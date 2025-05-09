@@ -14,7 +14,11 @@ class User extends Authenticatable
     use HasApiTokens, HasFactory, Notifiable; // ✅ Tambahkan HasApiTokens di sini
 
     protected $table = 'users';
+<<<<<<< HEAD
+    protected $primaryKey = 'user_id';
+=======
     protected $primaryKey = 'id';
+>>>>>>> f7f4dded849a52ba73ea8bc6302de8a52446edea
     public $timestamps = false;
 
     protected $fillable = [
