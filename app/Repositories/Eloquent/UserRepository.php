@@ -7,7 +7,7 @@ use App\Repositories\Interfaces\UserRepositoryInterface;
 
 class UserRepository implements UserRepositoryInterface
 {
-    public function getAll(int $perPage = 10, int $page = 1): array
+    public function getAll(int $perPage = 10, string $search, int $page = 1): array
     {
         return User::with('role')
             ->paginate($perPage, ['*'], 'page', $page)
