@@ -3,17 +3,14 @@
 use Illuminate\Http\Request;
 use Illuminate\Support\Facades\Route;
 use App\Http\Controllers\Api\UserController;
-<<<<<<< HEAD
 use App\Http\Controllers\Api\BarangController;
 use App\Http\Controllers\Api\DonasiController; 
 use App\Http\Controllers\GaransiController;
 use App\Http\Controllers\Api\KategoriBarangController;
 use App\Http\Controllers\Api\MerchController;
 use App\Http\Controllers\Api\PegawaiController;
-=======
 use App\Http\Controllers\Api\AuthController;
 
->>>>>>> f7f4dded849a52ba73ea8bc6302de8a52446edea
 
 Route::get('/user', function (Request $request) {
     return $request->user();
@@ -24,7 +21,6 @@ Route::prefix('users')->group(function () {
     //http://127.0.0.1:8000/api/usersy
 
 Route::post('/users', [UserController::class, 'store']);
-<<<<<<< HEAD
     Route::get('/{id}', [UserController::class, 'show']);
     Route::put('/{id}', [UserController::class, 'update']);
     Route::delete('/{id}', [UserController::class, 'destroy']);
@@ -76,15 +72,13 @@ Route::prefix('pegawai')->group(function () {
     Route::get('/{id}', [PegawaiController::class, 'show']);
     Route::put('/{id}', [PegawaiController::class, 'update']);
     Route::delete('/{id}', [PegawaiController::class, 'destroy']);
-=======
-//     Route::get('/{id}', [UserController::class, 'show']);
-//     Route::put('/{id}', [UserController::class, 'update']);
-//     Route::delete('/{id}', [UserController::class, 'destroy']);
-// });
+    Route::get('/{id}', [UserController::class, 'show']);
+    Route::put('/{id}', [UserController::class, 'update']);
+    Route::delete('/{id}', [UserController::class, 'destroy']);
+});
 Route::post('/register', [AuthController::class, 'register']);
 Route::post('/login', [AuthController::class, 'login']);
 Route::middleware('auth:api',"multiRole:CS,Admin")->group(function () {
     Route::get('/me', [AuthController::class, 'me']);
     Route::post('/logout', [AuthController::class, 'logout']);
->>>>>>> f7f4dded849a52ba73ea8bc6302de8a52446edea
 });
