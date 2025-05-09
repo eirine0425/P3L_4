@@ -3,11 +3,8 @@
 use Illuminate\Http\Request;
 use Illuminate\Support\Facades\Route;
 use App\Http\Controllers\Api\UserController;
-use App\Http\Controllers\Api\OrganisasiController;
-use App\Http\Controllers\Api\AlamatController;
-use App\Http\Controllers\Api\PembeliController;
-use App\Http\Controllers\Api\PenitipController;
-use App\Http\Controllers\Api\RoleController;
+use App\Http\Controllers\Api\AuthController;
+
 
 // Route::get('/user', function (Request $request) {
 //     return $request->user();
@@ -22,6 +19,12 @@ Route::post('/users', [UserController::class, 'store']);
 //     Route::put('/{id}', [UserController::class, 'update']);
 //     Route::delete('/{id}', [UserController::class, 'destroy']);
 // });
+Route::post('/register', [AuthController::class, 'register']);
+Route::post('/login', [AuthController::class, 'login']);
+Route::middleware('auth:api',"multiRole:CS,Admin")->group(function () {
+    Route::get('/me', [AuthController::class, 'me']);
+    Route::post('/logout', [AuthController::class, 'logout']);
+});
 
 Route::prefix('alamat')->group(function () {
     Route::get('/', [AlamatController::class, 'index']);
