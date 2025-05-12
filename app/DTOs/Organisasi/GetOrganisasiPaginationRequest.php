@@ -1,10 +1,10 @@
 <?php
 
-namespace App\DTOs\Garansi;
+namespace App\DTOs\Organisasi;
 
 use Illuminate\Foundation\Http\FormRequest;
 
-class GetGaransiPaginationRequest extends FormRequest
+class GetOrganisasiPaginationRequest extends FormRequest
 {
     public function rules(): array
     {
@@ -32,6 +32,6 @@ class GetGaransiPaginationRequest extends FormRequest
 
     public function getSearch(): ?string
     {
-        return $this->input('search', '*');
+        return $this->input('search', '');
     }
 }

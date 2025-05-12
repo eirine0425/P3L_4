@@ -6,14 +6,15 @@ use App\Http\Controllers\Controller;
 use App\UseCases\Barang\BarangUseCase;
 use App\DTOs\Barang\CreateBarangRequest;
 use App\DTOs\Barang\UpdateBarangRequest;
+use App\DTOs\Barang\GetBarangPaginationRequest;
 
 class BarangController extends Controller
 {
     public function __construct(protected BarangUseCase $barangUseCase) {}
 
-    public function index()
+    public function index(GetBarangPaginationRequest $request)
     {
-        return response()->json($this->barangUseCase->getAll());
+        return response()->json($this->barangUseCase->getAll($request));
     }
 
     public function store(CreateBarangRequest $request)

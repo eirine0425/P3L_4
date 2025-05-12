@@ -1,27 +1,34 @@
 <?php
 
-namespace App\Repositories\Garansi;
+namespace App\Repositories\Eloquent;
 
 use App\Models\Garansi;
+use App\Repositories\Interfaces\GaransiRepositoryInterface;
 
 class GaransiRepository implements GaransiRepositoryInterface
 {
-    public function getAll()
+    public function getAll(int $perPage = 10, string $search = "", int $page = 1, ): array
     {
-        return Garansi::all();
+        return Garansi::where(function ($query) use ($search) {
+                if (!empty($search)) {
+                    $query->where('status', 'like', '%' . $search . '%');
+                }
+            })
+            ->paginate($perPage, ['*'], 'page', $page)
+            ->toArray();
     }
 
-    public function findById($id)
+    public function find(int $id): ?Garansi
     {
         return Garansi::find($id);
     }
 
-    public function create(array $data)
+    public function create(array $data): Garansi
     {
         return Garansi::create($data);
     }
 
-    public function update($id, array $data)
+    public function update(int $id, array $data): ?Garansi
     {
         $garansi = Garansi::find($id);
         if ($garansi) {
@@ -30,7 +37,7 @@ class GaransiRepository implements GaransiRepositoryInterface
         return $garansi;
     }
 
-    public function delete($id)
+    public function delete(int $id): bool
     {
         $garansi = Garansi::find($id);
         if ($garansi) {

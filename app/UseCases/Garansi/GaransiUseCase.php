@@ -1,7 +1,7 @@
 <?php
 namespace App\UseCases\Garansi;
 
-use App\Repositories\Garansi\GaransiRepositoryInterface;
+use App\Repositories\Interfaces\GaransiRepositoryInterface;
 use App\DTOs\Garansi\CreateGaransiRequest;
 use App\DTOs\Garansi\UpdateGaransiRequest;
 use App\DTOs\Garansi\GetGaransiPaginationRequest;
@@ -26,7 +26,7 @@ class GaransiUseCase
     // Find a warranty by ID (method updated to findById)
     public function find($id)
     {
-        return $this->repository->findById($id); // Call the findById method
+        return $this->repository->find($id); // Call the findById method
     }
 
     // Create a new warranty record
@@ -46,7 +46,7 @@ class GaransiUseCase
     public function update($id, UpdateGaransiRequest $request)
     {
         // Find the existing warranty
-        $garansi = $this->repository->findById($id); // Using findById
+        $garansi = $this->repository->find($id); // Using findById
 
         if (!$garansi) {
             return null;
@@ -66,7 +66,7 @@ class GaransiUseCase
     public function delete($id): bool
     {
         // Find the existing warranty
-        $garansi = $this->repository->findById($id); // Using findById
+        $garansi = $this->repository->find($id); // Using findById
 
         if (!$garansi) {
             return false;

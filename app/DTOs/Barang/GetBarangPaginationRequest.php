@@ -1,10 +1,10 @@
 <?php
 
-namespace App\DTOs\Garansi;
+namespace App\DTOs\Barang;
 
 use Illuminate\Foundation\Http\FormRequest;
 
-class GetGaransiPaginationRequest extends FormRequest
+class GetBarangPaginationRequest extends FormRequest
 {
     public function rules(): array
     {

@@ -1,10 +1,10 @@
 <?php
 
-namespace App\DTOs\Garansi;
+namespace App\DTOs\Donasi;
 
 use Illuminate\Foundation\Http\FormRequest;
 
-class GetGaransiPaginationRequest extends FormRequest
+class GetDonasiPaginationRequest  extends FormRequest
 {
     public function rules(): array
     {
