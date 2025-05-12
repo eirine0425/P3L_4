@@ -7,6 +7,7 @@ use App\UseCases\Alamat\AlamatUsecase;
 use App\DTOs\Alamat\CreateAlamatRequest;
 use App\DTOs\Alamat\UpdateALamatRequest;
 use App\Models\Alamat;
+use App\DTOs\Alamat\GetAlamatPaginationRequest;
 
 class AlamatController extends Controller
 {
@@ -14,9 +15,9 @@ class AlamatController extends Controller
         protected AlamatUsecase $alamatUsecase
     ) {}
 
-    public function index()
+    public function index(GetAlamatPaginationRequest $request)
     {
-        return response()->json($this->alamatUsecase->getAll());
+        return response()->json($this->alamatUsecase->getAll($request));
     }
 
     public function store(CreateAlamatRequest $request)

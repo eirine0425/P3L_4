@@ -7,9 +7,15 @@ use App\Repositories\Interfaces\PembeliRepositoryInterface;
 
 class PembeliRepository implements PembeliRepositoryInterface
 {
-    public function getAll(): array
+    public function getAll(int $perPage = 10, string $search = "", int $page = 1, ): array
     {
-        return Pembeli::all()->toArray();
+        return Pembeli::where(function ($query) use ($search) {
+                if (!empty($search)) {
+                    $query->where('nama', 'like', '%' . $search . '%');
+                }
+            })
+            ->paginate($perPage, ['*'], 'page', $page)
+            ->toArray();
     }
 
     public function find(int $id): ?Pembeli

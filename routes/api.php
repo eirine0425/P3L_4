@@ -10,7 +10,11 @@ use App\Http\Controllers\Api\KategoriBarangController;
 use App\Http\Controllers\Api\MerchController;
 use App\Http\Controllers\Api\PegawaiController;
 use App\Http\Controllers\Api\AuthController;
-
+use App\Http\Controllers\Api\OrganisasiController;
+use App\Http\Controllers\Api\AlamatController;
+use App\Http\Controllers\Api\PembeliController;
+use App\Http\Controllers\Api\PenitipController;
+use App\Http\Controllers\Api\RoleController;
 
 Route::get('/user', function (Request $request) {
     return $request->user();

@@ -6,6 +6,7 @@ use App\DTOs\Organisasi\CreateOrganisasiRequest;
 use App\DTOs\Organisasi\UpdateOrganisasiRequest;
 use App\Models\Organisasi;
 use App\Repositories\Interfaces\OrganisasiRepositoryInterface;
+use App\DTOs\Organisasi\GetOrganisasiPaginationRequest;
 
 class OrganisasiUsecase
 {
@@ -13,9 +14,14 @@ class OrganisasiUsecase
         protected OrganisasiRepositoryInterface $repository
     ) {}
 
-    public function getAll()
+    public function getAll(GetOrganisasiPaginationRequest $request): array
     {
-        return $this->repository->getAll();
+
+        return $this->repository->getAll(
+            perPage: $request->getPerPage(),
+            page: $request->getPage(),
+            search: $request->getSearch()
+        );
     }
 
     public function find($id)

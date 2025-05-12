@@ -5,6 +5,7 @@ use App\Http\Controllers\Controller;
 use App\UseCases\Pembeli\PembeliUseCase;
 use App\DTOs\Pembeli\CreatePembeliRequest;
 use App\DTOs\Pembeli\UpdatePembeliRequest;
+use App\DTOs\Pembeli\GetPembeliPaginationRequest;
 
 class PembeliController extends Controller
 {
@@ -12,11 +13,10 @@ class PembeliController extends Controller
         protected PembeliUseCase $pembeliUseCase
     ) {}
 
-    public function index()
+    public function index(GetPembeliPaginationRequest $request)
     {
-        return response()->json($this->pembeliUseCase->getAll());
+        return response()->json($this->pembeliUseCase->getAll($request));
     }
-
     public function store(CreatePembeliRequest $request)
     {
         $pembeli = $this->pembeliUseCase->create($request);

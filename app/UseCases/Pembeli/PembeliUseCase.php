@@ -4,6 +4,7 @@ namespace App\UseCases\Pembeli;
 use App\DTOs\Pembeli\CreatePembeliRequest;
 use App\DTOs\Pembeli\UpdatePembeliRequest;
 use App\Repositories\Interfaces\PembeliRepositoryInterface;
+use App\DTOs\Pembeli\GetPembeliPaginationRequest;
 
 class PembeliUseCase
 {
@@ -11,9 +12,14 @@ class PembeliUseCase
         protected PembeliRepositoryInterface $repository
     ) {}
 
-    public function getAll()
+    public function getAll(GetPembeliPaginationRequest $request): array
     {
-        return $this->repository->getAll();
+
+        return $this->repository->getAll(
+            perPage: $request->getPerPage(),
+            page: $request->getPage(),
+            search: $request->getSearch()
+        );
     }
 
     public function find($id)

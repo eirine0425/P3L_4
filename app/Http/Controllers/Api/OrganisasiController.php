@@ -7,6 +7,7 @@ use App\UseCases\Organisasi\OrganisasiUsecase;
 use App\DTOs\Organisasi\CreateOrganisasiRequest;
 use App\DTOs\Organisasi\UpdateOrganisasiRequest;
 use App\Models\Organisasi;
+use App\DTOs\Organisasi\GetOrganisasiPaginationRequest;
 
 class OrganisasiController extends Controller
 {
@@ -14,9 +15,9 @@ class OrganisasiController extends Controller
         protected OrganisasiUsecase $organisasiUsecase
     ) {}
 
-    public function index()
+    public function index(GetOrganisasiPaginationRequest $request)
     {
-        return response()->json($this->organisasiUsecase->getAll());
+        return response()->json($this->organisasiUsecase->getAll($request));
     }
 
     public function store(CreateOrganisasiRequest $request)

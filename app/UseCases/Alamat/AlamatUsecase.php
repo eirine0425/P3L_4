@@ -3,9 +3,11 @@
 namespace App\UseCases\Alamat;
 
 use App\DTOs\Alamat\CreateAlamatRequest;
+use App\DTOs\Alamat\GetAlamatPaginationRequest;
 use App\DTOs\Alamat\UpdateAlamatRequest;
 use App\Models\Alamat;
 use App\Repositories\Interfaces\AlamatRepositoryInterface;
+use App\DTOs\Organisasi\GetOrganisasiPaginationRequest;
 
 class AlamatUsecase
 {
@@ -13,10 +15,16 @@ class AlamatUsecase
         protected AlamatRepositoryInterface $repository
     ) {}
 
-    public function getAll()
+    public function getAll(GetAlamatPaginationRequest $request): array
     {
-        return $this->repository->getAll();
+
+        return $this->repository->getAll(
+            perPage: $request->getPerPage(),
+            page: $request->getPage(),
+            search: $request->getSearch()
+        );
     }
+
 
     public function find($id)
     {
