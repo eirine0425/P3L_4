@@ -8,9 +8,15 @@ use App\Repositories\Interfaces\DonasiRepositoryInterface;
 class DonasiRepository implements DonasiRepositoryInterface
 {
     // Mengambil semua data donasi
-    public function getAll(): array
+    public function getAll(int $perPage = 10, string $search = "", int $page = 1, ): array
     {
-        return Donasi::all()->toArray();
+        return Donasi::where(function ($query) use ($search) {
+                if (!empty($search)) {
+                    $query->where('barang_id', 'like', '%' . $search . '%');
+                }
+            })
+            ->paginate($perPage, ['*'], 'page', $page)
+            ->toArray();
     }
 
     // Menemukan donasi berdasarkan ID
