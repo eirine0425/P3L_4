@@ -7,9 +7,16 @@ use App\Repositories\Interfaces\BarangRepositoryInterface;
 
 class BarangRepository implements BarangRepositoryInterface
 {
-    public function getAll(): array
+    public function getAll(int $perPage = 10, string $search = "", int $page = 1): array
     {
-        return Barang::all()->toArray();
+        return Barang::with('role')
+            ->where(function ($query) use ($search) {
+                if (!empty($search)) {
+                    $query->where('nama_barang', 'like', "%{$search}%");
+                }
+            })
+            ->paginate($perPage, ['*'], 'page', $page)
+            ->toArray();
     }
 
     public function find(int $id): ?Barang

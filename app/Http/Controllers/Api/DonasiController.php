@@ -6,6 +6,10 @@ use App\Http\Controllers\Controller;
 use App\UseCases\Donasi\DonasiUseCase;
 use App\DTOs\Donasi\CreateDonasiRequest;
 use App\DTOs\Donasi\UpdateDonasiRequest;
+use App\DTOs\Donasi\GetDonasiPaginationRequest;
+
+
+
 use Illuminate\Http\Request;
 
 class DonasiController extends Controller
@@ -13,9 +17,9 @@ class DonasiController extends Controller
     public function __construct(protected DonasiUseCase $donasiUseCase) {}
 
     // Get all donations
-    public function index()
+    public function index(GetDonasiPaginationRequest $request)
     {
-        return response()->json($this->donasiUseCase->getAll());
+        return response()->json($this->donasiUseCase->getAll($request));
     }
 
     // Create a new donation

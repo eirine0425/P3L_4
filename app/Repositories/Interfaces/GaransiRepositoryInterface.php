@@ -1,12 +1,14 @@
 <?php
 
-namespace App\Repositories\Garansi;
+namespace App\Repositories\Interfaces;
+
+use App\Models\Garansi;
 
 interface GaransiRepositoryInterface
 {
-    public function getAll();
-    public function findById($id);
-    public function create(array $data);
-    public function update($id, array $data);
-    public function delete($id);
+    public function getAll(int $perPage = 10, string $search ="", int $page = 1): array;
+    public function find(int $id): ?Garansi;
+    public function create(array $data): Garansi;
+    public function update(int $id, array $data): ?Garansi;
+    public function delete(int $id): bool;
 }
