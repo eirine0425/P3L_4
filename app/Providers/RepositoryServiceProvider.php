@@ -28,8 +28,8 @@ class RepositoryServiceProvider extends ServiceProvider
         );
 
         $this->app->bind(
-            \App\Repositories\Garansi\GaransiRepositoryInterface::class,
-            \App\Repositories\Garansi\GaransiRepository::class
+            \App\Repositories\Interfaces\GaransiRepositoryInterface::class,
+            \App\Repositories\Eloquent\GaransiRepository::class
         );
 
         $this->app->bind(

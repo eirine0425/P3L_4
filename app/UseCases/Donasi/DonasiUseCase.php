@@ -5,6 +5,8 @@ namespace App\UseCases\Donasi;
 use App\Repositories\Interfaces\DonasiRepositoryInterface;
 use App\DTOs\Donasi\CreateDonasiRequest;
 use App\DTOs\Donasi\UpdateDonasiRequest;
+use App\DTOs\Donasi\GetDonasiPaginationRequest;
+
 
 class DonasiUseCase
 {
@@ -12,12 +14,15 @@ class DonasiUseCase
         protected DonasiRepositoryInterface $repository
     ) {}
 
-    // Get all donation records
-    public function getAll()
+    public function getAll(GetDonasiPaginationRequest $request): array
     {
-        return $this->repository->getAll();
-    }
 
+        return $this->repository->getAll(
+            perPage: $request->getPerPage(),
+            page: $request->getPage(),
+            search: $request->getSearch()
+        );
+    }
     // Find a donation by ID
     public function find($id)
     {
