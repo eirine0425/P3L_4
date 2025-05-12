@@ -31,7 +31,6 @@ class RepositoryServiceProvider extends ServiceProvider
             \App\Repositories\Interfaces\GaransiRepositoryInterface::class,
             \App\Repositories\Eloquent\GaransiRepository::class
         );
-
         $this->app->bind(
             \App\Repositories\Interfaces\KategoriBarangRepositoryInterface::class,
             \App\Repositories\Eloquent\KategoriBarangRepository::class
