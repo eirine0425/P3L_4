@@ -4,6 +4,7 @@ namespace App\UseCases\Garansi;
 use App\Repositories\Garansi\GaransiRepositoryInterface;
 use App\DTOs\Garansi\CreateGaransiRequest;
 use App\DTOs\Garansi\UpdateGaransiRequest;
+use App\DTOs\Garansi\GetGaransiPaginationRequest;
 
 class GaransiUseCase
 {
@@ -12,9 +13,14 @@ class GaransiUseCase
     ) {}
 
     // Get all warranty records
-    public function getAll()
+    public function getAll(GetGaransiPaginationRequest $request): array
     {
-        return $this->repository->getAll();
+
+        return $this->repository->getAll(
+            perPage: $request->getPerPage(),
+            page: $request->getPage(),
+            search: $request->getSearch()
+        );
     }
 
     // Find a warranty by ID (method updated to findById)

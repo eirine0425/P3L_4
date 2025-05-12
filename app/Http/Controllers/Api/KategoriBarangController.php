@@ -6,6 +6,7 @@ use App\Http\Controllers\Controller;
 use App\UseCases\KategoriBarang\KategoriBarangUseCase;
 use App\DTOs\KategoriBarang\CreateKategoriBarangRequest;
 use App\DTOs\KategoriBarang\UpdateKategoriBarangRequest;
+use App\DTOs\KategoriBarang\GetKategoriBarangPaginationRequest;
 
 class KategoriBarangController extends Controller
 {
@@ -14,9 +15,9 @@ class KategoriBarangController extends Controller
     ) {}
 
     // Fetch all kategori barang
-    public function index()
+    public function index(GetKategoriBarangPaginationRequest $request)
     {
-        return response()->json($this->kategoriBarangUseCase->getAll());
+        return response()->json($this->kategoriBarangUseCase->getAll($request));
     }
 
     // Create a new kategori barang

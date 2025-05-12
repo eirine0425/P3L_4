@@ -7,9 +7,17 @@ use App\Repositories\Interfaces\KategoriBarangRepositoryInterface;
 
 class KategoriBarangRepository implements KategoriBarangRepositoryInterface
 {
-    public function getAll(): array
+    public function getAll(int $perPage = 10, string $search = "",int $page = 1): array
     {
-        return KategoriBarang::get()->toArray();
+        return KategoriBarang::
+            where(function ($query) use ($search) {
+                if (!empty($search)) {
+                    $query->where('nama_kategori', 'like', "%{$search}%");
+                        
+                }
+            })
+            ->paginate($perPage, ['*'], 'page', $page)
+            ->toArray();
     }
 
     public function find(int $id): ?KategoriBarang

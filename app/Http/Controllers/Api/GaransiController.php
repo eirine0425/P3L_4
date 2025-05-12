@@ -1,9 +1,10 @@
 <?php
-namespace App\Http\Controllers;
-
+namespace App\Http\Controllers\Api;
+use App\Http\Controllers\Controller;
 use App\UseCases\Garansi\GaransiUseCase;
 use App\DTOs\Garansi\CreateGaransiRequest;
 use App\DTOs\Garansi\UpdateGaransiRequest;
+use App\DTOs\Garansi\GetGaransiPaginationRequest;
 use Illuminate\Http\Request;
 
 class GaransiController extends Controller
@@ -18,10 +19,10 @@ class GaransiController extends Controller
     /**
      * Menampilkan daftar semua garansi.
      */
-    public function index()
+    public function index(GetGaransiPaginationRequest $request)
     {
-        $garansi = $this->garansiUseCase->getAll();
-        return response()->json($garansi);
+        return response()->json($this->garansiUseCase->getAll($request));
+
     }
 
     /**

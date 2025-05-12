@@ -5,7 +5,7 @@ use Illuminate\Support\Facades\Route;
 use App\Http\Controllers\Api\UserController;
 use App\Http\Controllers\Api\BarangController;
 use App\Http\Controllers\Api\DonasiController; 
-use App\Http\Controllers\GaransiController;
+use App\Http\Controllers\Api\GaransiController;
 use App\Http\Controllers\Api\KategoriBarangController;
 use App\Http\Controllers\Api\MerchController;
 use App\Http\Controllers\Api\PegawaiController;

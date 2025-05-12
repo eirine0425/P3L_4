@@ -7,9 +7,17 @@ use App\Repositories\Interfaces\MerchRepositoryInterface;
 class MerchRepository implements MerchRepositoryInterface
 {
     // Mengambil semua data merch
-    public function getAll()
+    public function getAll(int $perPage = 10, int $page = 1, string $search = ""): array
     {
-        return Merch::all();
+        return Merch::
+            where(function ($query) use ($search) {
+                if (!empty($search)) {
+                    $query->where('nama', 'like', "%{$search}%");
+                        
+                }
+            })
+            ->paginate($perPage, ['*'], 'page', $page)
+            ->toArray();
     }
 
     // Menemukan merch berdasarkan ID
