@@ -7,15 +7,17 @@ use App\UseCases\Merch\MerchUseCase;
 use App\DTOs\Merch\CreateMerchRequest;
 use App\DTOs\Merch\UpdateMerchRequest;
 use Illuminate\Http\Request;
+use App\DTOs\Merch\GetMerchPaginationRequest;
+
 
 class MerchController extends Controller
 {
     public function __construct(protected MerchUseCase $merchUseCase) {}
 
     // Get all merch
-    public function index()
+    public function index(GetMerchPaginationRequest $request)
     {
-        return response()->json($this->merchUseCase->getAll());
+        return response()->json($this->merchUseCase->getAll($request));
     }
 
     // Create a new merch

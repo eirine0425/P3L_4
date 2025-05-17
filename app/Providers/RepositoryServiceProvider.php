@@ -28,10 +28,9 @@ class RepositoryServiceProvider extends ServiceProvider
         );
 
         $this->app->bind(
-            \App\Repositories\Garansi\GaransiRepositoryInterface::class,
-            \App\Repositories\Garansi\GaransiRepository::class
+            \App\Repositories\Interfaces\GaransiRepositoryInterface::class,
+            \App\Repositories\Eloquent\GaransiRepository::class
         );
-
         $this->app->bind(
             \App\Repositories\Interfaces\KategoriBarangRepositoryInterface::class,
             \App\Repositories\Eloquent\KategoriBarangRepository::class
@@ -47,6 +46,30 @@ class RepositoryServiceProvider extends ServiceProvider
             \App\Repositories\Eloquent\PegawaiRepository::class
         );
 
+        $this->app->bind(
+            \App\Repositories\Interfaces\OrganisasiRepositoryInterface::class,
+            \App\Repositories\Eloquent\OrganisasiRepository::class
+        );
+
+        $this->app->bind(
+            \App\Repositories\Interfaces\AlamatRepositoryInterface::class,
+            \App\Repositories\Eloquent\AlamatRepository::class
+        );
+
+        $this->app->bind(
+            \App\Repositories\Interfaces\PembeliRepositoryInterface::class,
+            \App\Repositories\Eloquent\PembeliRepository::class
+        );
+
+        $this->app->bind(
+            \App\Repositories\Interfaces\PenitipRepositoryInterface::class,
+            \App\Repositories\Eloquent\PenitipRepository::class
+        );
+
+        $this->app->bind(
+            \App\Repositories\Interfaces\RequestDonasiRepositoryInterface::class,
+            \App\Repositories\Eloquent\RequestDonasiRepository::class
+        );
     }
 
     /**

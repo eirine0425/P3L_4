@@ -4,6 +4,7 @@ namespace App\UseCases\KategoriBarang;
 use App\DTOs\KategoriBarang\CreateKategoriBarangRequest;
 use App\DTOs\KategoriBarang\UpdateKategoriBarangRequest;
 use App\Repositories\Interfaces\KategoriBarangRepositoryInterface;
+use App\DTOs\KategoriBarang\GetKategoriBarangPaginationRequest;
 
 class KategoriBarangUseCase
 {
@@ -12,9 +13,14 @@ class KategoriBarangUseCase
     ) {}
 
     // Retrieve all kategori barang
-    public function getAll()
+    public function getAll(GetKategoriBarangPaginationRequest $request): array
     {
-        return $this->repository->getAll();
+
+        return $this->repository->getAll(
+            perPage: $request->getPerPage(),
+            page: $request->getPage(),
+            search: $request->getSearch()
+        );
     }
 
     // Find a specific kategori barang by ID

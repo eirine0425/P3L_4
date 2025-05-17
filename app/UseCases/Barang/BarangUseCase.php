@@ -5,6 +5,7 @@ namespace App\UseCases\Barang;
 use App\Repositories\Interfaces\BarangRepositoryInterface;
 use App\DTOs\Barang\CreateBarangRequest;
 use App\DTOs\Barang\UpdateBarangRequest;
+use App\DTOs\Barang\GetBarangPaginationRequest;
 
 class BarangUseCase
 {
@@ -12,9 +13,14 @@ class BarangUseCase
         protected BarangRepositoryInterface $repository
     ) {}
 
-    public function getAll()
+    public function getAll(GetBarangPaginationRequest $request): array
     {
-        return $this->repository->getAll();
+
+        return $this->repository->getAll(
+            perPage: $request->getPerPage(),
+            page: $request->getPage(),
+            search: $request->getSearch()
+        );
     }
 
     public function find($id)

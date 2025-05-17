@@ -5,10 +5,17 @@ use Illuminate\Support\Facades\Route;
 use App\Http\Controllers\Api\UserController;
 use App\Http\Controllers\Api\BarangController;
 use App\Http\Controllers\Api\DonasiController; 
-use App\Http\Controllers\GaransiController;
+use App\Http\Controllers\Api\GaransiController;
 use App\Http\Controllers\Api\KategoriBarangController;
 use App\Http\Controllers\Api\MerchController;
 use App\Http\Controllers\Api\PegawaiController;
+use App\Http\Controllers\Api\AuthController;
+use App\Http\Controllers\Api\OrganisasiController;
+use App\Http\Controllers\Api\AlamatController;
+use App\Http\Controllers\Api\PembeliController;
+use App\Http\Controllers\Api\PenitipController;
+use App\Http\Controllers\Api\RoleController;
+use App\Http\Controllers\Api\RequestDonasiController;
 
 Route::get('/user', function (Request $request) {
     return $request->user();
@@ -70,4 +77,62 @@ Route::prefix('pegawai')->group(function () {
     Route::get('/{id}', [PegawaiController::class, 'show']);
     Route::put('/{id}', [PegawaiController::class, 'update']);
     Route::delete('/{id}', [PegawaiController::class, 'destroy']);
+    Route::get('/{id}', [UserController::class, 'show']);
+    Route::put('/{id}', [UserController::class, 'update']);
+    Route::delete('/{id}', [UserController::class, 'destroy']);
+});
+Route::post('/register', [AuthController::class, 'register']);
+Route::post('/login', [AuthController::class, 'login']);
+Route::middleware('auth:api',"multiRole:CS,Admin")->group(function () {
+    Route::get('/me', [AuthController::class, 'me']);
+    Route::post('/logout', [AuthController::class, 'logout']);
+});
+
+Route::prefix('alamat')->group(function () {
+    Route::get('/', [AlamatController::class, 'index']);
+    Route::post('/', [AlamatController::class, 'store']);
+    Route::get('/{id}', [AlamatController::class, 'show']);
+    Route::put('/{id}', [AlamatController::class, 'update']);
+    Route::delete('/{id}', [AlamatController::class, 'destroy']);
+});
+
+Route::prefix('organisasi')->group(function () {
+    Route::get('/', [OrganisasiController::class, 'index']);
+    Route::post('/', [OrganisasiController::class, 'store']);
+    Route::get('/{id}', [OrganisasiController::class, 'show']);
+    Route::put('/{id}', [OrganisasiController::class, 'update']);
+    Route::delete('/{id}', [OrganisasiController::class, 'destroy']);
+});
+
+Route::prefix('pembeli')->group(function () {
+    Route::get('/', [PembeliController::class, 'index']);
+    Route::post('/', [PembeliController::class, 'store']);
+    Route::get('/{id}', [PembeliController::class, 'show']);
+    Route::put('/{id}', [PembeliController::class, 'update']);
+    Route::delete('/{id}', [PembeliController::class, 'destroy']);
+});
+
+Route::prefix('penitip')->group(function () {
+    Route::get('/', [PenitipController::class, 'index']);
+    Route::post('/', [PenitipController::class, 'store']);
+    Route::get('/{id}', [PenitipController::class, 'show']);
+    Route::put('/{id}', [PenitipController::class, 'update']);
+    Route::delete('/{id}', [PenitipController::class, 'destroy']);
+
+});
+
+Route::prefix('role')->group(function () {
+    Route::get('/', [RoleController::class, 'index']);
+    Route::post('/', [RoleController::class, 'store']);
+    Route::get('/{id}', [RoleController::class, 'show']);
+    Route::put('/{id}', [RoleController::class, 'update']);
+    Route::delete('/{id}', [RoleController::class, 'destroy']);
+});
+
+Route::prefix('request_donasi')->group(function () {
+    Route::get('/', [RequestDonasiController::class, 'index']);
+    Route::post('/', [RequestDonasiController::class, 'store']);
+    Route::get('/{id}', [RequestDonasiController::class, 'show']);
+    Route::put('/{id}', [RequestDonasiController::class, 'update']);
+    Route::delete('/{id}', [RequestDonasiController::class, 'destroy']);
 });

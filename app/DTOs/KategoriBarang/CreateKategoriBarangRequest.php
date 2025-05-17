@@ -12,7 +12,6 @@ class CreateKategoriBarangRequest
 
     public function __construct(Request $request)
     {
-        $this->kategori_id = $request->input('kategori_id');
         $this->nama_kategori = $request->input('nama_kategori');
         $this->deskripsi = $request->input('deskripsi');
     }
@@ -20,7 +19,6 @@ class CreateKategoriBarangRequest
     public function toArray(): array
     {
         return [
-            'kategori_id'   => $this->kategori_id,
             'nama_kategori' => $this->nama_kategori,
             'deskripsi'     => $this->deskripsi,
         ];

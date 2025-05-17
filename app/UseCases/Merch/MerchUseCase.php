@@ -5,6 +5,7 @@ namespace App\UseCases\Merch;
 use App\Repositories\Interfaces\MerchRepositoryInterface;
 use App\DTOs\Merch\CreateMerchRequest;
 use App\DTOs\Merch\UpdateMerchRequest;
+use App\DTOs\Merch\GetMerchPaginationRequest;
 
 class MerchUseCase
 {
@@ -13,9 +14,14 @@ class MerchUseCase
     ) {}
 
     // Ambil semua data merch
-    public function getAll()
+    public function getAll(GetMerchPaginationRequest $request): array
     {
-        return $this->repository->getAll();
+
+        return $this->repository->getAll(
+            perPage: $request->getPerPage(),
+            page: $request->getPage(),
+            search: $request->getSearch()
+        );
     }
 
     // Temukan merch berdasarkan ID
