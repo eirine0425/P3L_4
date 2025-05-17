@@ -15,6 +15,7 @@ use App\Http\Controllers\Api\AlamatController;
 use App\Http\Controllers\Api\PembeliController;
 use App\Http\Controllers\Api\PenitipController;
 use App\Http\Controllers\Api\RoleController;
+use App\Http\Controllers\Api\RequestDonasiController;
 
 Route::get('/user', function (Request $request) {
     return $request->user();
@@ -117,6 +118,7 @@ Route::prefix('penitip')->group(function () {
     Route::get('/{id}', [PenitipController::class, 'show']);
     Route::put('/{id}', [PenitipController::class, 'update']);
     Route::delete('/{id}', [PenitipController::class, 'destroy']);
+
 });
 
 Route::prefix('role')->group(function () {
@@ -125,4 +127,12 @@ Route::prefix('role')->group(function () {
     Route::get('/{id}', [RoleController::class, 'show']);
     Route::put('/{id}', [RoleController::class, 'update']);
     Route::delete('/{id}', [RoleController::class, 'destroy']);
+});
+
+Route::prefix('request_donasi')->group(function () {
+    Route::get('/', [RequestDonasiController::class, 'index']);
+    Route::post('/', [RequestDonasiController::class, 'store']);
+    Route::get('/{id}', [RequestDonasiController::class, 'show']);
+    Route::put('/{id}', [RequestDonasiController::class, 'update']);
+    Route::delete('/{id}', [RequestDonasiController::class, 'destroy']);
 });

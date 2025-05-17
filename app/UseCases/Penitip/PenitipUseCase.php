@@ -2,68 +2,48 @@
 
 namespace App\UseCases\Penitip;
 
+use App\Models\Penitip;
 use App\DTOs\Penitip\CreatePenitipRequest;
 use App\DTOs\Penitip\UpdatePenitipRequest;
-use App\Repositories\Interfaces\PenitipRepositoryInterface;
+use App\DTOs\Penitip\GetPenitipPaginationRequest;
 
 class PenitipUseCase
 {
-    public function __construct(
-        protected PenitipRepositoryInterface $repository
-    ) {}
-
-    public function getAll()
+    public function getAll(GetPenitipPaginationRequest $request)
     {
-        return $this->repository->getAll();
+        return Penitip::query()
+            ->when($request->getSearch(), function ($query) use ($request) {
+                return $query->where('nama', 'like', '%' . $request->getSearch() . '%');
+            })
+            ->paginate($request->getPerPage());
+    }
+
+    public function create(CreatePenitipRequest $request)
+    {
+        return Penitip::create($request->toArray());
     }
 
     public function find($id)
     {
-        return $this->repository->find($id); // Mencari penitip berdasarkan penitip_id
-    }
-
-    public function create(CreatePenitipRequest $request)
-{
-    $data = $request->toArray([
-            'penitip_id',
-            'nama',
-            'point_reward',
-            'tanggal_registrasi',
-            'no_ktp',
-            'user_id',
-            'badge',
-            'periode',
-        ]);
-        return $this->repository->create($data);
+        return Penitip::find($id);
     }
 
     public function update(UpdatePenitipRequest $request, $id)
-{
-    $penitip = $this->repository->find($id);
-    if (!$penitip) {
+    {
+        $penitip = Penitip::find($id);
+        if ($penitip) {
+            $penitip->update($request->validated());
+            return $penitip;
+        }
         return null;
     }
 
-        $data = $request->only([
-            'penitip_id',
-            'nama',
-            'point_reward',
-            'tanggal_registrasi',
-            'no_ktp',
-            'user_id',
-            'badge',
-            'periode',
-        ]);
-
-        return $this->repository->update($id, $data); // Melakukan update berdasarkan penitip_id
-    }
-
-    public function delete($id): bool
+    public function delete($id)
     {
-        $penitip = $this->repository->find($id); // Mencari penitip berdasarkan penitip_id
-        if (!$penitip) {
-            return false; // Jika penitip tidak ditemukan
+        $penitip = Penitip::find($id);
+        if ($penitip) {
+            $penitip->delete();
+            return true;
         }
-        return $this->repository->delete($id); // Menghapus penitip
     }
 }

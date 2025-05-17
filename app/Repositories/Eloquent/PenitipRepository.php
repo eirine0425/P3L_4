@@ -7,14 +7,20 @@ use App\Repositories\Interfaces\PenitipRepositoryInterface;
 
 class PenitipRepository implements PenitipRepositoryInterface
 {
-    public function getAll(): array
+    public function getAll(int $perPage = 10, string $search = "", int $page = 1, ): array
     {
-        return Penitip::all()->toArray();
+        return Penitip::where(function ($query) use ($search) {
+                if (!empty($search)) {
+                    $query->where('nama', 'like', '%' . $search . '%');
+                }
+            })
+            ->paginate($perPage, ['*'], 'page', $page)
+            ->toArray();
     }
 
     public function find(int $id): ?Penitip
     {
-        return Penitip::where('penitip_id', $id)->first(); // Menggunakan penitip_id
+        return Penitip::where('pembeli_id', $id)->first(); // Menggunakan pembeli_id sebagai primary key
     }
 
     public function create(array $data): Penitip
@@ -26,7 +32,7 @@ class PenitipRepository implements PenitipRepositoryInterface
     {
         $penitip = $this->find($id);
         if ($penitip) {
-            $penitip->update($data);
+            $penitip->update($data); // Update data pembeli
         }
         return $penitip;
     }
@@ -35,7 +41,7 @@ class PenitipRepository implements PenitipRepositoryInterface
     {
         $penitip = $this->find($id);
         if ($penitip) {
-            return $penitip->delete();
+            return $penitip->delete(); // Menghapus pembeli
         }
         return false;
     }

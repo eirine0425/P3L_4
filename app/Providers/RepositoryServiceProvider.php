@@ -60,6 +60,16 @@ class RepositoryServiceProvider extends ServiceProvider
             \App\Repositories\Interfaces\PembeliRepositoryInterface::class,
             \App\Repositories\Eloquent\PembeliRepository::class
         );
+
+        $this->app->bind(
+            \App\Repositories\Interfaces\PenitipRepositoryInterface::class,
+            \App\Repositories\Eloquent\PenitipRepository::class
+        );
+
+        $this->app->bind(
+            \App\Repositories\Interfaces\RequestDonasiRepositoryInterface::class,
+            \App\Repositories\Eloquent\RequestDonasiRepository::class
+        );
     }
 
     /**
