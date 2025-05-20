@@ -23,10 +23,35 @@ use App\Http\Controllers\Api\TransaksiController;
 use App\Http\Controllers\Api\TransaksiMerchController;
 use App\Http\Controllers\Api\TransaksiPenitipanController;
 use App\Http\Controllers\Api\AuthController;
+use App\Http\Controllers\Api\WebViewController;
 
 // Auth routes
 Route::post('/register', [AuthController::class, 'register']);
 Route::post('/login', [AuthController::class, 'login']);
+
+// Public view routes (tidak memerlukan autentikasi)
+Route::get('/', [WebViewController::class, 'home']);
+Route::get('/products', [WebViewController::class, 'products']);
+Route::get('/products/{id}', [WebViewController::class, 'productDetail']);
+Route::get('/warranty-check', [WebViewController::class, 'warrantyCheck']);
+Route::get('/about', [WebViewController::class, 'about']);
+
+// Auth view routes
+Route::get('/login', function () {
+    return view('auth.login');
+})->name('login');
+
+Route::get('/register', function () {
+    return view('auth.register');
+})->name('register');
+
+Route::get('/password/reset', function () {
+    return view('auth.passwords.email');
+})->name('password.request');
+
+Route::get('/password/reset/{token}', function ($token) {
+    return view('auth.passwords.reset', ['token' => $token]);
+})->name('password.reset');
 
 Route::middleware('auth:api')->group(function () {
     Route::get('/user', function (Request $request) {
@@ -35,6 +60,53 @@ Route::middleware('auth:api')->group(function () {
     
     Route::post('/logout', [AuthController::class, 'logout']);
     Route::get('/me', [AuthController::class, 'me']);
+    
+    // Dashboard routes
+    Route::get('/dashboard', [WebViewController::class, 'dashboard'])->name('dashboard');
+    
+    // Role-specific dashboard routes
+    Route::middleware('role:Owner')->group(function () {
+        Route::get('/dashboard/owner', [WebViewController::class, 'ownerDashboard']);
+        Route::get('/dashboard/owner/reports', [WebViewController::class, 'ownerReports']);
+    });
+    
+    Route::middleware('role:Admin')->group(function () {
+        Route::get('/dashboard/admin', [WebViewController::class, 'adminDashboard']);
+        Route::get('/dashboard/admin/users', [WebViewController::class, 'adminUsers']);
+        Route::get('/dashboard/admin/roles', [WebViewController::class, 'adminRoles']);
+    });
+    
+    Route::middleware('role:Pegawai Gudang')->group(function () {
+        Route::get('/dashboard/warehouse', [WebViewController::class, 'warehouseDashboard']);
+        Route::get('/dashboard/warehouse/inventory', [WebViewController::class, 'warehouseInventory']);
+    });
+    
+    Route::middleware('role:CS')->group(function () {
+        Route::get('/dashboard/cs', [WebViewController::class, 'csDashboard']);
+        Route::get('/dashboard/cs/customers', [WebViewController::class, 'csCustomers']);
+    });
+    
+    Route::middleware('role:Penitip')->group(function () {
+        Route::get('/dashboard/consignor', [WebViewController::class, 'consignorDashboard']);
+        Route::get('/dashboard/consignor/items', [WebViewController::class, 'consignorItems']);
+        Route::get('/dashboard/consignor/transactions', [WebViewController::class, 'consignorTransactions']);
+    });
+    
+    Route::middleware('role:Pembeli')->group(function () {
+        Route::get('/dashboard/buyer', [WebViewController::class, 'buyerDashboard']);
+        Route::get('/dashboard/buyer/orders', [WebViewController::class, 'buyerOrders']);
+        Route::get('/dashboard/buyer/profile', [WebViewController::class, 'buyerProfile']);
+    });
+    
+    Route::middleware('role:Organisasi')->group(function () {
+        Route::get('/dashboard/organization', [WebViewController::class, 'organizationDashboard']);
+        Route::get('/dashboard/organization/donations', [WebViewController::class, 'organizationDonations']);
+    });
+    
+    // Cart and checkout routes
+    Route::get('/cart', [WebViewController::class, 'cart']);
+    Route::get('/checkout', [WebViewController::class, 'checkout']);
+    Route::get('/order-success', [WebViewController::class, 'orderSuccess']);
     
     // User routes
     Route::prefix('users')->group(function () {
@@ -89,7 +161,6 @@ Route::middleware('auth:api')->group(function () {
         Route::put('/{id}', [DonasiController::class, 'update']);
         Route::delete('/{id}', [DonasiController::class, 'destroy']);
     });
-    
     
     // Garansi routes
     Route::prefix('garansi')->group(function () {
