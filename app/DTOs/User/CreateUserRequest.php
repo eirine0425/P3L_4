@@ -10,10 +10,11 @@ class CreateUserRequest extends FormRequest
     {
         return [
             'name' => 'required|string|max:50',
+            'email' => 'required|email|max:100|unique:users,email',
             'password' => 'required|string|min:6',
-            'email' => 'required|email|max:100',
-            'no_hp' => 'nullable|string|max:20',
-            'role_id' => 'required|integer|exists:role,role_id'
+            'dob' => 'required|date',
+            'phone_number' => 'nullable|string|max:20',
+            'role_id' => 'required|integer|exists:roles,role_id', // Sesuaikan dengan nama tabel dan kolom role
         ];
     }
 

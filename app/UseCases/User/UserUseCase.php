@@ -16,7 +16,8 @@ class UserUseCase
     {
         return $this->repository->getAll(
             perPage: $request->getPerPage(),
-            page: $request->getPage()
+            page: $request->getPage(),
+            filters: [] // Add appropriate filters or an empty array as needed
         );
     }
 

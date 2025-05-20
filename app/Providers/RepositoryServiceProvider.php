@@ -70,6 +70,49 @@ class RepositoryServiceProvider extends ServiceProvider
             \App\Repositories\Interfaces\RequestDonasiRepositoryInterface::class,
             \App\Repositories\Eloquent\RequestDonasiRepository::class
         );
+
+        $this->app->bind(
+            \App\Repositories\Interfaces\KeranjangBelanjaRepositoryInterface::class,
+            \App\Repositories\Eloquent\KeranjangBelanjaRepository::class
+        );
+
+        $this->app->bind(
+            \App\Repositories\Interfaces\DetailTransaksiRepositoryInterface::class,
+            \App\Repositories\Eloquent\DetailTransaksiRepository::class
+        );
+        $this->app->bind(
+            \App\Repositories\Interfaces\TransaksiRepositoryInterface::class,
+            \App\Repositories\Eloquent\TransaksiRepository::class
+        );
+        $this->app->bind(
+            \App\Repositories\Interfaces\TransaksiPenitipanRepositoryInterface::class,
+            \App\Repositories\Eloquent\TransaksiPenitipanRepository::class
+        );
+
+        $this->app->bind(
+            \App\Repositories\Interfaces\KomisiRepositoryInterface::class,
+            \App\Repositories\Eloquent\KomisiRepository::class
+        );
+
+        $this->app->bind(
+            \App\Repositories\Interfaces\PengirimanRepositoryInterface::class,
+            \App\Repositories\Eloquent\PengirimanRepository::class
+        );
+
+        $this->app->bind(
+            \App\Repositories\Interfaces\TransaksiMerchRepositoryInterface::class,
+            \App\Repositories\Eloquent\TransaksiMerchRepository::class
+        );
+
+        $this->app->bind(
+            \App\Repositories\Interfaces\DetailTransaksiRepositoryInterface::class,
+            \App\Repositories\Eloquent\DetailTransaksiRepository::class
+        );
+
+        $this->app->bind(
+            \App\Repositories\Interfaces\DiskusiProdukRepositoryInterface::class,
+            \App\Repositories\Eloquent\DiskusiProdukRepository::class
+        );
     }
 
     /**

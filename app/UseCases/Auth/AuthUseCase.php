@@ -1,4 +1,4 @@
-<?php
+<?php 
 
 namespace App\UseCases\Auth;
 
@@ -13,29 +13,34 @@ class AuthUseCase
     ) {}
 
     public function register(Request $request): array
-{
-    $validated = $request->validate([
-        'name'     => 'required|string|max:255',
-        'email'    => 'required|email|unique:users,email',
-        'password' => 'required|string|min:8',
-        'role_id'  => 'required|exists:roles,role_id', // asumsi kamu pakai foreign key
-    ]);
+    {
+        $validated = $request->validate([
+            'name'          => 'required|string|max:255',
+            'email'         => 'required|email|unique:users,email',
+            'password'      => 'required|string|min:6',
+            'dob'           => 'required|date',
+            'phone_number'  => 'nullable|string|max:20',
+            'role_id'       => 'required|integer|exists:roles,role_id', // sesuaikan nama tabel dan kolom PK di roles
+        ]);
 
-    $validated['password'] = bcrypt($validated['password']);
+        // Hash password sebelum simpan
+        $validated['password'] = bcrypt($validated['password']);
 
-    $user = $this->userRepo->create($validated);
-    $token = $user->createToken('auth_token')->accessToken;
+        $user = $this->userRepo->create($validated);
 
-    return [
-        'token' => $token,
-        'user'  => $user,
-    ];
-}
+        // Generate token dengan Laravel Passport atau Sanctum (pastikan sudah setup)
+        $token = $user->createToken('auth_token')->accessToken;
+
+        return [
+            'token' => $token,
+            'user'  => $user,
+        ];
+    }
 
     public function login(Request $request): array
     {
         $request->validate([
-            'email' => 'required|email',
+            'email'    => 'required|email',
             'password' => 'required|string',
         ]);
 
@@ -48,13 +53,14 @@ class AuthUseCase
 
         return [
             'token' => $token,
-            'user' => $user,
+            'user'  => $user,
         ];
     }
 
+
     public function me(Request $request)
     {
-        return  $this->userRepo->find($request->user()->id);
+        return $this->userRepo->find($request->user()->id);
     }
 
     public function logout(Request $request): array
