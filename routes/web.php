@@ -24,6 +24,7 @@ use App\Models\Penitip;
 use App\Models\Pembeli;
 use App\Models\Barang;
 use App\Models\DiskusiProduk;
+use App\Models\KeranjangBelanja;
 
 /*
 |--------------------------------------------------------------------------
@@ -79,6 +80,21 @@ Route::get('/password/reset', [AuthController::class, 'showLinkRequestForm'])->n
 Route::post('/password/email', [AuthController::class, 'sendResetLinkEmail'])->name('password.email');
 Route::get('/password/reset/{token}', [AuthController::class, 'showResetForm'])->name('password.reset');
 Route::post('/password/reset', [AuthController::class, 'reset'])->name('password.update');
+
+// Cart Routes - Remove auth middleware from here since we handle it in the controller
+Route::get('/cart', [KeranjangBelanjaController::class, 'viewCart'])->name('cart.index');
+Route::post('/cart/add', [KeranjangBelanjaController::class, 'store'])->name('cart.add');
+Route::put('/cart/update/{id}', [KeranjangBelanjaController::class, 'update'])->name('cart.update');
+Route::delete('/cart/remove/{id}', [KeranjangBelanjaController::class, 'destroy'])->name('cart.remove');
+Route::post('/cart/clear', [KeranjangBelanjaController::class, 'clearCart'])->name('cart.clear');
+Route::post('/cart/add', [KeranjangBelanjaController::class, 'add'])->name('cart.add')->middleware('auth');
+Route::post('/cart/buy-now', [KeranjangBelanjaController::class, 'buyNow'])->name('cart.buyNow')->middleware('auth');
+
+
+// Product discussion route (for the product detail page)
+Route::post('/products/{id}/discussion', function() {
+    return redirect()->back()->with('success', 'Pertanyaan berhasil dikirim.');
+})->name('product.discussion.store');
 
 // Protected Routes - Main Dashboard Redirect
 Route::middleware(['auth'])->get('/dashboard', function () {

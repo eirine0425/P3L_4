@@ -87,8 +87,15 @@ Route::apiResource('garansi', GaransiController::class);
 // Rute CRUD untuk KategoriBarang
 Route::apiResource('kategori-barang', KategoriBarangController::class);
 
-// Rute CRUD untuk KeranjangBelanja
-Route::apiResource('keranjang-belanja', KeranjangBelanjaController::class);
+// Keranjang Belanja Routes
+Route::middleware(['auth:api'])->group(function () {
+    Route::get('/keranjang-belanja', [KeranjangBelanjaController::class, 'index']);
+    Route::post('/keranjang-belanja', [KeranjangBelanjaController::class, 'store']);
+    Route::get('/keranjang-belanja/{id}', [KeranjangBelanjaController::class, 'show']);
+    Route::put('/keranjang-belanja/{id}', [KeranjangBelanjaController::class, 'update']);
+    Route::delete('/keranjang-belanja/{id}', [KeranjangBelanjaController::class, 'destroy']);
+    Route::post('/keranjang-belanja/clear', [KeranjangBelanjaController::class, 'clearCart']);
+});
 
 // Rute CRUD untuk Komisi
 Route::apiResource('komisi', KomisiController::class);
