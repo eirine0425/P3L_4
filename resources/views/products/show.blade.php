@@ -363,7 +363,7 @@
                                         <div class="d-flex align-items-start mb-2">
                                             <img src="https://via.placeholder.com/40" class="rounded-circle me-2" alt="Seller">
                                             <div>
-                                                <h6 class="mb-0">Penjual <span class="badge bg-primary">CS</span></h6>
+                                                <h6 class="mb-0">Penitip <span class="badge bg-primary">CS</span></h6>
                                                 <small class="text-muted">{{ date('d M Y H:i', strtotime('-' . $i . ' days +2 hours')) }}</small>
                                                 <p class="mt-2">Ya, laptop ini masih memiliki garansi pabrik hingga 3 bulan ke depan. Selain itu, ReuseMart juga memberikan garansi toko selama 30 hari untuk memastikan kepuasan Anda.</p>
                                             </div>

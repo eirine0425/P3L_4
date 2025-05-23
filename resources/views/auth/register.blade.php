@@ -15,7 +15,7 @@
                         <button class="nav-link active" id="pembeli-tab" data-bs-toggle="tab" data-bs-target="#pembeli" type="button" role="tab" aria-controls="pembeli" aria-selected="true">Pembeli</button>
                     </li>
                     <li class="nav-item" role="presentation">
-                        <button class="nav-link" id="penitip-tab" data-bs-toggle="tab" data-bs-target="#penitip" type="button" role="tab" aria-controls="penitip" aria-selected="false">Penitip</button>
+                        <button class="nav-link" id="pegawai-tab" data-bs-toggle="tab" data-bs-target="#pegawai" type="button" role="tab" aria-controls="pegawai" aria-selected="false">Pegawai</button>
                     </li>
                     <li class="nav-item" role="presentation">
                         <button class="nav-link" id="organisasi-tab" data-bs-toggle="tab" data-bs-target="#organisasi" type="button" role="tab" aria-controls="organisasi" aria-selected="false">Organisasi</button>
@@ -27,7 +27,8 @@
                     <div class="tab-pane fade show active" id="pembeli" role="tabpanel" aria-labelledby="pembeli-tab">
                         <form method="POST" action="{{ url('/register') }}">
                             @csrf
-                            <input type="hidden" name="role_id" value="3"> <!-- Assuming 3 is the role_id for Pembeli -->
+                            <input type="hidden" name="role_id" value="4"> <!-- role_id 4 untuk Pembeli -->
+                            <input type="hidden" name="role" value="pembeli">
                             
                             <div class="row mb-3">
                                 <div class="col-md-6">
@@ -103,16 +104,17 @@
                         </form>
                     </div>
                     
-                    <!-- Penitip Registration Form -->
-                    <div class="tab-pane fade" id="penitip" role="tabpanel" aria-labelledby="penitip-tab">
-                        <form method="POST" action="{{ url('/register') }}" enctype="multipart/form-data">
+                    <!-- Pegawai Registration Form -->
+                    <div class="tab-pane fade" id="pegawai" role="tabpanel" aria-labelledby="pegawai-tab">
+                        <form method="POST" action="{{ url('/register') }}">
                             @csrf
-                            <input type="hidden" name="role_id" value="4"> <!-- Assuming 4 is the role_id for Penitip -->
+                            <input type="hidden" name="role_id" value="5"> <!-- role_id 5 untuk Pegawai -->
+                            <input type="hidden" name="role" value="pegawai">
                             
                             <div class="row mb-3">
                                 <div class="col-md-6">
-                                    <label for="penitip_name" class="form-label">Nama Lengkap</label>
-                                    <input type="text" class="form-control @error('name') is-invalid @enderror" id="penitip_name" name="name" value="{{ old('name') }}" required autocomplete="name" autofocus>
+                                    <label for="pegawai_name" class="form-label">Nama Lengkap</label>
+                                    <input type="text" class="form-control @error('name') is-invalid @enderror" id="pegawai_name" name="name" value="{{ old('name') }}" required autocomplete="name" autofocus>
                                     @error('name')
                                     <div class="invalid-feedback">
                                         {{ $message }}
@@ -121,8 +123,8 @@
                                 </div>
                                 
                                 <div class="col-md-6">
-                                    <label for="penitip_email" class="form-label">Email</label>
-                                    <input type="email" class="form-control @error('email') is-invalid @enderror" id="penitip_email" name="email" value="{{ old('email') }}" required autocomplete="email">
+                                    <label for="pegawai_email" class="form-label">Email</label>
+                                    <input type="email" class="form-control @error('email') is-invalid @enderror" id="pegawai_email" name="email" value="{{ old('email') }}" required autocomplete="email">
                                     @error('email')
                                     <div class="invalid-feedback">
                                         {{ $message }}
@@ -133,8 +135,8 @@
                             
                             <div class="row mb-3">
                                 <div class="col-md-6">
-                                    <label for="penitip_password" class="form-label">Password</label>
-                                    <input type="password" class="form-control @error('password') is-invalid @enderror" id="penitip_password" name="password" required autocomplete="new-password">
+                                    <label for="pegawai_password" class="form-label">Password</label>
+                                    <input type="password" class="form-control @error('password') is-invalid @enderror" id="pegawai_password" name="password" required autocomplete="new-password">
                                     @error('password')
                                     <div class="invalid-feedback">
                                         {{ $message }}
@@ -143,15 +145,15 @@
                                 </div>
                                 
                                 <div class="col-md-6">
-                                    <label for="penitip_password-confirm" class="form-label">Konfirmasi Password</label>
-                                    <input type="password" class="form-control" id="penitip_password-confirm" name="password_confirmation" required autocomplete="new-password">
+                                    <label for="pegawai_password-confirm" class="form-label">Konfirmasi Password</label>
+                                    <input type="password" class="form-control" id="pegawai_password-confirm" name="password_confirmation" required autocomplete="new-password">
                                 </div>
                             </div>
                             
                             <div class="row mb-3">
                                 <div class="col-md-6">
-                                    <label for="penitip_dob" class="form-label">Tanggal Lahir</label>
-                                    <input type="date" class="form-control @error('dob') is-invalid @enderror" id="penitip_dob" name="dob" value="{{ old('dob') }}" required>
+                                    <label for="pegawai_dob" class="form-label">Tanggal Lahir</label>
+                                    <input type="date" class="form-control @error('dob') is-invalid @enderror" id="pegawai_dob" name="dob" value="{{ old('dob') }}" required>
                                     @error('dob')
                                     <div class="invalid-feedback">
                                         {{ $message }}
@@ -160,8 +162,8 @@
                                 </div>
                                 
                                 <div class="col-md-6">
-                                    <label for="penitip_phone_number" class="form-label">Nomor Telepon</label>
-                                    <input type="text" class="form-control @error('phone_number') is-invalid @enderror" id="penitip_phone_number" name="phone_number" value="{{ old('phone_number') }}">
+                                    <label for="pegawai_phone_number" class="form-label">Nomor Telepon</label>
+                                    <input type="text" class="form-control @error('phone_number') is-invalid @enderror" id="pegawai_phone_number" name="phone_number" value="{{ old('phone_number') }}" required>
                                     @error('phone_number')
                                     <div class="invalid-feedback">
                                         {{ $message }}
@@ -172,9 +174,9 @@
                             
                             <div class="row mb-3">
                                 <div class="col-md-6">
-                                    <label for="no_ktp" class="form-label">Nomor KTP</label>
-                                    <input type="text" class="form-control @error('no_ktp') is-invalid @enderror" id="no_ktp" name="no_ktp" value="{{ old('no_ktp') }}" required>
-                                    @error('no_ktp')
+                                    <label for="alamat" class="form-label">Alamat</label>
+                                    <textarea class="form-control @error('alamat') is-invalid @enderror" id="alamat" name="alamat" rows="2" required>{{ old('alamat') }}</textarea>
+                                    @error('alamat')
                                     <div class="invalid-feedback">
                                         {{ $message }}
                                     </div>
@@ -182,25 +184,25 @@
                                 </div>
                                 
                                 <div class="col-md-6">
-                                    <label for="ktp_image" class="form-label">Foto KTP</label>
-                                    <input type="file" class="form-control @error('ktp_image') is-invalid @enderror" id="ktp_image" name="ktp_image" required>
-                                    @error('ktp_image')
+                                    <label for="gaji" class="form-label">Gaji yang Diharapkan</label>
+                                    <input type="number" class="form-control @error('gaji') is-invalid @enderror" id="gaji" name="gaji" value="{{ old('gaji') }}" min="0" step="1000">
+                                    @error('gaji')
                                     <div class="invalid-feedback">
                                         {{ $message }}
                                     </div>
                                     @enderror
-                                    <small class="form-text text-muted">Upload foto KTP yang jelas dan tidak buram.</small>
+                                    <small class="form-text text-muted">Opsional - akan ditentukan oleh manajemen</small>
                                 </div>
                             </div>
                             
                             <div class="mb-3 form-check">
-                                <input type="checkbox" class="form-check-input" id="penitip_terms" name="terms" required>
-                                <label class="form-check-label" for="penitip_terms">Saya menyetujui <a href="#">syarat dan ketentuan</a> yang berlaku</label>
+                                <input type="checkbox" class="form-check-input" id="pegawai_terms" name="terms" required>
+                                <label class="form-check-label" for="pegawai_terms">Saya menyetujui <a href="#">syarat dan ketentuan</a> yang berlaku</label>
                             </div>
                             
                             <div class="d-grid gap-2">
-                                <button type="submit" class="btn btn-primary">
-                                    <i class="fas fa-user-plus me-2"></i>Daftar sebagai Penitip
+                                <button type="submit" class="btn btn-success">
+                                    <i class="fas fa-user-plus me-2"></i>Daftar sebagai Pegawai
                                 </button>
                             </div>
                         </form>
@@ -210,7 +212,8 @@
                     <div class="tab-pane fade" id="organisasi" role="tabpanel" aria-labelledby="organisasi-tab">
                         <form method="POST" action="{{ url('/register') }}" enctype="multipart/form-data">
                             @csrf
-                            <input type="hidden" name="role_id" value="5"> <!-- Assuming 5 is the role_id for Organisasi -->
+                            <input type="hidden" name="role_id" value="7"> <!-- role_id 7 untuk Organisasi -->
+                            <input type="hidden" name="role" value="organisasi">
                             
                             <div class="row mb-3">
                                 <div class="col-md-6">
@@ -300,7 +303,7 @@
                             </div>
                             
                             <div class="d-grid gap-2">
-                                <button type="submit" class="btn btn-primary">
+                                <button type="submit" class="btn btn-warning">
                                     <i class="fas fa-user-plus me-2"></i>Daftar sebagai Organisasi
                                 </button>
                             </div>
@@ -310,9 +313,37 @@
                 
                 <div class="mt-3 text-center">
                     <p>Sudah punya akun? <a href="{{ url('/login') }}">Login sekarang</a></p>
+                    <p class="text-muted small">
+                        <strong>Catatan:</strong> Penitip/Penjual harus didaftarkan oleh admin. 
+                        Silakan hubungi admin untuk mendaftar sebagai penitip.
+                    </p>
                 </div>
             </div>
         </div>
     </div>
 </div>
+
+<script>
+// Script untuk memastikan role_id terkirim dengan benar
+document.addEventListener('DOMContentLoaded', function() {
+    var tabs = document.querySelectorAll('#registerTab button[data-bs-toggle="tab"]');
+    
+    tabs.forEach(function(tab) {
+        tab.addEventListener('shown.bs.tab', function(event) {
+            var activeTab = event.target.getAttribute('data-bs-target');
+            
+            if (activeTab === '#pembeli') {
+                document.querySelector('#pembeli input[name="role_id"]').value = '4';
+                document.querySelector('#pembeli input[name="role"]').value = 'pembeli';
+            } else if (activeTab === '#pegawai') {
+                document.querySelector('#pegawai input[name="role_id"]').value = '5';
+                document.querySelector('#pegawai input[name="role"]').value = 'pegawai';
+            } else if (activeTab === '#organisasi') {
+                document.querySelector('#organisasi input[name="role_id"]').value = '7';
+                document.querySelector('#organisasi input[name="role"]').value = 'organisasi';
+            }
+        });
+    });
+});
+</script>
 @endsection

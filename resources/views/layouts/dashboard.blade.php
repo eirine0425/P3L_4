@@ -28,61 +28,62 @@
         }
         
         .sidebar {
-            background-color: #343a40;
+            background-color: var(--dark-color);
+            color: white;
             min-height: 100vh;
             position: fixed;
-            top: 0;
-            bottom: 0;
-            left: 0;
-            z-index: 100;
+            width: 250px;
+            transition: all 0.3s;
+            z-index: 1000;
+        }
+        
+        .sidebar-header {
+            padding: 20px;
+            background-color: rgba(0, 0, 0, 0.2);
+        }
+        
+        .sidebar-brand {
+            color: white;
+            font-weight: bold;
+            font-size: 1.5rem;
+            text-decoration: none;
+        }
+        
+        .sidebar-menu {
             padding: 0;
-            box-shadow: inset -1px 0 0 rgba(0, 0, 0, .1);
+            list-style: none;
         }
         
-        .sidebar-sticky {
-            position: sticky;
-            top: 0;
-            height: calc(100vh - 48px);
-            padding-top: 1rem;
-            overflow-x: hidden;
-            overflow-y: auto;
+        .sidebar-menu li {
+            padding: 10px 20px;
+            border-bottom: 1px solid rgba(255, 255, 255, 0.1);
         }
         
-        .sidebar .nav-link {
-            font-weight: 500;
-            color: #ced4da;
-            padding: 0.75rem 1rem;
+        .sidebar-menu li a {
+            color: white;
+            text-decoration: none;
+            display: block;
         }
         
-        .sidebar .nav-link:hover {
-            color: #fff;
+        .sidebar-menu li:hover {
+            background-color: rgba(255, 255, 255, 0.1);
         }
         
-        .sidebar .nav-link.active {
-            color: #fff;
+        .sidebar-menu li.active {
             background-color: var(--primary-color);
         }
         
-        .sidebar-heading {
-            font-size: .75rem;
-            text-transform: uppercase;
-            padding: 0.5rem 1rem;
-            color: #adb5bd;
+        .content {
+            margin-left: 250px;
+            padding: 20px;
+            transition: all 0.3s;
         }
         
-        .navbar-brand {
-            font-weight: bold;
-            color: var(--primary-color) !important;
-            padding-top: 1rem;
-            padding-bottom: 1rem;
-            font-size: 1.25rem;
-            background-color: rgba(0, 0, 0, .25);
-            box-shadow: inset -1px 0 0 rgba(0, 0, 0, .25);
-        }
-        
-        .main-content {
-            margin-left: 240px;
-            padding: 2rem;
+        .navbar-dashboard {
+            background-color: white;
+            box-shadow: 0 2px 4px rgba(0, 0, 0, 0.1);
+            padding: 10px 20px;
+            margin-bottom: 20px;
         }
         
         .card {
@@ -97,6 +98,31 @@
             font-weight: bold;
         }
         
+        .stats-card {
+            background-color: white;
+            border-radius: 10px;
+            box-shadow: 0 4px 6px rgba(0, 0, 0, 0.1);
+            padding: 20px;
+            margin-bottom: 20px;
+            text-align: center;
+        }
+        
+        .stats-card i {
+            font-size: 2.5rem;
+            margin-bottom: 10px;
+            color: var(--primary-color);
+        }
+        
+        .stats-card h3 {
+            font-size: 1.8rem;
+            margin-bottom: 5px;
+        }
+        
+        .stats-card p {
+            color: #666;
+            margin-bottom: 0;
+        }
+        
         .btn-primary {
             background-color: var(--primary-color);
             border-color: var(--primary-color);
@@ -107,214 +133,186 @@
             border-color: var(--secondary-color);
         }
         
-        .dropdown-menu {
-            box-shadow: 0 4px 6px rgba(0, 0, 0, 0.1);
+        @media (max-width: 768px) {
+            .sidebar {
+                margin-left: -250px;
+            }
+            
+            .sidebar.active {
+                margin-left: 0;
+            }
+            
+            .content {
+                margin-left: 0;
+            }
+            
+            .content.active {
+                margin-left: 250px;
+            }
+            
+            #sidebarCollapse {
+                display: block;
+            }
         }
         
-        .dropdown-item:hover {
-            background-color: var(--light-color);
-        }
-        
-        .badge-notification {
-            position: absolute;
-            top: 5px;
-            right: 5px;
-            padding: 3px 6px;
-            border-radius: 50%;
-            background-color: red;
-            color: white;
-            font-size: 0.7rem;
+        #sidebarCollapse {
+            display: none;
         }
     </style>
     
     @stack('styles')
 </head>
 <body>
-    <div class="container-fluid">
-        <div class="row">
-            <!-- Sidebar -->
-            <nav class="col-md-2 d-none d-md-block sidebar">
-                <div class="sidebar-sticky">
-                    <div class="text-center mb-4 mt-3">
-                        <h3 class="text-white">ReuseMart</h3>
-                    </div>
+    <div class="wrapper">
+        <!-- Sidebar -->
+        <nav id="sidebar" class="sidebar">
+            <div class="sidebar-header">
+                <a href="{{ url('/') }}" class="sidebar-brand">ReuseMart</a>
+            </div>
+            
+            <ul class="sidebar-menu">
+                @if(Auth::user()->role->nama_role == 'Owner')
+                    <li class="{{ request()->is('dashboard/owner') ? 'active' : '' }}">
+                        <a href="{{ route('dashboard.owner') }}"><i class="fas fa-tachometer-alt me-2"></i> Dashboard</a>
+                    </li>
+                    <li class="{{ request()->is('dashboard/owner/reports') ? 'active' : '' }}">
+                        <a href="{{ route('owner.reports.sales') }}"><i class="fas fa-chart-bar me-2"></i> Laporan</a>
+                    </li>
+                    <li>
+                        <a href="{{ route('admin.employees') }}"><i class="fas fa-users me-2"></i> Pengguna</a>
+                    </li>
+                    <li>
+                        <a href="{{ route('warehouse.items') }}"><i class="fas fa-box me-2"></i> Barang</a>
+                    </li>
+                    <li>
+                        <a href="{{ route('consignor.transactions') }}"><i class="fas fa-shopping-cart me-2"></i> Transaksi</a>
+                    </li>
+                    <li>
+                        <a href="{{ route('owner.donations') }}"><i class="fas fa-hand-holding-heart me-2"></i> Donasi</a>
+                    </li>
+                @elseif(Auth::user()->role->nama_role == 'Admin')
+                    <li class="{{ request()->is('dashboard/admin') ? 'active' : '' }}">
+                        <a href="{{ route('dashboard.admin') }}"><i class="fas fa-tachometer-alt me-2"></i> Dashboard</a>
+                    </li>
+                    <li class="{{ request()->is('dashboard/admin/users') ? 'active' : '' }}">
+                        <a href="{{ route('admin.employees') }}"><i class="fas fa-users me-2"></i> Pengguna</a>
+                    </li>
+                    <li class="{{ request()->is('dashboard/admin/roles') ? 'active' : '' }}">
+                        <a href="{{ route('admin.organizations') }}"><i class="fas fa-user-tag me-2"></i> Peran</a>
+                    </li>
+                    <li>
+                        <a href="{{ route('admin.employees') }}"><i class="fas fa-user-tie me-2"></i> Pegawai</a>
+                    </li>
+                @elseif(Auth::user()->role->nama_role == 'Pegawai Gudang')
+                    <li class="{{ request()->is('dashboard/warehouse') ? 'active' : '' }}">
+                        <a href="{{ route('dashboard.warehouse') }}"><i class="fas fa-tachometer-alt me-2"></i> Dashboard</a>
+                    </li>
+                    <li class="{{ request()->is('dashboard/warehouse/inventory') ? 'active' : '' }}">
+                        <a href="{{ route('warehouse.items') }}"><i class="fas fa-boxes me-2"></i> Inventaris</a>
+                    </li>
+                    <li class="{{ request()->is('dashboard/warehouse/shipments') ? 'active' : '' }}">
+                        <a href="{{ route('warehouse.shipments') }}"><i class="fas fa-truck me-2"></i> Pengiriman</a>
+                    </li>
+                @elseif(Auth::user()->role->nama_role == 'CS')
+                    <li class="{{ request()->is('dashboard/cs') ? 'active' : '' }}">
+                        <a href="{{ route('dashboard.cs') }}"><i class="fas fa-tachometer-alt me-2"></i> Dashboard</a>
+                    </li>
+                    <li class="{{ request()->is('dashboard/cs/customers') ? 'active' : '' }}">
+                        <a href="{{ route('cs.consignors') }}"><i class="fas fa-users me-2"></i> Pelanggan</a>
+                    </li>
+                    <li class="{{ request()->is('dashboard/cs/discussions') ? 'active' : '' }}">
+                        <a href="{{ route('dashboard.cs.discussions') }}"><i class="fas fa-comments me-2"></i> Diskusi Produk</a>
+                    </li>
+                @elseif(Auth::user()->role->nama_role == 'Penitip')
+                    <li class="{{ request()->is('dashboard/consignor') ? 'active' : '' }}">
+                        <a href="{{ route('dashboard.consignor') }}"><i class="fas fa-tachometer-alt me-2"></i> Dashboard</a>
+                    </li>
+                    <li class="{{ request()->is('dashboard/consignor/items') ? 'active' : '' }}">
+                        <a href="{{ route('consignor.items') }}"><i class="fas fa-box me-2"></i> Barang Saya</a>
+                    </li>
+                    <li class="{{ request()->is('dashboard/consignor/transactions') ? 'active' : '' }}">
+                        <a href="{{ route('consignor.transactions') }}"><i class="fas fa-money-bill-wave me-2"></i> Transaksi</a>
+                    </li>
+                @elseif(Auth::user()->role->nama_role == 'Pembeli')
+                    <li class="{{ request()->is('dashboard/buyer') ? 'active' : '' }}">
+                        <a href="{{ route('dashboard.buyer') }}"><i class="fas fa-tachometer-alt me-2"></i> Dashboard</a>
+                    </li>
+                    <li class="{{ request()->is('dashboard/buyer/orders') ? 'active' : '' }}">
+                        <a href="{{ route('buyer.transactions') }}"><i class="fas fa-shopping-bag me-2"></i> Pesanan Saya</a>
+                    </li>
+                    <li class="{{ request()->is('dashboard/buyer/profile') ? 'active' : '' }}">
+                        <a href="{{ route('profile.show') }}"><i class="fas fa-user me-2"></i> Profil</a>
+                    </li>
+                    <li class="{{ request()->is('cart') ? 'active' : '' }}">
+                        <a href="{{ route('cart.index') }}"><i class="fas fa-shopping-cart me-2"></i> Keranjang</a>
+                    </li>
+                @elseif(Auth::user()->role->nama_role == 'Organisasi')
+                    <li class="{{ request()->is('dashboard/organization') ? 'active' : '' }}">
+                        <a href="{{ route('dashboard.organization') }}"><i class="fas fa-tachometer-alt me-2"></i> Dashboard</a>
+                    </li>
+                    <li class="{{ request()->is('dashboard/organization/donations') ? 'active' : '' }}">
+                        <a href="{{ route('owner.donations') }}"><i class="fas fa-hand-holding-heart me-2"></i> Donasi</a>
+                    </li>
+                    <li class="{{ request()->is('dashboard/organization/requests') ? 'active' : '' }}">
+                        <a href="{{ route('cs.payment.verifications') }}"><i class="fas fa-clipboard-list me-2"></i> Request Donasi</a>
+                    </li>
+                @endif
+                
+                <li>
+                    <a href="{{ route('products.index') }}"><i class="fas fa-store me-2"></i> Katalog Produk</a>
+                </li>
+                <li>
+                    <a href="{{ route('logout') }}" onclick="event.preventDefault(); document.getElementById('logout-form').submit();">
+                        <i class="fas fa-sign-out-alt me-2"></i> Logout
+                    </a>
+                    <form id="logout-form" action="{{ route('logout') }}" method="POST" class="d-none">
+                        @csrf
+                    </form>
+                </li>
+            </ul>
+        </nav>
+        
+        <!-- Content -->
+        <div class="content">
+            <nav class="navbar navbar-dashboard">
+                <div class="container-fluid">
+                    <button type="button" id="sidebarCollapse" class="btn btn-primary">
+                        <i class="fas fa-bars"></i>
+                    </button>
                     
-                    <div class="user-info text-center mb-4">
-                        <img src="https://via.placeholder.com/80" alt="User Avatar" class="rounded-circle mb-2">
-                        <h6 class="text-white">{{ auth()->user()->name ?? 'User' }}</h6>
-                        <span class="badge bg-light text-dark">{{ auth()->user()->role->nama_role ?? 'Role' }}</span>
-                    </div>
-                    
-                    <ul class="nav flex-column">
-                        <li class="nav-item">
-                            <a class="nav-link {{ request()->is('dashboard') ? 'active' : '' }}" href="{{ url('/dashboard') }}">
-                                <i class="fas fa-tachometer-alt me-2"></i> Dashboard
-                            </a>
-                        </li>
-                        
-                        @if(auth()->check() && in_array(auth()->user()->role->nama_role ?? '', ['Owner', 'Admin']))
-                        <li class="nav-item">
-                            <a class="nav-link {{ request()->is('dashboard/pegawai*') ? 'active' : '' }}" href="{{ url('/dashboard/pegawai') }}">
-                                <i class="fas fa-users me-2"></i> Pegawai
-                            </a>
-                        </li>
-                        
-                        <li class="nav-item">
-                            <a class="nav-link {{ request()->is('dashboard/jabatan*') ? 'active' : '' }}" href="{{ url('/dashboard/jabatan') }}">
-                                <i class="fas fa-id-badge me-2"></i> Jabatan
-                            </a>
-                        </li>
-                        
-                        <li class="nav-item">
-                            <a class="nav-link {{ request()->is('dashboard/organisasi*') ? 'active' : '' }}" href="{{ url('/dashboard/organisasi') }}">
-                                <i class="fas fa-building me-2"></i> Organisasi
-                            </a>
-                        </li>
-                        
-                        <li class="nav-item">
-                            <a class="nav-link {{ request()->is('dashboard/merchandise*') ? 'active' : '' }}" href="{{ url('/dashboard/merchandise') }}">
-                                <i class="fas fa-gift me-2"></i> Merchandise
-                            </a>
-                        </li>
-                        @endif
-                        
-                        @if(auth()->check() && in_array(auth()->user()->role->nama_role ?? '', ['CS']))
-                        <li class="nav-item">
-                            <a class="nav-link {{ request()->is('dashboard/penitip*') ? 'active' : '' }}" href="{{ url('/dashboard/penitip') }}">
-                                <i class="fas fa-user-tag me-2"></i> Penitip
-                            </a>
-                        </li>
-                        
-                        <li class="nav-item">
-                            <a class="nav-link {{ request()->is('dashboard/diskusi*') ? 'active' : '' }}" href="{{ url('/dashboard/diskusi') }}">
-                                <i class="fas fa-comments me-2"></i> Diskusi Produk
-                            </a>
-                        </li>
-                        
-                        <li class="nav-item">
-                            <a class="nav-link {{ request()->is('dashboard/verifikasi-pembayaran*') ? 'active' : '' }}" href="{{ url('/dashboard/verifikasi-pembayaran') }}">
-                                <i class="fas fa-check-circle me-2"></i> Verifikasi Pembayaran
-                            </a>
-                        </li>
-                        
-                        <li class="nav-item">
-                            <a class="nav-link {{ request()->is('dashboard/klaim-merchandise*') ? 'active' : '' }}" href="{{ url('/dashboard/klaim-merchandise') }}">
-                                <i class="fas fa-box-open me-2"></i> Klaim Merchandise
-                            </a>
-                        </li>
-                        @endif
-                        
-                        @if(auth()->check() && in_array(auth()->user()->role->nama_role ?? '', ['Pegawai Gudang']))
-                        <li class="nav-item">
-                            <a class="nav-link {{ request()->is('dashboard/barang-titipan*') ? 'active' : '' }}" href="{{ url('/dashboard/barang-titipan') }}">
-                                <i class="fas fa-box me-2"></i> Barang Titipan
-                            </a>
-                        </li>
-                        
-                        <li class="nav-item">
-                            <a class="nav-link {{ request()->is('dashboard/pengiriman*') ? 'active' : '' }}" href="{{ url('/dashboard/pengiriman') }}">
-                                <i class="fas fa-truck me-2"></i> Pengiriman
-                            </a>
-                        </li>
-                        
-                        <li class="nav-item">
-                            <a class="nav-link {{ request()->is('dashboard/pengambilan*') ? 'active' : '' }}" href="{{ url('/dashboard/pengambilan') }}">
-                                <i class="fas fa-hand-holding-box me-2"></i> Pengambilan Barang
-                            </a>
-                        </li>
-                        @endif
-                        
-                        @if(auth()->check() && in_array(auth()->user()->role->nama_role ?? '', ['Owner']))
-                        <li class="nav-item">
-                            <a class="nav-link {{ request()->is('dashboard/donasi*') ? 'active' : '' }}" href="{{ url('/dashboard/donasi') }}">
-                                <i class="fas fa-hand-holding-heart me-2"></i> Donasi
-                            </a>
-                        </li>
-                        
-                        <li class="nav-item dropdown">
-                            <a class="nav-link dropdown-toggle {{ request()->is('dashboard/laporan*') ? 'active' : '' }}" href="#" id="navbarDropdown" role="button" data-bs-toggle="dropdown" aria-expanded="false">
-                                <i class="fas fa-chart-bar me-2"></i> Laporan
-                            </a>
-                            <ul class="dropdown-menu" aria-labelledby="navbarDropdown">
-                                <li><a class="dropdown-item" href="{{ url('/dashboard/laporan/penjualan') }}">Penjualan Bulanan</a></li>
-                                <li><a class="dropdown-item" href="{{ url('/dashboard/laporan/komisi') }}">Komisi Bulanan</a></li>
-                                <li><a class="dropdown-item" href="{{ url('/dashboard/laporan/stok') }}">Stok Gudang</a></li>
-                                <li><a class="dropdown-item" href="{{ url('/dashboard/laporan/kategori') }}">Penjualan per Kategori</a></li>
-                                <li><a class="dropdown-item" href="{{ url('/dashboard/laporan/masa-habis') }}">Barang Masa Habis</a></li>
-                                <li><a class="dropdown-item" href="{{ url('/dashboard/laporan/donasi') }}">Donasi Barang</a></li>
-                                <li><a class="dropdown-item" href="{{ url('/dashboard/laporan/request-donasi') }}">Request Donasi</a></li>
-                                <li><a class="dropdown-item" href="{{ url('/dashboard/laporan/transaksi-penitip') }}">Transaksi Penitip</a></li>
+                    <div class="d-flex">
+                        <div class="dropdown">
+                            <button class="btn dropdown-toggle" type="button" id="dropdownMenuButton" data-bs-toggle="dropdown" aria-expanded="false">
+                                <i class="fas fa-user-circle me-1"></i> {{ Auth::user()->name }}
+                            </button>
+                            <ul class="dropdown-menu dropdown-menu-end" aria-labelledby="dropdownMenuButton">
+                                <li><a class="dropdown-item" href="{{ route('profile.show') }}"><i class="fas fa-user me-2"></i> Profil</a></li>
+                                <li><a class="dropdown-item" href="#"><i class="fas fa-cog me-2"></i> Pengaturan</a></li>
+                                <li><hr class="dropdown-divider"></li>
+                                <li>
+                                    <a class="dropdown-item" href="{{ route('logout') }}" onclick="event.preventDefault(); document.getElementById('logout-form').submit();">
+                                        <i class="fas fa-sign-out-alt me-2"></i> Logout
+                                    </a>
+                                </li>
                             </ul>
-                        </li>
-                        @endif
-                        
-                        @if(auth()->check() && in_array(auth()->user()->role->nama_role ?? '', ['Pembeli', 'Penitip']))
-                        <li class="nav-item">
-                            <a class="nav-link {{ request()->is('dashboard/profil*') ? 'active' : '' }}" href="{{ url('/dashboard/profil') }}">
-                                <i class="fas fa-user me-2"></i> Profil
-                            </a>
-                        </li>
-                        
-                        <li class="nav-item">
-                            <a class="nav-link {{ request()->is('dashboard/transaksi*') ? 'active' : '' }}" href="{{ url('/dashboard/transaksi') }}">
-                                <i class="fas fa-shopping-cart me-2"></i> Transaksi
-                            </a>
-                        </li>
-                        @endif
-                        
-                        @if(auth()->check() && in_array(auth()->user()->role->nama_role ?? '', ['Penitip']))
-                        <li class="nav-item">
-                            <a class="nav-link {{ request()->is('dashboard/barang-saya*') ? 'active' : '' }}" href="{{ url('/dashboard/barang-saya') }}">
-                                <i class="fas fa-boxes me-2"></i> Barang Saya
-                            </a>
-                        </li>
-                        @endif
-                        
-                        @if(auth()->check() && in_array(auth()->user()->role->nama_role ?? '', ['Pembeli']))
-                        <li class="nav-item">
-                            <a class="nav-link {{ request()->is('dashboard/alamat*') ? 'active' : '' }}" href="{{ url('/dashboard/alamat') }}">
-                                <i class="fas fa-map-marker-alt me-2"></i> Alamat
-                            </a>
-                        </li>
-                        
-                        <li class="nav-item">
-                            <a class="nav-link {{ request()->is('dashboard/keranjang*') ? 'active' : '' }}" href="{{ url('/dashboard/keranjang') }}">
-                                <i class="fas fa-shopping-basket me-2"></i> Keranjang
-                            </a>
-                        </li>
-                        
-                        <li class="nav-item">
-                            <a class="nav-link {{ request()->is('dashboard/poin*') ? 'active' : '' }}" href="{{ url('/dashboard/poin') }}">
-                                <i class="fas fa-star me-2"></i> Poin Reward
-                            </a>
-                        </li>
-                        @endif
-                        
-                        <li class="nav-item">
-                            <a class="nav-link" href="#" onclick="event.preventDefault(); document.getElementById('logout-form').submit();">
-                                <i class="fas fa-sign-out-alt me-2"></i> Logout
-                            </a>
-                            <form id="logout-form" action="{{ url('/logout') }}" method="POST" style="display: none;">
-                                @csrf
-                            </form>
-                        </li>
-                    </ul>
+                        </div>
+                    </div>
                 </div>
             </nav>
             
-            <!-- Main content -->
-            <main role="main" class="col-md-10 ml-sm-auto main-content">
-                <div class="d-flex justify-content-between flex-wrap flex-md-nowrap align-items-center pt-3 pb-2 mb-3 border-bottom">
-                    <h1 class="h2">@yield('page-title', 'Dashboard')</h1>
-                    <div class="btn-toolbar mb-2 mb-md-0">
-                        @yield('page-actions')
-                    </div>
+            @if(session('success'))
+                <div class="alert alert-success">
+                    {{ session('success') }}
                 </div>
-                
-                @include('partials.alerts')
-                
-                @yield('content')
-            </main>
+            @endif
+            
+            @if(session('error'))
+                <div class="alert alert-danger">
+                    {{ session('error') }}
+                </div>
+            @endif
+            
+            @yield('content')
         </div>
     </div>
     
@@ -329,11 +327,12 @@
     
     <!-- Custom JS -->
     <script>
-        // Enable tooltips
-        var tooltipTriggerList = [].slice.call(document.querySelectorAll('[data-bs-toggle="tooltip"]'))
-        var tooltipList = tooltipTriggerList.map(function (tooltipTriggerEl) {
-            return new bootstrap.Tooltip(tooltipTriggerEl)
-        })
+        $(document).ready(function() {
+            $('#sidebarCollapse').on('click', function() {
+                $('#sidebar').toggleClass('active');
+                $('.content').toggleClass('active');
+            });
+        });
     </script>
     
     @stack('scripts')

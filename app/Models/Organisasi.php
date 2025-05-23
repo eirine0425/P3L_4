@@ -18,6 +18,9 @@ class Organisasi extends Model
     protected $fillable = [
         'nama_organisasi',
         'user_id',
+        'alamat',
+        'deskripsi',
+        'dokumen_path',
     ];
 
     public function user()

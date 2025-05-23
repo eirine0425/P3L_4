@@ -4,91 +4,320 @@ namespace App\Http\Controllers\Api;
 
 use App\Http\Controllers\Controller;
 use Illuminate\Http\Request;
+use Illuminate\Support\Facades\Auth;
+use App\Models\Barang;
+use App\Models\KategoriBarang;
+use App\Models\KeranjangBelanja;
+use App\Models\Transaksi;
+use App\Models\DetailTransaksi;
+use App\Models\Garansi;
+use App\Models\Donasi;
+use App\Models\RequestDonasi;
+use App\Models\Merch;
+use App\Models\TransaksiMerch;
+use App\Models\TransaksiPenitipan;
+use App\Models\Komisi;
+use App\Models\Penitip;
+use App\Models\Pembeli;
+use App\Models\Organisasi;
+use App\Models\Pegawai;
 
 class WebViewController extends Controller
 {
+    // Halaman Publik
     public function home()
     {
-        return view('web.home');
+        $featuredProducts = Barang::with('kategori')->where('is_featured', true)->take(8)->get();
+        $categories = KategoriBarang::all();
+        
+        return view('home', compact('featuredProducts', 'categories'));
     }
-
-    public function products()
+    
+    public function products(Request $request)
     {
-        return view('web.products');
+        $query = Barang::with('kategori');
+        
+        // Filter by category
+        if ($request->has('category')) {
+            $query->whereHas('kategori', function($q) use ($request) {
+                $q->where('id', $request->category);
+            });
+        }
+        
+        // Filter by price
+        if ($request->has('min_price')) {
+            $query->where('harga', '>=', $request->min_price);
+        }
+        
+        if ($request->has('max_price')) {
+            $query->where('harga', '<=', $request->max_price);
+        }
+        
+        // Search by name
+        if ($request->has('search')) {
+            $query->where('nama', 'like', '%' . $request->search . '%');
+        }
+        
+        // Sort
+        if ($request->has('sort')) {
+            switch ($request->sort) {
+                case 'price_asc':
+                    $query->orderBy('harga', 'asc');
+                    break;
+                case 'price_desc':
+                    $query->orderBy('harga', 'desc');
+                    break;
+                case 'newest':
+                    $query->orderBy('created_at', 'desc');
+                    break;
+                default:
+                    $query->orderBy('nama', 'asc');
+            }
+        } else {
+            $query->orderBy('nama', 'asc');
+        }
+        
+        $products = $query->paginate(12);
+        $categories = KategoriBarang::all();
+        
+        return view('products.index', compact('products', 'categories'));
     }
-
+    
     public function productDetail($id)
     {
-        return view('web.product-detail', ['id' => $id]);
+        $product = Barang::with(['kategori', 'diskusi.user'])->findOrFail($id);
+        $relatedProducts = Barang::where('kategori_id', $product->kategori_id)
+            ->where('id', '!=', $id)
+            ->take(4)
+            ->get();
+            
+        return view('products.show', compact('product', 'relatedProducts'));
     }
-
-    public function productCategory($id)
+    
+    public function warrantyCheck(Request $request)
     {
-        return view('web.product-category', ['id' => $id]);
+        $warranty = null;
+        $message = '';
+        
+        if ($request->has('serial_number')) {
+            $warranty = Garansi::where('serial_number', $request->serial_number)->first();
+            
+            if (!$warranty) {
+                $message = 'Garansi dengan nomor seri tersebut tidak ditemukan.';
+            }
+        }
+        
+        return view('warranty.check', compact('warranty', 'message'));
     }
-
-    public function warrantyCheck()
-    {
-        return view('web.warranty-check');
-    }
-
+    
     public function about()
     {
-        return view('web.about');
+        return view('about');
     }
-
-    public function contact()
-    {
-        return view('web.contact');
-    }
-
-    public function loginForm()
-    {
-        return view('auth.login');
-    }
-
-    public function registerForm()
-    {
-        return view('auth.register');
-    }
-
+    
+    // Halaman Cart & Checkout
     public function cart()
     {
-        return view('web.cart');
+        $cartItems = KeranjangBelanja::with('barang')
+            ->where('user_id', Auth::id())
+            ->get();
+            
+        $total = $cartItems->sum(function($item) {
+            return $item->barang->harga * $item->jumlah;
+        });
+        
+        return view('cart.index', compact('cartItems', 'total'));
     }
-
-    public function orders()
+    
+    // Add to cart
+    public function addToCart(Request $request)
     {
-        return view('web.orders');
+        $request->validate([
+            'product_id' => 'required|exists:barang,id',
+            'quantity' => 'required|integer|min:1'
+        ]);
+        
+        $existingItem = KeranjangBelanja::where('user_id', Auth::id())
+            ->where('barang_id', $request->product_id)
+            ->first();
+            
+        if ($existingItem) {
+            $existingItem->jumlah += $request->quantity;
+            $existingItem->save();
+        } else {
+            KeranjangBelanja::create([
+                'user_id' => Auth::id(),
+                'barang_id' => $request->product_id,
+                'jumlah' => $request->quantity
+            ]);
+        }
+        
+        return redirect()->back()->with('success', 'Produk berhasil ditambahkan ke keranjang.');
     }
-
-    public function orderDetail($id)
+    
+    // Remove from cart
+    public function removeFromCart(Request $request)
     {
-        return view('web.order-detail', ['id' => $id]);
+        $request->validate([
+            'cart_id' => 'required|exists:keranjang_belanja,id'
+        ]);
+        
+        KeranjangBelanja::where('id', $request->cart_id)
+            ->where('user_id', Auth::id())
+            ->delete();
+            
+        return redirect()->back()->with('success', 'Produk berhasil dihapus dari keranjang.');
     }
-
-    public function profile()
+    
+    // Checkout page
+    public function checkout()
     {
-        return view('web.profile');
+        $cartItems = KeranjangBelanja::with('barang')
+            ->where('user_id', Auth::id())
+            ->get();
+            
+        if ($cartItems->isEmpty()) {
+            return redirect()->route('cart')->with('error', 'Keranjang belanja Anda kosong.');
+        }
+        
+        $subtotal = $cartItems->sum(function($item) {
+            return $item->barang->harga * $item->jumlah;
+        });
+        
+        $tax = $subtotal * 0.1; // 10% tax
+        $shipping = 15000; // Flat shipping rate
+        $total = $subtotal + $tax + $shipping;
+        
+        return view('checkout.index', compact('cartItems', 'subtotal', 'tax', 'shipping', 'total'));
     }
-
-    public function consignments()
+    
+    // Process checkout
+    public function processCheckout(Request $request)
     {
-        return view('web.consignments');
+        $request->validate([
+            'name' => 'required|string|max:255',
+            'email' => 'required|email|max:255',
+            'phone' => 'required|string|max:20',
+            'address' => 'required|string',
+            'payment_method' => 'required|in:transfer,cod,credit_card'
+        ]);
+        
+        $cartItems = KeranjangBelanja::with('barang')
+            ->where('user_id', Auth::id())
+            ->get();
+            
+        if ($cartItems->isEmpty()) {
+            return redirect()->route('cart')->with('error', 'Keranjang belanja Anda kosong.');
+        }
+        
+        $subtotal = $cartItems->sum(function($item) {
+            return $item->barang->harga * $item->jumlah;
+        });
+        
+        $tax = $subtotal * 0.1;
+        $shipping = 15000;
+        $total = $subtotal + $tax + $shipping;
+        
+        // Create transaction
+        $transaction = Transaksi::create([
+            'user_id' => Auth::id(),
+            'total' => $total,
+            'status' => 'pending',
+            'payment_method' => $request->payment_method,
+            'shipping_address' => $request->address,
+            'shipping_cost' => $shipping,
+            'tax' => $tax
+        ]);
+        
+        // Create transaction details
+        foreach ($cartItems as $item) {
+            DetailTransaksi::create([
+                'transaksi_id' => $transaction->id,
+                'barang_id' => $item->barang_id,
+                'jumlah' => $item->jumlah,
+                'harga' => $item->barang->harga,
+                'subtotal' => $item->barang->harga * $item->jumlah
+            ]);
+        }
+        
+        // Clear cart
+        KeranjangBelanja::where('user_id', Auth::id())->delete();
+        
+        return redirect()->route('thank-you', ['transaction_id' => $transaction->id]);
     }
-
+    
+    // Thank you page
+    public function thankYou($transactionId)
+    {
+        $transaction = Transaksi::with('details.barang')->findOrFail($transactionId);
+        
+        return view('checkout.thank-you', compact('transaction'));
+    }
+    
+    // Dashboard
+    public function dashboard()
+    {
+        if (!Auth::check()) {
+            return redirect()->route('login');
+        }
+        
+        $user = Auth::user();
+        $role = $user->role->nama_role;
+        
+        // Redirect to appropriate dashboard based on role
+        switch ($role) {
+            case 'Owner':
+                return $this->ownerDashboard();
+            case 'Admin':
+                return $this->adminDashboard();
+            case 'Pegawai Gudang':
+                return $this->warehouseDashboard();
+            case 'CS':
+                return $this->csDashboard();
+            case 'Penitip':
+                return $this->consignorDashboard();
+            case 'Pembeli':
+                return $this->buyerDashboard();
+            case 'Organisasi':
+                return $this->organizationDashboard();
+            default:
+                return view('dashboard.index');
+        }
+    }
+    
+    // Owner Dashboard
+    public function ownerDashboard()
+    {
+        return view('dashboard.owner.index');
+    }
+    
     public function adminDashboard()
     {
-        return view('admin.dashboard');
+        return view('dashboard.admin.index');
     }
-
-    public function csDashboard()
-    {
-        return view('cs.dashboard');
-    }
-
+    
     public function warehouseDashboard()
     {
-        return view('warehouse.dashboard');
+        return view('dashboard.warehouse.index');
+    }
+    
+    public function csDashboard()
+    {
+        return view('dashboard.cs.index');
+    }
+    
+    public function consignorDashboard()
+    {
+        return view('dashboard.consignor.index');
+    }
+    
+    public function buyerDashboard()
+    {
+        return view('dashboard.buyer.index');
+    }
+    
+    public function organizationDashboard()
+    {
+        return view('dashboard.organization.index');
     }
 }

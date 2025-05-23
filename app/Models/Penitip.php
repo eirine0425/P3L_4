@@ -24,6 +24,7 @@ class Penitip extends Model
         'badge',
         'periode',
         'saldo',
+        'ktp_path',
     ];
 
     public function user()
