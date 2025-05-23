@@ -108,9 +108,8 @@
                     <h5>Tautan</h5>
                     <ul class="list-unstyled">
                         <li><a href="{{ url('/') }}" class="text-white">Beranda</a></li>
-                        <li><a href="{{ url('/about') }}" class="text-white">Tentang Kami</a></li>
                         <li><a href="{{ url('/products') }}" class="text-white">Produk</a></li>
-                        <li><a href="{{ url('/contact') }}" class="text-white">Kontak</a></li>
+                        <li><a href="{{ url('/warranty') }}" class="text-white">Cek Garansi</a></li>
                     </ul>
                 </div>
                 <div class="col-md-4">
