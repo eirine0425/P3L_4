@@ -17,12 +17,6 @@
                 <li class="nav-item">
                     <a class="nav-link {{ request()->is('warranty/check*') ? 'active' : '' }}" href="{{ url('/warranty/check') }}">Cek Garansi</a>
                 </li>
-                <li class="nav-item">
-                    <a class="nav-link {{ request()->is('about*') ? 'active' : '' }}" href="{{ url('/about') }}">Tentang Kami</a>
-                </li>
-                <li class="nav-item">
-                    <a class="nav-link {{ request()->is('contact*') ? 'active' : '' }}" href="{{ url('/contact') }}">Kontak</a>
-                </li>
             </ul>
             
             <div class="d-flex">

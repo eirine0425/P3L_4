@@ -58,10 +58,6 @@ Route::get('/warranty/check', function () {
    return view('warranty.check');
 })->name('warranty.check');
 
-Route::get('/about', function () {
-   return view('about');
-})->name('about');
-
 Route::get('/contact', function () {
    return view('errors.missing-view', ['view' => 'contact']);
 })->name('contact');
