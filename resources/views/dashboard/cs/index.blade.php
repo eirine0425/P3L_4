@@ -63,11 +63,11 @@
                             <tbody>
                                 @forelse($diskusiTerbaru ?? [] as $diskusi)
                                     <tr>
-                                        <td>{{ $diskusi->user->name ?? 'Anonim' }}</td>
-                                        <td>{{ $diskusi->barang->nama_barang ?? '-' }}</td>
+                                        <td>{{ optional(optional($diskusi->pembeli)->user)->name ?? 'Anonim' }}</td>
+                                        <td>{{ optional($diskusi->barang)->nama_barang ?? '-' }}</td>
                                         <td>{{ Str::limit($diskusi->pertanyaan ?? '', 30) }}</td>
                                         <td>
-                                            @if($diskusi->balasan)
+                                            @if($diskusi->jawaban)
                                                 <span class="badge bg-success">Terjawab</span>
                                             @else
                                                 <span class="badge bg-warning">Belum Dijawab</span>
@@ -88,7 +88,7 @@
                     </div>
                 </div>
                 <div class="card-footer">
-                    <a href="{{ route('dashboard.cs.discussions') }}" class="btn btn-primary">Lihat Semua Diskusi</a>
+                    <a href="{{ route('dashboard.cs.discussions', [], false) }}" class="btn btn-primary">Lihat Semua Diskusi</a>
                 </div>
             </div>
         </div>
@@ -114,8 +114,8 @@
                                 @forelse($barangUntukVerifikasi ?? [] as $barang)
                                     <tr>
                                         <td>{{ $barang->nama_barang ?? '-' }}</td>
-                                        <td>{{ $barang->kategori->nama_kategori ?? '-' }}</td>
-                                        <td>{{ $barang->penitip->user->name ?? '-' }}</td>
+                                        <td>{{ optional($barang->kategori)->nama_kategori ?? '-' }}</td>
+                                        <td>{{ optional(optional($barang->penitip)->user)->name ?? '-' }}</td>
                                         <td>{{ $barang->created_at ? $barang->created_at->format('d M Y') : '-' }}</td>
                                         <td>
                                             <a href="#" class="btn btn-sm btn-primary"><i class="fas fa-eye"></i></a>
@@ -136,40 +136,32 @@
         </div>
     </div>
     
-    <div class="row mt-4">
-        <div class="col-12">
-            <div class="card">
-                <div class="card-header">
-                    <h5 class="card-title">Distribusi Pelanggan</h5>
-                </div>
-                <div class="card-body">
-                    <canvas id="customerDistributionChart"></canvas>
-                </div>
-            </div>
-        </div>
-    </div>
 </div>
 @endsection
 
 @push('scripts')
 <script>
-    var customerDistributionCtx = document.getElementById('customerDistributionChart').getContext('2d');
-    var customerDistributionChart = new Chart(customerDistributionCtx, {
-        type: 'pie',
-        data: {
-            labels: ['Penitip', 'Pembeli'],
-            datasets: [{
-                data: [{{ $totalPenitip ?? 0 }}, {{ $totalPembeli ?? 0 }}],
-                backgroundColor: ['#4CAF50', '#2196F3']
-            }]
-        },
-        options: {
-            responsive: true,
-            plugins: {
-                legend: {
-                    position: 'bottom'
+    document.addEventListener('DOMContentLoaded', function() {
+        if (typeof Chart !== 'undefined') {
+            var customerDistributionCtx = document.getElementById('customerDistributionChart').getContext('2d');
+            var customerDistributionChart = new Chart(customerDistributionCtx, {
+                type: 'pie',
+                data: {
+                    labels: ['Penitip', 'Pembeli'],
+                    datasets: [{
+                        data: [{{ $totalPenitip ?? 0 }}, {{ $totalPembeli ?? 0 }}],
+                        backgroundColor: ['#4CAF50', '#2196F3']
+                    }]
+                },
+                options: {
+                    responsive: true,
+                    plugins: {
+                        legend: {
+                            position: 'bottom'
+                        }
+                    }
                 }
-            }
+            });
         }
     });
 </script>
