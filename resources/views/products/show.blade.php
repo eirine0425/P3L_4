@@ -95,6 +95,13 @@
                             <td>Garansi</td>
                             <td>: <span class="badge bg-success">Bergaransi (30 hari)</span></td>
                         </tr>
+                        <tr>
+                                <td colspan="2" class="text-center pt-3">
+                                    <a href="{{ route('cart.index') }}" class="btn btn-primary">
+                                        Tambah ke Keranjang
+                                    </a>
+                                </td>
+                            </tr>
                     </table>
                 </div>
                 
@@ -119,13 +126,25 @@
                 @auth
                     @if(auth()->user()->role->nama_role == 'Pembeli')
                     <div class="d-grid gap-2">
-                        <button class="btn btn-primary btn-lg" id="addToCartBtn">
-                            <i class="fas fa-cart-plus me-2"></i>Tambah ke Keranjang
-                        </button>
-                        <button class="btn btn-success btn-lg" id="buyNowBtn">
-                            <i class="fas fa-shopping-bag me-2"></i>Beli Sekarang
-                        </button>
-                    </div>
+    <form action="{{ route('cart.add') }}" method="POST">
+        @csrf
+        <input type="hidden" name="barang_id" value="{{ $barang->barang_id }}">
+        <input type="hidden" name="jumlah" value="1"> {{-- atau input dinamis --}}
+        <button type="submit" class="btn btn-primary btn-lg">
+            <i class="fas fa-cart-plus me-2"></i>Tambah ke Keranjang
+        </button>
+    </form>
+
+    <form action="{{ route('cart.buyNow') }}" method="POST">
+        @csrf
+        <input type="hidden" name="barang_id" value="{{ $barang->barang_id }}">
+        <input type="hidden" name="jumlah" value="1">
+        <button type="submit" class="btn btn-success btn-lg">
+            <i class="fas fa-shopping-bag me-2"></i>Beli Sekarang
+        </button>
+    </form>
+</div>
+
                     @endif
                 @else
                 <div class="alert alert-info">
