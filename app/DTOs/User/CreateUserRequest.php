@@ -18,7 +18,8 @@ class CreateUserRequest extends FormRequest
         ];
         
         // Hanya izinkan role tertentu untuk register mandiri
-        $allowedRoles = [4, 5, 7]; // pembeli, pegawai, organisasi
+        $allowedRoles = [4, 7]; // pembeli, organisasi
+        $allowedPegawaiRoles = [1, 3, 6, 8, 9, 10]; // admin, cs, kurir, owner, hunter, gudang
         
         if (request()->has('role_id')) {
             $rules['role_id'] = 'required|integer|in:' . implode(',', $allowedRoles);
@@ -27,9 +28,11 @@ class CreateUserRequest extends FormRequest
         }
         
         // Role-specific validations
-        if (request('role') == 'pegawai' || request('role_id') == 5) {
+        if (request('role') == 'pegawai') {
+            $rules['jabatan_role_id'] = 'required|integer|in:' . implode(',', $allowedPegawaiRoles);
             $rules['alamat'] = 'required|string';
-            $rules['gaji'] = 'nullable|numeric|min:0';
+            $rules['gaji_harapan'] = 'nullable|numeric|min:0';
+            $rules['pengalaman'] = 'nullable|string';
         }
         
         if (request('role') == 'organisasi' || request('role_id') == 7) {
@@ -45,6 +48,9 @@ class CreateUserRequest extends FormRequest
     {
         return [
             'role_id.in' => 'Role yang dipilih tidak diizinkan untuk registrasi mandiri.',
+            'jabatan_role_id.required' => 'Jabatan yang dilamar wajib dipilih.',
+            'jabatan_role_id.in' => 'Jabatan yang dipilih tidak valid.',
+            'alamat.required' => 'Alamat lengkap wajib diisi.',
             'document.required' => 'Dokumen legalitas organisasi wajib diupload.',
             'document.mimes' => 'Dokumen harus berformat PDF.',
             'document.max' => 'Ukuran dokumen maksimal 2MB.',

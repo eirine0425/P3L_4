@@ -1,172 +1,222 @@
-@extends('layouts.dashboard')
+<?php
 
-@section('title', 'Warehouse Dashboard')
+namespace App\Http\Controllers\Api;
 
-@section('content')
-<div class="container-fluid">
-    <div class="row mb-4">
-        <div class="col-12">
-            <h2>Dashboard Pegawai Gudang</h2>
-            <p class="text-muted">Selamat datang di panel kontrol Pegawai Gudang ReuseMart.</p>
-        </div>
-    </div>
-    
-    <div class="row">
-        <div class="col-md-3">
-            <div class="stats-card">
-                <i class="fas fa-boxes"></i>
-                <h3>{{ $totalItems }}</h3>
-                <p>Total Barang</p>
-            </div>
-        </div>
-        <div class="col-md-3">
-            <div class="stats-card">
-                <i class="fas fa-check-circle"></i>
-                <h3>{{ $activeItems }}</h3>
-                <p>Barang Aktif</p>
-            </div>
-        </div>
-        <div class="col-md-3">
-            <div class="stats-card">
-                <i class="fas fa-times-circle"></i>
-                <h3>{{ $inactiveItems }}</h3>
-                <p>Barang Tidak Aktif</p>
-            </div>
-        </div>
-        <div class="col-md-3">
-            <div class="stats-card">
-                <i class="fas fa-clock"></i>
-                <h3>{{ $pendingItems }}</h3>
-                <p>Menunggu Verifikasi</p>
-            </div>
-        </div>
-    </div>
-    
-    <div class="row mt-4">
-        <div class="col-md-6">
-            <div class="card">
-                <div class="card-header">
-                    <h5 class="card-title">Barang Terbaru</h5>
-                </div>
-                <div class="card-body">
-                    <div class="table-responsive">
-                        <table class="table table-striped">
-                            <thead>
-                                <tr>
-                                    <th>Nama Barang</th>
-                                    <th>Kategori</th>
-                                    <th>Penitip</th>
-                                    <th>Status</th>
-                                    <th>Aksi</th>
-                                </tr>
-                            </thead>
-                            <tbody>
-                                @foreach($recentItems as $item)
-                                    <tr>
-                                        <td>{{ $item->nama_barang }}</td>
-                                        <td>{{ $item->kategori->nama_kategori }}</td>
-                                        <td>{{ $item->penitip->user->name }}</td>
-                                        <td>
-                                            @if($item->status == 'Aktif')
-                                                <span class="badge bg-success">Aktif</span>
-                                            @elseif($item->status == 'Tidak Aktif')
-                                                <span class="badge bg-danger">Tidak Aktif</span>
-                                            @else
-                                                <span class="badge bg-warning">Menunggu Verifikasi</span>
-                                            @endif
-                                        </td>
-                                        <td>
-                                            <a href="#" class="btn btn-sm btn-primary"><i class="fas fa-eye"></i></a>
-                                            <a href="#" class="btn btn-sm btn-warning"><i class="fas fa-edit"></i></a>
-                                        </td>
-                                    </tr>
-                                @endforeach
-                            </tbody>
-                        </table>
-                    </div>
-                </div>
-                <div class="card-footer">
-                    <a href="{{ route('dashboard.warehouse.inventory') }}" class="btn btn-primary">Lihat Semua Barang</a>
-                </div>
-            </div>
-        </div>
-        <div class="col-md-6">
-            <div class="card">
-                <div class="card-header">
-                    <h5 class="card-title">Pengiriman yang Perlu Diproses</h5>
-                </div>
-                <div class="card-body">
-                    <div class="table-responsive">
-                        <table class="table table-striped">
-                            <thead>
-                                <tr>
-                                    <th>ID Pengiriman</th>
-                                    <th>Pembeli</th>
-                                    <th>Alamat</th>
-                                    <th>Status</th>
-                                    <th>Aksi</th>
-                                </tr>
-                            </thead>
-                            <tbody>
-                                @foreach($pendingShipments as $shipment)
-                                    <tr>
-                                        <td>#{{ $shipment->id }}</td>
-                                        <td>{{ $shipment->transaksi->pembeli->user->name }}</td>
-                                        <td>{{ Str::limit($shipment->alamat_pengiriman, 30) }}</td>
-                                        <td><span class="badge bg-warning">Menunggu Pengiriman</span></td>
-                                        <td>
-                                            <a href="#" class="btn btn-sm btn-primary"><i class="fas fa-eye"></i></a>
-                                            <a href="#" class="btn btn-sm btn-success"><i class="fas fa-truck"></i></a>
-                                        </td>
-                                    </tr>
-                                @endforeach
-                            </tbody>
-                        </table>
-                    </div>
-                </div>
-                <div class="card-footer">
-                    <a href="{{ route('dashboard.warehouse.shipments') }}" class="btn btn-primary">Lihat Semua Pengiriman</a>
-                </div>
-            </div>
-        </div>
-    </div>
-    
-    <div class="row mt-4">
-        <div class="col-12">
-            <div class="card">
-                <div class="card-header">
-                    <h5 class="card-title">Status Inventaris</h5>
-                </div>
-                <div class="card-body">
-                    <canvas id="inventoryStatusChart"></canvas>
-                </div>
-            </div>
-        </div>
-    </div>
-</div>
-@endsection
+use App\Http\Controllers\Controller;
+use Illuminate\Http\Request;
+use App\Models\Barang;
+use App\Models\Pengiriman;
+use App\Models\Transaksi;
+use App\Models\KategoriBarang;
+use Illuminate\Support\Facades\DB;
 
-@push('scripts')
-<script>
-    // Data untuk grafik status inventaris
-    var inventoryStatusCtx = document.getElementById('inventoryStatusChart').getContext('2d');
-    var inventoryStatusChart = new Chart(inventoryStatusCtx, {
-        type: 'doughnut',
-        data: {
-            labels: ['Aktif', 'Tidak Aktif', 'Menunggu Verifikasi'],
-            datasets: [{
-                data: [{{ $activeItems }}, {{ $inactiveItems }}, {{ $pendingItems }}],
-                backgroundColor: ['#4CAF50', '#F44336', '#FFC107']
-            }]
-        },
-        options: {
-            responsive: true,
-            plugins: {
-                legend: {
-                    position: 'bottom'
-                }
-            }
+class DashboardWarehouseController extends Controller
+{
+    public function index()
+    {
+        // Statistik barang
+        $totalItems = Barang::count();
+        $activeItems = Barang::where('status_barang', 'Aktif')->count();
+        $inactiveItems = Barang::where('status_barang', 'Tidak Aktif')->count();
+        $pendingItems = Barang::where('status_barang', 'Menunggu Verifikasi')->count();
+        
+        // Barang terbaru
+        $recentItems = Barang::with(['kategori', 'penitip.user'])
+            ->orderBy('created_at', 'desc')
+            ->limit(5)
+            ->get();
+        
+        // Pengiriman yang perlu diproses
+        $pendingShipments = Pengiriman::with(['transaksi.pembeli.user', 'alamat'])
+            ->where('status_pengiriman', 'Menunggu Pengiriman')
+            ->orderBy('created_at', 'desc')
+            ->limit(5)
+            ->get();
+        
+        // Data untuk grafik
+        $itemsByCategory = DB::table('barang')
+            ->join('kategori_barang', 'barang.kategori_id', '=', 'kategori_barang.kategori_id')
+            ->select('kategori_barang.nama_kategori', DB::raw('count(*) as total'))
+            ->groupBy('kategori_barang.nama_kategori')
+            ->get();
+        
+        $itemsByStatus = DB::table('barang')
+            ->select('status_barang', DB::raw('count(*) as total'))
+            ->groupBy('status_barang')
+            ->get();
+        
+        return view('dashboard.warehouse.index', compact(
+            'totalItems', 
+            'activeItems', 
+            'inactiveItems', 
+            'pendingItems', 
+            'recentItems', 
+            'pendingShipments',
+            'itemsByCategory',
+            'itemsByStatus'
+        ));
+    }
+    
+    public function inventory(Request $request)
+    {
+        $query = Barang::with(['kategori', 'penitip.user']);
+        
+        // Filter berdasarkan status
+        if ($request->has('status') && $request->status != '') {
+            $query->where('status_barang', $request->status);
         }
-    });
-</script>
-@endpush
+        
+        // Filter berdasarkan kategori
+        if ($request->has('kategori') && $request->kategori != '') {
+            $query->where('kategori_id', $request->kategori);
+        }
+        
+        // Pencarian
+        if ($request->has('search') && $request->search != '') {
+            $search = $request->search;
+            $query->where(function($q) use ($search) {
+                $q->where('nama_barang', 'like', "%{$search}%")
+                  ->orWhere('deskripsi', 'like', "%{$search}%")
+                  ->orWhere('kode_barang', 'like', "%{$search}%");
+            });
+        }
+        
+        // Pengurutan
+        if ($request->has('sort')) {
+            switch ($request->sort) {
+                case 'name_asc':
+                    $query->orderBy('nama_barang', 'asc');
+                    break;
+                case 'name_desc':
+                    $query->orderBy('nama_barang', 'desc');
+                    break;
+                case 'price_asc':
+                    $query->orderBy('harga', 'asc');
+                    break;
+                case 'price_desc':
+                    $query->orderBy('harga', 'desc');
+                    break;
+                case 'newest':
+                    $query->orderBy('created_at', 'desc');
+                    break;
+                case 'oldest':
+                    $query->orderBy('created_at', 'asc');
+                    break;
+                default:
+                    $query->orderBy('created_at', 'desc');
+            }
+        } else {
+            $query->orderBy('created_at', 'desc');
+        }
+        
+        $items = $query->paginate(10);
+        $categories = KategoriBarang::all();
+        
+        return view('dashboard.warehouse.inventory', compact('items', 'categories'));
+    }
+    
+    public function shipments(Request $request)
+    {
+        $query = Pengiriman::with(['transaksi.pembeli.user', 'alamat']);
+        
+        // Filter berdasarkan status
+        if ($request->has('status') && $request->status != '') {
+            $query->where('status_pengiriman', $request->status);
+        }
+        
+        // Pencarian
+        if ($request->has('search') && $request->search != '') {
+            $search = $request->search;
+            $query->whereHas('transaksi.pembeli.user', function($q) use ($search) {
+                $q->where('name', 'like', "%{$search}%");
+            });
+        }
+        
+        // Pengurutan
+        if ($request->has('sort')) {
+            switch ($request->sort) {
+                case 'id_asc':
+                    $query->orderBy('pengiriman_id', 'asc');
+                    break;
+                case 'id_desc':
+                    $query->orderBy('pengiriman_id', 'desc');
+                    break;
+                case 'newest':
+                    $query->orderBy('created_at', 'desc');
+                    break;
+                case 'oldest':
+                    $query->orderBy('created_at', 'asc');
+                    break;
+                default:
+                    $query->orderBy('created_at', 'desc');
+            }
+        } else {
+            $query->orderBy('created_at', 'desc');
+        }
+        
+        $shipments = $query->paginate(10);
+        
+        return view('dashboard.warehouse.shipments', compact('shipments'));
+    }
+    
+    public function showShipment($id)
+    {
+        $shipment = Pengiriman::with([
+            'transaksi.pembeli.user', 
+            'transaksi.detailTransaksi.barang',
+            'alamat'
+        ])->findOrFail($id);
+        
+        return view('dashboard.warehouse.shipment-detail', compact('shipment'));
+    }
+    
+    public function updateShipmentStatus(Request $request, $id)
+    {
+        $request->validate([
+            'status' => 'required|in:Menunggu Pengiriman,Sedang Dikirim,Terkirim,Dibatalkan'
+        ]);
+        
+        $shipment = Pengiriman::findOrFail($id);
+        $shipment->status_pengiriman = $request->status;
+        
+        // Jika status berubah menjadi "Sedang Dikirim", update tanggal kirim
+        if ($request->status == 'Sedang Dikirim' && $shipment->tanggal_kirim === null) {
+            $shipment->tanggal_kirim = now();
+        }
+        
+        // Jika status berubah menjadi "Terkirim", update tanggal terima
+        if ($request->status == 'Terkirim') {
+            $shipment->tanggal_terima = now();
+        }
+        
+        $shipment->save();
+        
+        return redirect()->route('dashboard.warehouse.shipment.show', $id)
+            ->with('success', 'Status pengiriman berhasil diperbarui.');
+    }
+    
+    public function showItem($id)
+    {
+        $item = Barang::with([
+            'kategori', 
+            'penitip.user', 
+            'diskusiProduk.user'
+        ])->findOrFail($id);
+        
+        return view('dashboard.warehouse.item-detail', compact('item'));
+    }
+    
+    public function updateItemStatus(Request $request, $id)
+    {
+        $request->validate([
+            'status' => 'required|in:Aktif,Tidak Aktif,Menunggu Verifikasi,Terjual,Ditolak'
+        ]);
+        
+        $item = Barang::findOrFail($id);
+        $item->status_barang = $request->status;
+        $item->save();
+        
+        return redirect()->route('dashboard.warehouse.item.show', $id)
+            ->with('success', 'Status barang berhasil diperbarui.');
+    }
+}

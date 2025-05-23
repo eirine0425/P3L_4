@@ -108,7 +108,6 @@
                     <div class="tab-pane fade" id="pegawai" role="tabpanel" aria-labelledby="pegawai-tab">
                         <form method="POST" action="{{ url('/register') }}">
                             @csrf
-                            <input type="hidden" name="role_id" value="5"> <!-- role_id 5 untuk Pegawai -->
                             <input type="hidden" name="role" value="pegawai">
                             
                             <div class="row mb-3">
@@ -174,7 +173,26 @@
                             
                             <div class="row mb-3">
                                 <div class="col-md-6">
-                                    <label for="alamat" class="form-label">Alamat</label>
+                                    <label for="jabatan_role_id" class="form-label">Jabatan yang Dilamar</label>
+                                    <select class="form-select @error('jabatan_role_id') is-invalid @enderror" id="jabatan_role_id" name="jabatan_role_id" required>
+                                        <option value="">Pilih Jabatan</option>
+                                        <option value="1" {{ old('jabatan_role_id') == '1' ? 'selected' : '' }}>Admin</option>
+                                        <option value="3" {{ old('jabatan_role_id') == '3' ? 'selected' : '' }}>Customer Service (CS)</option>
+                                        <option value="6" {{ old('jabatan_role_id') == '6' ? 'selected' : '' }}>Kurir</option>
+                                        <option value="8" {{ old('jabatan_role_id') == '8' ? 'selected' : '' }}>Owner</option>
+                                        <option value="9" {{ old('jabatan_role_id') == '9' ? 'selected' : '' }}>Hunter</option>
+                                        <option value="10" {{ old('jabatan_role_id') == '10' ? 'selected' : '' }}>Gudang</option>
+                                    </select>
+                                    @error('jabatan_role_id')
+                                    <div class="invalid-feedback">
+                                        {{ $message }}
+                                    </div>
+                                    @enderror
+                                    <small class="form-text text-muted">Pilih jabatan yang Anda lamar. Penempatan akan ditentukan oleh manajemen.</small>
+                                </div>
+                                
+                                <div class="col-md-6">
+                                    <label for="alamat" class="form-label">Alamat Lengkap</label>
                                     <textarea class="form-control @error('alamat') is-invalid @enderror" id="alamat" name="alamat" rows="2" required>{{ old('alamat') }}</textarea>
                                     @error('alamat')
                                     <div class="invalid-feedback">
@@ -182,22 +200,18 @@
                                     </div>
                                     @enderror
                                 </div>
-                                
-                                <div class="col-md-6">
-                                    <label for="gaji" class="form-label">Gaji yang Diharapkan</label>
-                                    <input type="number" class="form-control @error('gaji') is-invalid @enderror" id="gaji" name="gaji" value="{{ old('gaji') }}" min="0" step="1000">
-                                    @error('gaji')
-                                    <div class="invalid-feedback">
-                                        {{ $message }}
-                                    </div>
-                                    @enderror
-                                    <small class="form-text text-muted">Opsional - akan ditentukan oleh manajemen</small>
-                                </div>
                             </div>
                             
+                            <div class="row mb-3">
+                               
                             <div class="mb-3 form-check">
                                 <input type="checkbox" class="form-check-input" id="pegawai_terms" name="terms" required>
                                 <label class="form-check-label" for="pegawai_terms">Saya menyetujui <a href="#">syarat dan ketentuan</a> yang berlaku</label>
+                            </div>
+                            
+                            <div class="alert alert-info">
+                                <i class="fas fa-info-circle me-2"></i>
+                                <strong>Catatan:</strong> Pendaftaran pegawai akan diverifikasi oleh manajemen. Anda akan dihubungi jika lamaran diterima.
                             </div>
                             
                             <div class="d-grid gap-2">
@@ -335,15 +349,35 @@ document.addEventListener('DOMContentLoaded', function() {
             if (activeTab === '#pembeli') {
                 document.querySelector('#pembeli input[name="role_id"]').value = '4';
                 document.querySelector('#pembeli input[name="role"]').value = 'pembeli';
-            } else if (activeTab === '#pegawai') {
-                document.querySelector('#pegawai input[name="role_id"]').value = '5';
-                document.querySelector('#pegawai input[name="role"]').value = 'pegawai';
             } else if (activeTab === '#organisasi') {
                 document.querySelector('#organisasi input[name="role_id"]').value = '7';
                 document.querySelector('#organisasi input[name="role"]').value = 'organisasi';
             }
         });
     });
+    
+    // Handle pegawai role_id berdasarkan jabatan yang dipilih
+    var jabatanSelect = document.getElementById('jabatan_role_id');
+    if (jabatanSelect) {
+        jabatanSelect.addEventListener('change', function() {
+            // Set role_id sesuai dengan jabatan yang dipilih
+            var selectedRoleId = this.value;
+            if (selectedRoleId) {
+                // Update hidden input untuk role_id
+                var existingRoleInput = document.querySelector('#pegawai input[name="role_id"]');
+                if (existingRoleInput) {
+                    existingRoleInput.value = selectedRoleId;
+                } else {
+                    // Buat input hidden baru jika belum ada
+                    var hiddenInput = document.createElement('input');
+                    hiddenInput.type = 'hidden';
+                    hiddenInput.name = 'role_id';
+                    hiddenInput.value = selectedRoleId;
+                    document.querySelector('#pegawai form').appendChild(hiddenInput);
+                }
+            }
+        });
+    }
 });
 </script>
 @endsection
