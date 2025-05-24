@@ -10,7 +10,7 @@ class UpdatePenitipRequest extends FormRequest
     {
         return [
             'nama'               => 'sometimes|required|string|max:100',
-            'point_reward'       => 'sometimes|required|integer|min:0',
+            'point_donasi'       => 'sometimes|required|integer|min:0',
             'tanggal_registrasi' => 'sometimes|required|date',
             'no_ktp'             => 'sometimes|required|string|max:20',
             'badge'              => 'sometimes|nullable|string|max:50',

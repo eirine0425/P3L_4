@@ -24,17 +24,11 @@
                     <!-- Categories -->
                     <div class="mb-3">
                         <label class="form-label">Kategori</label>
-                        @php
-                        $categories = [
-                            'Elektronik', 'Furnitur', 'Fashion', 'Buku', 'Olahraga', 'Lainnya'
-                        ];
-                        @endphp
-                        
                         @foreach ($categories as $category)
                         <div class="form-check">
-                            <input class="form-check-input" type="checkbox" name="categories[]" value="{{ $category }}" id="category-{{ $loop->index }}" {{ in_array($category, request('categories', [])) ? 'checked' : '' }}>
-                            <label class="form-check-label" for="category-{{ $loop->index }}">
-                                {{ $category }}
+                            <input class="form-check-input" type="checkbox" name="categories[]" value="{{ $category->nama_kategori }}" id="category-{{ $category->id }}" {{ in_array($category->nama_kategori, request('categories', [])) ? 'checked' : '' }}>
+                            <label class="form-check-label" for="category-{{ $category->id }}">
+                                {{ $category->nama_kategori }}
                             </label>
                         </div>
                         @endforeach
@@ -114,69 +108,81 @@
     <div class="col-md-9">
         <div class="d-flex justify-content-between align-items-center mb-4">
             <h2><i class="fas fa-box-open me-2"></i>Produk</h2>
-            <span>Menampilkan 1-12 dari 100 produk</span>
+            <span>Menampilkan {{ $products->firstItem() ?? 0 }}-{{ $products->lastItem() ?? 0 }} dari {{ $products->total() }} produk</span>
         </div>
         
-        <div class="row row-cols-1 row-cols-md-2 row-cols-lg-3 g-4">
-            @for ($i = 1; $i <= 12; $i++)
-            <div class="col">
-                <div class="card h-100 product-card">
-                    <div class="position-relative">
-                        <img src="https://via.placeholder.com/300x200" class="card-img-top" alt="Product {{ $i }}">
-                        <span class="badge bg-success position-absolute top-0 end-0 m-2">Tersedia</span>
-                    </div>
-                    <div class="card-body">
-                        <h5 class="card-title">Produk {{ $i }}</h5>
-                        <p class="card-text">Deskripsi singkat produk {{ $i }} yang menjelaskan kondisi dan kualitas barang.</p>
-                        <div class="d-flex justify-content-between align-items-center">
-                            <span class="fw-bold text-primary">Rp {{ number_format(rand(100000, 1000000), 0, ',', '.') }}</span>
-                            <div>
-                                <i class="fas fa-star text-warning"></i>
-                                <i class="fas fa-star text-warning"></i>
-                                <i class="fas fa-star text-warning"></i>
-                                <i class="fas fa-star text-warning"></i>
-                                <i class="fas fa-star-half-alt text-warning"></i>
-                                <span class="ms-1">({{ rand(10, 50) }})</span>
+        @if($products->count() > 0)
+            <div class="row row-cols-1 row-cols-md-2 row-cols-lg-3 g-4">
+                @foreach ($products as $product)
+                <div class="col">
+                    <div class="card h-100 product-card">
+                        <div class="position-relative">
+                            <img src="/placeholder.svg?height=200&width=300" class="card-img-top" alt="{{ $product->nama_barang }}">
+                            <span class="badge bg-{{ $product->status == 'tersedia' ? 'success' : 'secondary' }} position-absolute top-0 end-0 m-2">
+                                {{ ucfirst($product->status) }}
+                            </span>
+                            @if($product->kondisi)
+                                <span class="badge bg-info position-absolute top-0 start-0 m-2">
+                                    {{ ucwords(str_replace('_', ' ', $product->kondisi)) }}
+                                </span>
+                            @endif
+                        </div>
+                        <div class="card-body">
+                            <h5 class="card-title">{{ $product->nama_barang }}</h5>
+                            <p class="card-text">{{ Str::limit($product->deskripsi, 100) }}</p>
+                            <div class="mb-2">
+                                <small class="text-muted">
+                                    <i class="fas fa-tag me-1"></i>{{ $product->kategori->nama_kategori ?? 'Tidak ada kategori' }}
+                                </small>
+                            </div>
+                            <div class="d-flex justify-content-between align-items-center">
+                                <span class="fw-bold text-primary">Rp {{ number_format($product->harga, 0, ',', '.') }}</span>
+                                <div>
+                                    @if($product->rating)
+                                        @for($i = 1; $i <= 5; $i++)
+                                            @if($i <= floor($product->rating))
+                                                <i class="fas fa-star text-warning"></i>
+                                            @elseif($i <= $product->rating)
+                                                <i class="fas fa-star-half-alt text-warning"></i>
+                                            @else
+                                                <i class="far fa-star text-warning"></i>
+                                            @endif
+                                        @endfor
+                                        <span class="ms-1">({{ number_format($product->rating, 1) }})</span>
+                                    @else
+                                        <span class="text-muted">Belum ada rating</span>
+                                    @endif
+                                </div>
+                            </div>
+                        </div>
+                        <div class="card-footer bg-white border-top-0">
+                            <div class="d-grid gap-2">
+                                <a href="{{ url('/products/' . $product->barang_id) }}" class="btn btn-outline-primary">Detail</a>
+                                @auth
+                                    @if(auth()->user()->role->nama_role == 'Pembeli')
+                                    <button class="btn btn-primary add-to-cart" data-product-id="{{ $product->barang_id }}">
+                                        <i class="fas fa-cart-plus me-2"></i>Tambah ke Keranjang
+                                    </button>
+                                    @endif
+                                @endauth
                             </div>
                         </div>
                     </div>
-                    <div class="card-footer bg-white border-top-0">
-                        <div class="d-grid gap-2">
-                            <a href="{{ url('/products/' . $i) }}" class="btn btn-outline-primary">Detail</a>
-                            @auth
-                                @if(auth()->user()->role->nama_role == 'Pembeli')
-                                <button class="btn btn-primary add-to-cart" data-product-id="{{ $i }}">
-                                    <i class="fas fa-cart-plus me-2"></i>Tambah ke Keranjang
-                                </button>
-                                @endif
-                            @endauth
-                        </div>
-                    </div>
                 </div>
+                @endforeach
             </div>
-            @endfor
-        </div>
-        
-        <!-- Pagination -->
-        <div class="d-flex justify-content-center mt-4">
-            <nav aria-label="Page navigation">
-                <ul class="pagination">
-                    <li class="page-item disabled">
-                        <a class="page-link" href="#" aria-label="Previous">
-                            <span aria-hidden="true">&laquo;</span>
-                        </a>
-                    </li>
-                    <li class="page-item active"><a class="page-link" href="#">1</a></li>
-                    <li class="page-item"><a class="page-link" href="#">2</a></li>
-                    <li class="page-item"><a class="page-link" href="#">3</a></li>
-                    <li class="page-item">
-                        <a class="page-link" href="#" aria-label="Next">
-                            <span aria-hidden="true">&raquo;</span>
-                        </a>
-                    </li>
-                </ul>
-            </nav>
-        </div>
+            
+            <!-- Pagination -->
+            <div class="d-flex justify-content-center mt-4">
+                {{ $products->links() }}
+            </div>
+        @else
+            <div class="text-center py-5">
+                <i class="fas fa-box-open fa-3x text-muted mb-3"></i>
+                <h4 class="text-muted">Tidak ada produk ditemukan</h4>
+                <p class="text-muted">Coba ubah filter pencarian Anda atau <a href="{{ url('/products') }}">lihat semua produk</a>.</p>
+            </div>
+        @endif
     </div>
 </div>
 @endsection

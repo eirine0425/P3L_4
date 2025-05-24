@@ -8,7 +8,7 @@ class CreatePenitipRequest
 {
     public ?int $penitip_id;
     public string $nama;
-    public ?int $point_reward;
+    public ?int $point_donasi;
     public string $tanggal_registrasi;
     public string $no_ktp;
     public int $user_id;
@@ -19,7 +19,7 @@ class CreatePenitipRequest
     {
         $this->penitip_id = $request->input('penitip_id');
         $this->nama = $request->input('nama');
-        $this->point_reward = $request->input('point_reward') ?: null; // Menangani null secara eksplisit
+        $this->point_donasi = $request->input('point_donasi') ?: null; // Menangani null secara eksplisit
         $this->tanggal_registrasi = $request->input('tanggal_registrasi');
         $this->no_ktp = $request->input('no_ktp');
         $this->user_id = $request->input('user_id');
@@ -32,7 +32,7 @@ class CreatePenitipRequest
         return [
             'penitip_id'         => $this->penitip_id,
             'nama'               => $this->nama,
-            'point_reward'       => $this->point_reward,
+            'point_donasi'       => $this->point_donasi,
             'tanggal_registrasi' => $this->tanggal_registrasi,
             'no_ktp'             => $this->no_ktp,
             'user_id'            => $this->user_id,
@@ -51,7 +51,7 @@ class CreatePenitipRequest
         'penitip_id' => 'nullable|integer',
 
         'nama' => 'required|string|max:255',
-        'point_reward' => 'nullable|integer',
+        'point_donasi' => 'nullable|integer',
         'tanggal_registrasi' => 'required|date',
         'no_ktp' => 'required|string|size:16',
         'user_id' => 'required|integer|exists:users,id',
