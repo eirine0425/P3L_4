@@ -96,59 +96,6 @@
     </div>
 </div>
 
-<!-- How It Works -->
-<div class="row mb-4">
-    <div class="col-12">
-        <div class="card bg-light">
-            <div class="card-body">
-                <h2 class="text-center mb-4"><i class="fas fa-question-circle me-2"></i>Bagaimana Cara Kerjanya?</h2>
-                
-                <div class="row row-cols-1 row-cols-md-3 g-4 text-center">
-                    <div class="col">
-                        <div class="card h-100 border-0 bg-transparent">
-                            <div class="card-body">
-                                <div class="rounded-circle bg-primary text-white d-flex align-items-center justify-content-center mx-auto mb-3" style="width: 80px; height: 80px;">
-                                    <i class="fas fa-box-open fa-2x"></i>
-                                </div>
-                                <h4>1. Titipkan Barang</h4>
-                                <p>Titipkan barang bekas berkualitas Anda ke ReuseMart dan dapatkan estimasi harga.</p>
-                            </div>
-                        </div>
-                    </div>
-                    
-                    <div class="col">
-                        <div class="card h-100 border-0 bg-transparent">
-                            <div class="card-body">
-                                <div class="rounded-circle bg-primary text-white d-flex align-items-center justify-content-center mx-auto mb-3" style="width: 80px; height: 80px;">
-                                    <i class="fas fa-store fa-2x"></i>
-                                </div>
-                                <h4>2. Kami Jual</h4>
-                                <p>Tim kami akan memastikan barang Anda terjual dengan harga terbaik.</p>
-                            </div>
-                        </div>
-                    </div>
-                    
-                    <div class="col">
-                        <div class="card h-100 border-0 bg-transparent">
-                            <div class="card-body">
-                                <div class="rounded-circle bg-primary text-white d-flex align-items-center justify-content-center mx-auto mb-3" style="width: 80px; height: 80px;">
-                                    <i class="fas fa-wallet fa-2x"></i>
-                                </div>
-                                <h4>3. Dapatkan Uang</h4>
-                                <p>Setelah barang terjual, Anda akan mendapatkan pembayaran langsung ke akun Anda.</p>
-                            </div>
-                        </div>
-                    </div>
-                </div>
-                
-                <div class="text-center mt-4">
-                    <a href="{{ url('/about') }}" class="btn btn-primary">Pelajari Lebih Lanjut</a>
-                </div>
-            </div>
-        </div>
-    </div>
-</div>
-
 <!-- Top Sellers -->
 <div class="row mb-4">
     <div class="col-12">
@@ -243,22 +190,6 @@
                 </div>
             </div>
             @endforeach
-        </div>
-    </div>
-</div>
-
-<!-- Call to Action -->
-<div class="row mb-4">
-    <div class="col-12">
-        <div class="card bg-primary text-white">
-            <div class="card-body text-center py-5">
-                <h2 class="card-title mb-3">Siap Bergabung dengan ReuseMart?</h2>
-                <p class="card-text fs-5 mb-4">Daftarkan diri Anda sekarang dan mulai jual beli barang bekas berkualitas atau titipkan barang Anda untuk dijual.</p>
-                <div>
-                    <a href="{{ url('/register') }}" class="btn btn-light btn-lg me-2">Daftar Sekarang</a>
-                    <a href="{{ url('/about') }}" class="btn btn-outline-light btn-lg">Pelajari Lebih Lanjut</a>
-                </div>
-            </div>
         </div>
     </div>
 </div>

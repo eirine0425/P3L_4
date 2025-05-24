@@ -167,10 +167,6 @@
                                 @endauth
                             </div>
                         </div>
-                    </div>
-                </div>
-                @endforeach
-            </div>
             
             <!-- Pagination -->
             <div class="d-flex justify-content-center mt-4">
@@ -189,21 +185,15 @@
 
 @push('scripts')
 <script>
-    // Add to cart functionality
     document.querySelectorAll('.add-to-cart').forEach(button => {
-        button.addEventListener('click', function() {
+        button.addEventListener('click', function () {
             const productId = this.getAttribute('data-product-id');
-            
-            // You would typically make an AJAX request to add the item to the cart
-            // For demonstration, we'll just show an alert
-            
-            // Create a toast notification
             const toastContainer = document.createElement('div');
             toastContainer.className = 'position-fixed bottom-0 end-0 p-3';
             toastContainer.style.zIndex = '11';
-            
+
             toastContainer.innerHTML = `
-                <div id="liveToast" class="toast show" role="alert" aria-live="assertive" aria-atomic="true">
+                <div class="toast show" role="alert" aria-live="assertive" aria-atomic="true">
                     <div class="toast-header bg-success text-white">
                         <i class="fas fa-check-circle me-2"></i>
                         <strong class="me-auto">Berhasil</strong>
@@ -214,13 +204,8 @@
                     </div>
                 </div>
             `;
-            
             document.body.appendChild(toastContainer);
-            
-            // Remove the toast after 3 seconds
-            setTimeout(() => {
-                toastContainer.remove();
-            }, 3000);
+            setTimeout(() => toastContainer.remove(), 3000);
         });
     });
 </script>
