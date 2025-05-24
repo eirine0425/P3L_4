@@ -4,13 +4,14 @@ namespace App\Models;
 
 use Illuminate\Database\Eloquent\Factories\HasFactory;
 use Illuminate\Database\Eloquent\Model;
+use Illuminate\Database\Eloquent\SoftDeletes;
 
 use App\Models\Pembeli;
 use App\Models\Barang;
 
 class DiskusiProduk extends Model
 {
-    use HasFactory;
+    use HasFactory, SoftDeletes;
 
     protected $table = 'diskusi_produk';
     protected $primaryKey = 'diskusi_id';
@@ -23,6 +24,11 @@ class DiskusiProduk extends Model
         'pertanyaan',
         'jawaban',
         'tanggal_diskusi',
+    ];
+
+    protected $dates = [
+        'tanggal_diskusi',
+        'deleted_at'
     ];
 
     public function pembeli()

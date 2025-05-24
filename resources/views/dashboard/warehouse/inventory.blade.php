@@ -1,142 +1,169 @@
 @extends('layouts.dashboard')
 
-@section('title', 'Warehouse Inventory')
+@section('title', 'Inventaris Barang')
 
 @section('content')
 <div class="container-fluid">
     <div class="row mb-4">
         <div class="col-12">
-            <h2>Inventaris Gudang</h2>
-            <p class="text-muted">Kelola semua barang di gudang ReuseMart.</p>
-        </div>
-    </div>
-    
-    <div class="row mb-4">
-        <div class="col-md-8">
-            <form action="{{ route('dashboard.warehouse.inventory') }}" method="GET" class="d-flex">
-                <div class="input-group">
-                    <input type="text" name="search" class="form-control" placeholder="Cari barang..." value="{{ request('search') }}">
-                    <select name="status" class="form-select">
-                        <option value="">Semua Status</option>
-                        <option value="Aktif" {{ request('status') == 'Aktif' ? 'selected' : '' }}>Aktif</option>
-                        <option value="Tidak Aktif" {{ request('status') == 'Tidak Aktif' ? 'selected' : '' }}>Tidak Aktif</option>
-                        <option value="Menunggu Verifikasi" {{ request('status') == 'Menunggu Verifikasi' ? 'selected' : '' }}>Menunggu Verifikasi</option>
-                    </select>
-                    <button type="submit" class="btn btn-primary">
-                        <i class="fas fa-search"></i> Cari
-                    </button>
+            <div class="d-flex justify-content-between align-items-center">
+                <div>
+                    <h2>Inventaris Barang</h2>
+                    <p class="text-muted">Kelola semua barang titipan</p>
                 </div>
-            </form>
-        </div>
-        <div class="col-md-4 text-end">
-            <div class="btn-group">
-                <button type="button" class="btn btn-outline-secondary dropdown-toggle" data-bs-toggle="dropdown" aria-expanded="false">
-                    <i class="fas fa-sort"></i> Urutkan
-                </button>
-                <ul class="dropdown-menu dropdown-menu-end">
-                    <li><a class="dropdown-item" href="{{ route('dashboard.warehouse.inventory', array_merge(request()->except('sort'), ['sort' => 'name_asc'])) }}">Nama (A-Z)</a></li>
-                    <li><a class="dropdown-item" href="{{ route('dashboard.warehouse.inventory', array_merge(request()->except('sort'), ['sort' => 'name_desc'])) }}">Nama (Z-A)</a></li>
-                    <li><a class="dropdown-item" href="{{ route('dashboard.warehouse.inventory', array_merge(request()->except('sort'), ['sort' => 'price_asc'])) }}">Harga (Terendah)</a></li>
-                    <li><a class="dropdown-item" href="{{ route('dashboard.warehouse.inventory', array_merge(request()->except('sort'), ['sort' => 'price_desc'])) }}">Harga (Tertinggi)</a></li>
-                    <li><a class="dropdown-item" href="{{ route('dashboard.warehouse.inventory', array_merge(request()->except('sort'), ['sort' => 'newest'])) }}">Terbaru</a></li>
-                    <li><a class="dropdown-item" href="{{ route('dashboard.warehouse.inventory', array_merge(request()->except('sort'), ['sort' => 'oldest'])) }}">Terlama</a></li>
-                </ul>
+                <a href="{{ route('dashboard.warehouse.consignment.create') }}" class="btn btn-primary">
+                    <i class="fas fa-plus me-2"></i>Tambah Barang Titipan
+                </a>
             </div>
         </div>
     </div>
     
+    <!-- Filters -->
+    <div class="row mb-4">
+        <div class="col-12">
+            <div class="card">
+                <div class="card-body">
+                    <form method="GET" action="{{ route('dashboard.warehouse.inventory') }}">
+                        <div class="row">
+                            <div class="col-md-3">
+                                <input type="text" class="form-control" name="search" 
+                                       placeholder="Cari barang..." value="{{ request('search') }}">
+                            </div>
+                            <div class="col-md-2">
+                                <select class="form-select" name="status">
+                                    <option value="">Semua Status</option>
+                                    <option value="belum_terjual" {{ request('status') == 'belum_terjual' ? 'selected' : '' }}>Belum Terjual</option>
+                                    <option value="terjual" {{ request('status') == 'terjual' ? 'selected' : '' }}>Terjual</option>
+                                    <option value="sold out" {{ request('status') == 'sold out' ? 'selected' : '' }}>Sold Out</option>
+                                </select>
+                            </div>
+                            <div class="col-md-2">
+                                <select class="form-select" name="kategori">
+                                    <option value="">Semua Kategori</option>
+                                    @foreach($categories as $category)
+                                        <option value="{{ $category->kategori_id }}" 
+                                                {{ request('kategori') == $category->kategori_id ? 'selected' : '' }}>
+                                            {{ $category->nama_kategori }}
+                                        </option>
+                                    @endforeach
+                                </select>
+                            </div>
+                            <div class="col-md-2">
+                                <select class="form-select" name="sort">
+                                    <option value="newest" {{ request('sort') == 'newest' ? 'selected' : '' }}>Terbaru</option>
+                                    <option value="oldest" {{ request('sort') == 'oldest' ? 'selected' : '' }}>Terlama</option>
+                                    <option value="name_asc" {{ request('sort') == 'name_asc' ? 'selected' : '' }}>Nama A-Z</option>
+                                    <option value="name_desc" {{ request('sort') == 'name_desc' ? 'selected' : '' }}>Nama Z-A</option>
+                                    <option value="price_asc" {{ request('sort') == 'price_asc' ? 'selected' : '' }}>Harga Terendah</option>
+                                    <option value="price_desc" {{ request('sort') == 'price_desc' ? 'selected' : '' }}>Harga Tertinggi</option>
+                                </select>
+                            </div>
+                            <div class="col-md-3">
+                                <div class="d-flex gap-2">
+                                    <button type="submit" class="btn btn-primary">
+                                        <i class="fas fa-search"></i> Filter
+                                    </button>
+                                    <a href="{{ route('dashboard.warehouse.inventory') }}" class="btn btn-secondary">
+                                        <i class="fas fa-refresh"></i> Reset
+                                    </a>
+                                </div>
+                            </div>
+                        </div>
+                    </form>
+                </div>
+            </div>
+        </div>
+    </div>
+    
+    <!-- Items List -->
     <div class="row">
         <div class="col-12">
             <div class="card">
                 <div class="card-body">
-                    <div class="table-responsive">
-                        <table class="table table-striped">
-                            <thead>
-                                <tr>
-                                    <th>ID</th>
-                                    <th>Gambar</th>
-                                    <th>Nama Barang</th>
-                                    <th>Kategori</th>
-                                    <th>Harga</th>
-                                    <th>Stok</th>
-                                    <th>Penitip</th>
-                                    <th>Status</th>
-                                    <th>Aksi</th>
-                                </tr>
-                            </thead>
-                            <tbody>
-                                @foreach($items as $item)
+                    @if(count($items) > 0)
+                        <div class="table-responsive">
+                            <table class="table table-hover">
+                                <thead>
                                     <tr>
-                                        <td>{{ $item->id }}</td>
-                                        <td>
-                                            @if($item->gambar)
-                                                <img src="{{ asset('storage/' . $item->gambar) }}" alt="{{ $item->nama }}" width="50" height="50" class="img-thumbnail">
-                                            @else
-                                                <div class="no-image">No Image</div>
-                                            @endif
-                                        </td>
-                                        <td>{{ $item->nama }}</td>
-                                        <td>{{ $item->kategori->nama_kategori }}</td>
-                                        <td>Rp {{ number_format($item->harga, 0, ',', '.') }}</td>
-                                        <td>{{ $item->stok }}</td>
-                                        <td>{{ $item->penitip->user->name }}</td>
-                                        <td>
-                                            @if($item->status == 'Aktif')
-                                                <span class="badge bg-success">Aktif</span>
-                                            @elseif($item->status == 'Tidak Aktif')
-                                                <span class="badge bg-danger">Tidak Aktif</span>
-                                            @else
-                                                <span class="badge bg-warning">Menunggu Verifikasi</span>
-                                            @endif
-                                        </td>
-                                        <td>
-                                            <div class="btn-group">
-                                                <a href="{{ route('dashboard.warehouse.item.show', $item->id) }}" class="btn btn-sm btn-primary">
-                                                    <i class="fas fa-eye"></i>
-                                                </a>
-                                                <button type="button" class="btn btn-sm btn-success" data-bs-toggle="modal" data-bs-target="#statusModal{{ $item->id }}">
-                                                    <i class="fas fa-check-circle"></i>
-                                                </button>
-                                            </div>
-                                            
-                                            <!-- Status Modal -->
-                                            <div class="modal fade" id="statusModal{{ $item->id }}" tabindex="-1" aria-labelledby="statusModalLabel{{ $item->id }}" aria-hidden="true">
-                                                <div class="modal-dialog">
-                                                    <div class="modal-content">
-                                                        <div class="modal-header">
-                                                            <h5 class="modal-title" id="statusModalLabel{{ $item->id }}">Update Status Barang</h5>
-                                                            <button type="button" class="btn-close" data-bs-dismiss="modal" aria-label="Close"></button>
-                                                        </div>
-                                                        <form action="{{ route('dashboard.warehouse.item.update-status', $item->id) }}" method="POST">
-                                                            @csrf
-                                                            @method('PUT')
-                                                            <div class="modal-body">
-                                                                <div class="mb-3">
-                                                                    <label for="status" class="form-label">Status</label>
-                                                                    <select name="status" id="status" class="form-select">
-                                                                        <option value="Aktif" {{ $item->status == 'Aktif' ? 'selected' : '' }}>Aktif</option>
-                                                                        <option value="Tidak Aktif" {{ $item->status == 'Tidak Aktif' ? 'selected' : '' }}>Tidak Aktif</option>
-                                                                        <option value="Menunggu Verifikasi" {{ $item->status == 'Menunggu Verifikasi' ? 'selected' : '' }}>Menunggu Verifikasi</option>
-                                                                    </select>
-                                                                </div>
-                                                            </div>
-                                                            <div class="modal-footer">
-                                                                <button type="button" class="btn btn-secondary" data-bs-dismiss="modal">Batal</button>
-                                                                <button type="submit" class="btn btn-primary">Simpan</button>
-                                                            </div>
-                                                        </form>
-                                                    </div>
-                                                </div>
-                                            </div>
-                                        </td>
+                                        <th>Foto</th>
+                                        <th>Nama Barang</th>
+                                        <th>Penitip</th>
+                                        <th>Kategori</th>
+                                        <th>Harga</th>
+                                        <th>Kondisi</th>
+                                        <th>Status</th>
+                                        <th>Tanggal</th>
+                                        <th>Aksi</th>
                                     </tr>
-                                @endforeach
-                            </tbody>
-                        </table>
-                    </div>
-                </div>
-                <div class="card-footer">
-                    {{ $items->appends(request()->except('page'))->links() }}
+                                </thead>
+                                <tbody>
+                                    @foreach($items as $item)
+                                        <tr>
+                                            <td>
+                                                @if($item->foto_barang)
+                                                    <img src="{{ asset('storage/' . $item->foto_barang) }}" 
+                                                         alt="{{ $item->nama_barang }}" 
+                                                         class="img-thumbnail" 
+                                                         style="width: 50px; height: 50px; object-fit: cover;">
+                                                @else
+                                                    <div class="bg-light d-flex align-items-center justify-content-center" 
+                                                         style="width: 50px; height: 50px;">
+                                                        <i class="fas fa-image text-muted"></i>
+                                                    </div>
+                                                @endif
+                                            </td>
+                                            <td>
+                                                <strong>{{ $item->nama_barang }}</strong><br>
+                                                <small class="text-muted">{{ Str::limit($item->deskripsi, 50) }}</small>
+                                            </td>
+                                            <td>{{ $item->penitip->user->name ?? '-' }}</td>
+                                            <td>{{ $item->kategori->nama_kategori ?? '-' }}</td>
+                                            <td>Rp {{ number_format($item->harga, 0, ',', '.') }}</td>
+                                            <td>
+                                                <span class="badge bg-info">{{ ucfirst(str_replace('_', ' ', $item->kondisi)) }}</span>
+                                            </td>
+                                            <td>
+                                                @if($item->status == 'belum_terjual')
+                                                    <span class="badge bg-success">Belum Terjual</span>
+                                                @elseif($item->status == 'terjual')
+                                                    <span class="badge bg-primary">Terjual</span>
+                                                @else
+                                                    <span class="badge bg-secondary">{{ ucfirst($item->status) }}</span>
+                                                @endif
+                                            </td>
+                                            <td>{{ $item->created_at->format('d M Y') }}</td>
+                                            <td>
+                                                <div class="btn-group" role="group">
+                                                    <a href="{{ route('dashboard.warehouse.item.show', $item->barang_id) }}" 
+                                                       class="btn btn-sm btn-outline-primary">
+                                                        <i class="fas fa-eye"></i>
+                                                    </a>
+                                                    <a href="{{ route('products.show', $item->barang_id) }}" 
+                                                       class="btn btn-sm btn-outline-info" target="_blank">
+                                                        <i class="fas fa-external-link-alt"></i>
+                                                    </a>
+                                                </div>
+                                            </td>
+                                        </tr>
+                                    @endforeach
+                                </tbody>
+                            </table>
+                        </div>
+                        
+                        <!-- Pagination -->
+                        <div class="d-flex justify-content-center">
+                            {{ $items->appends(request()->query())->links() }}
+                        </div>
+                    @else
+                        <div class="text-center py-5">
+                            <i class="fas fa-box fa-3x text-muted mb-3"></i>
+                            <h5>Tidak ada barang ditemukan</h5>
+                            <p class="text-muted">Belum ada barang yang sesuai dengan filter yang dipilih.</p>
+                            <a href="{{ route('dashboard.warehouse.consignment.create') }}" class="btn btn-primary">
+                                <i class="fas fa-plus me-2"></i>Tambah Barang Pertama
+                            </a>
+                        </div>
+                    @endif
                 </div>
             </div>
         </div>
