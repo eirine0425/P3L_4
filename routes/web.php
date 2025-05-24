@@ -87,16 +87,20 @@ Route::get('/password/reset/{token}', [AuthController::class, 'showResetForm'])-
 Route::post('/password/reset', [AuthController::class, 'reset'])->name('password.update');
 
 // ========================================
-// CART ROUTES (PUBLIC/GUEST)
+// CART ROUTES (AUTHENTICATED USERS)
 // ========================================
 
-Route::get('/cart', [KeranjangBelanjaController::class, 'viewCart'])->name('cart.index');
-Route::post('/cart/add', [KeranjangBelanjaController::class, 'store'])->name('cart.add');
-Route::post('/cart/add', [KeranjangBelanjaController::class, 'add'])->name('cart.add')->middleware('auth');
-Route::post('/cart/buy-now', [KeranjangBelanjaController::class, 'buyNow'])->name('cart.buyNow')->middleware('auth');
-Route::put('/cart/update/{id}', [KeranjangBelanjaController::class, 'update'])->name('cart.update');
-Route::delete('/cart/remove/{id}', [KeranjangBelanjaController::class, 'destroy'])->name('cart.remove');
-Route::post('/cart/clear', [KeranjangBelanjaController::class, 'clearCart'])->name('cart.clear');
+Route::middleware(['auth:web'])->group(function () {
+    Route::get('/cart', [KeranjangBelanjaController::class, 'viewCart'])->name('cart.index');
+    Route::post('/cart/add', [KeranjangBelanjaController::class, 'store'])->name('cart.add');
+    Route::put('/cart/{id}', [KeranjangBelanjaController::class, 'update'])->name('cart.update');
+    Route::delete('/cart/{id}', [KeranjangBelanjaController::class, 'destroy'])->name('cart.remove');
+    Route::delete('/cart/clear', [KeranjangBelanjaController::class, 'clearCart'])->name('cart.clear');
+    
+    // Debug routes (remove in production)
+    Route::get('/cart/debug', [KeranjangBelanjaController::class, 'debug'])->name('cart.debug');
+    Route::get('/cart/test-add', [KeranjangBelanjaController::class, 'testAdd'])->name('cart.test-add');
+});
 
 // ========================================
 // PROTECTED ROUTES - MAIN DASHBOARD REDIRECT
@@ -144,9 +148,7 @@ Route::middleware(['auth', 'role:pembeli'])->group(function () {
     Route::get('/dashboard/buyer/transactions/{id}', [BuyerTransactionController::class, 'show'])->name('buyer.transactions.show');
     
     // Cart Routes
-    Route::get('/dashboard/keranjang', function () {
-        return view('errors.missing-view', ['view' => 'dashboard.buyer.cart.index']);
-    })->name('buyer.cart');
+    Route::get('/dashboard/keranjang', [KeranjangBelanjaController::class, 'viewCart'])->name('buyer.cart');
     
     Route::post('/dashboard/keranjang/add', [KeranjangBelanjaController::class, 'store'])->name('buyer.cart.add');
     Route::put('/dashboard/keranjang/update', [KeranjangBelanjaController::class, 'update'])->name('buyer.cart.update');
@@ -423,4 +425,9 @@ Route::middleware(['auth', 'role:kurir'])->group(function () {
     Route::put('/dashboard/pengiriman-kurir/{id}/update-status', function ($id) {
         return view('errors.missing-view', ['view' => 'dashboard.courier.deliveries.update_status', 'id' => $id]);
     })->name('courier.deliveries.update-status');
+});
+
+// Fallback route
+Route::fallback(function () {
+    return view('errors.404');
 });
