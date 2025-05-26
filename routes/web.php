@@ -20,16 +20,21 @@ use App\Http\Controllers\Api\BuyerTransactionController;
 use App\Http\Controllers\Api\DashboardWarehouseController;
 use App\Http\Controllers\Api\DashboardCSController;
 use App\Http\Controllers\Api\DashboardHunterController;
+
 use App\Http\Controllers\Api\AlamatController;
+
+
 use App\Http\Controllers\Api\DashboardOrganisasiController;
-use App\Http\Controllers\Api\DashboardAdminController;
-use App\Http\Controllers\Api\DashboardConsignorController;
 
 use App\Models\Penitip;
 use App\Models\Pembeli;
 use App\Models\Barang;
 use App\Models\DiskusiProduk;
 use App\Models\KeranjangBelanja;
+
+use App\Http\Controllers\Api\DashboardAdminController;
+use App\Http\Controllers\Api\DashboardConsignorController;
+
 
 /*
 |--------------------------------------------------------------------------
@@ -121,7 +126,7 @@ Route::middleware(['auth'])->get('/dashboard', function () {
     return match ($role) {
         'owner' => redirect()->route('dashboard.owner'),
         'admin' => redirect()->route('dashboard.admin.index'),
-        'pegawai', 'gudang' => redirect()->route('dashboard.warehouse'), // FIXED: Changed from dashboard.warehouse.index to dashboard.warehouse
+        'pegawai', 'gudang' => redirect()->route('dashboard.warehouse.index'),
         'cs' => redirect()->route('dashboard.cs'),
         'penitip', 'penjual' => redirect()->route('dashboard.consignor'),
         'organisasi' => redirect()->route('dashboard.organization'),
@@ -141,10 +146,6 @@ Route::middleware(['auth'])->group(function () {
     })->name('profile.show');
     
     Route::put('/dashboard/profil', [UserController::class, 'update'])->name('profile.update');
-    
-    // General profile routes
-    Route::get('/profile', [WebViewController::class, 'profilePembeli'])->name('profile.show');
-    Route::put('/profile', [WebViewController::class, 'updateProfilePembeli'])->name('profile.update');
 });
 
 // ========================================
@@ -159,17 +160,9 @@ Route::middleware(['auth', 'role:pembeli'])->group(function () {
     Route::get('/dashboard/buyer/transactions', [BuyerTransactionController::class, 'index'])->name('buyer.transactions');
     Route::get('/dashboard/buyer/transactions/{id}', [BuyerTransactionController::class, 'show'])->name('buyer.transactions.show');
     
-    // Alamat Routes
-    Route::get('/dashboard/alamat', [WebViewController::class, 'alamatIndex'])->name('buyer.alamat.index');
-    Route::get('/dashboard/alamat/create', [WebViewController::class, 'alamatCreate'])->name('buyer.alamat.create');
-    Route::post('/dashboard/alamat', [WebViewController::class, 'alamatStore'])->name('buyer.alamat.store');
-    Route::get('/dashboard/alamat/{id}/edit', [WebViewController::class, 'alamatEdit'])->name('buyer.alamat.edit');
-    Route::put('/dashboard/alamat/{id}', [WebViewController::class, 'alamatUpdate'])->name('buyer.alamat.update');
-    Route::delete('/dashboard/alamat/{id}', [WebViewController::class, 'alamatDestroy'])->name('buyer.alamat.destroy');
-    Route::patch('/dashboard/alamat/{id}/set-default', [WebViewController::class, 'alamatSetDefault'])->name('buyer.alamat.set-default');
-
     // Cart Routes
     Route::get('/dashboard/keranjang', [KeranjangBelanjaController::class, 'viewCart'])->name('buyer.cart');
+    
     Route::post('/dashboard/keranjang/add', [KeranjangBelanjaController::class, 'store'])->name('buyer.cart.add');
     Route::put('/dashboard/keranjang/update', [KeranjangBelanjaController::class, 'update'])->name('buyer.cart.update');
     Route::delete('/dashboard/keranjang/remove/{id}', [KeranjangBelanjaController::class, 'destroy'])->name('buyer.cart.remove');
@@ -180,20 +173,60 @@ Route::middleware(['auth', 'role:pembeli'])->group(function () {
     })->name('checkout.index');
     
     Route::post('/checkout/process', [TransaksiController::class, 'store'])->name('checkout.process');
-    
-    // Profile Routes
-    Route::prefix('dashboard/buyer/profile')->name('buyer.profile.')->group(function () {
-        Route::get('/', [App\Http\Controllers\Api\BuyerProfileController::class, 'index'])->name('index');
-        Route::put('/update', [App\Http\Controllers\Api\BuyerProfileController::class, 'updateProfile'])->name('update');
-        Route::get('/rewards', [App\Http\Controllers\Api\BuyerProfileController::class, 'showRewardPoints'])->name('rewards');
-        Route::get('/transaction-history', [App\Http\Controllers\Api\BuyerProfileController::class, 'showTransactionHistory'])->name('transaction-history');
-        Route::get('/transaction/{id}', [App\Http\Controllers\Api\BuyerProfileController::class, 'showTransactionDetail'])->name('transaction-detail');
-    });
 });
 
 // ========================================
 // CONSIGNOR/PENITIP ROUTES
 // ========================================
+
+
+// Profile Routes
+Route::middleware(['auth'])->group(function () {
+   Route::get('/dashboard/profile', function () {
+       return view('errors.missing-view', ['view' => 'dashboard.profile.show']);
+   })->name('profile.show');
+   
+   Route::put('/dashboard/profile', [UserController::class, 'update'])->name('profile.update');
+});
+
+
+// Buyer Routes
+Route::middleware(['auth', 'role:pembeli'])->group(function () {
+   // Transaction Routes
+   Route::get('/dashboard/buyer/transactions', [BuyerTransactionController::class, 'index'])->name('buyer.transactions');
+   Route::get('/dashboard/buyer/transactions/{id}', [BuyerTransactionController::class, 'show'])->name('buyer.transactions.show');
+   
+    // Alamat Routes
+    Route::get('/dashboard/alamat', [WebViewController::class, 'alamatIndex'])->name('buyer.alamat.index');
+    Route::get('/dashboard/alamat/create', [WebViewController::class, 'alamatCreate'])->name('buyer.alamat.create');
+    Route::post('/dashboard/alamat', [WebViewController::class, 'alamatStore'])->name('buyer.alamat.store');
+    Route::get('/dashboard/alamat/{id}/edit', [WebViewController::class, 'alamatEdit'])->name('buyer.alamat.edit');
+    Route::put('/dashboard/alamat/{id}', [WebViewController::class, 'alamatUpdate'])->name('buyer.alamat.update');
+    Route::delete('/dashboard/alamat/{id}', [WebViewController::class, 'alamatDestroy'])->name('buyer.alamat.destroy');
+    Route::patch('/dashboard/alamat/{id}/set-default', [WebViewController::class, 'alamatSetDefault'])->name('buyer.alamat.set-default');
+
+   // Cart Routes
+   Route::get('/dashboard/keranjang', function () {
+       return view('errors.missing-view', ['view' => 'dashboard.buyer.cart.index']);
+   })->name('cart.index');
+   
+   Route::post('/dashboard/keranjang/add', [KeranjangBelanjaController::class, 'store'])->name('cart.add');
+   Route::put('/dashboard/keranjang/update', [KeranjangBelanjaController::class, 'update'])->name('cart.update');
+   Route::delete('/dashboard/keranjang/remove/{id}', [KeranjangBelanjaController::class, 'destroy'])->name('cart.remove');
+   
+   // Checkout Routes
+   Route::get('/checkout', function () {
+       return view('errors.missing-view', ['view' => 'dashboard.buyer.checkout.index']);
+   })->name('checkout.index');
+   
+   Route::post('/checkout/process', [TransaksiController::class, 'store'])->name('checkout.process');
+});
+
+Route::middleware(['auth'])->group(function () {
+    Route::get('/profile', [App\Http\Controllers\Api\WebViewController::class, 'profilePembeli'])->name('profile.show');
+    Route::put('/profile', [App\Http\Controllers\Api\WebViewController::class, 'updateProfilePembeli'])->name('profile.update');
+});
+
 
 Route::middleware(['auth', 'role:penitip'])->group(function () {
     // Dashboard
@@ -216,42 +249,22 @@ Route::middleware(['auth', 'role:penitip'])->group(function () {
     Route::get('/dashboard/transaksi/{id}', function ($id) {
         return view('errors.missing-view', ['view' => 'dashboard.consignor.transactions.show', 'id' => $id]);
     })->name('consignor.transactions.show');
+
 });
 
 // ========================================
-// WAREHOUSE STAFF ROUTES - FIXED SECTION
+// WAREHOUSE STAFF ROUTES
 // ========================================
 
 Route::middleware(['auth', 'role:gudang'])->group(function () {
-    // FIXED: Main warehouse dashboard route (this was missing)
-    Route::get('/dashboard/warehouse', [DashboardWarehouseController::class, 'index'])->name('dashboard.warehouse');
-    
-    // Warehouse Dashboard Routes with prefix
+    // Warehouse Dashboard Routes
     Route::prefix('dashboard/warehouse')->name('dashboard.warehouse.')->group(function () {
         Route::get('/', [DashboardWarehouseController::class, 'index'])->name('index');
         Route::get('/inventory', [DashboardWarehouseController::class, 'inventory'])->name('inventory');
-        Route::get('/shipments', [DashboardWarehouseController::class, 'shipments'])->name('shipments');
-        Route::get('/transactions', [DashboardWarehouseController::class, 'transactionsList'])->name('transactions');
-        
-        // Consignment management
         Route::get('/consignment/create', [DashboardWarehouseController::class, 'createConsignmentItem'])->name('consignment.create');
         Route::post('/consignment', [DashboardWarehouseController::class, 'storeConsignmentItem'])->name('consignment.store');
-        
-        // Item management
         Route::get('/items/{id}', [DashboardWarehouseController::class, 'showItem'])->name('item.show');
         Route::put('/items/{id}/update-status', [DashboardWarehouseController::class, 'updateItemStatus'])->name('item.update-status');
-        Route::put('/item/{id}/status', [DashboardWarehouseController::class, 'updateItemStatus'])->name('item.update-status-alt');
-        
-        // Shipment management
-        Route::get('/shipment/{id}', [DashboardWarehouseController::class, 'showShipment'])->name('shipment.show');
-        Route::put('/shipment/{id}/status', [DashboardWarehouseController::class, 'updateShipmentStatus'])->name('shipment.update-status');
-        
-        // Transaction management
-        Route::post('/transaction/{id}/shipping', [DashboardWarehouseController::class, 'createShippingSchedule'])->name('create-shipping');
-        Route::post('/transaction/{id}/pickup', [DashboardWarehouseController::class, 'createPickupSchedule'])->name('create-pickup');
-        Route::get('/transaction/{id}/sales-note', [DashboardWarehouseController::class, 'generateSalesNote'])->name('sales-note');
-        Route::post('/transaction/{id}/confirm', [DashboardWarehouseController::class, 'confirmItemReceived'])->name('confirm-received');
-        Route::post('/transaction/{id}/status', [DashboardWarehouseController::class, 'updateTransactionStatus'])->name('update-transaction-status');
     });
     
     // Legacy Routes (for backward compatibility)
@@ -402,6 +415,39 @@ Route::middleware(['auth', 'role:owner'])->group(function () {
 
 Route::middleware(['auth', 'role:organisasi'])->group(function () {
     // Dashboard
+    Route::get('/dashboard/organization', function () {
+        return view('dashboard.organization.index');
+    })->name('dashboard.organization');
+    
+    // Donation Request Routes
+    Route::get('/dashboard/request-donasi', function () {
+        return view('errors.missing-view', ['view' => 'dashboard.organization.donation_requests.index']);
+    })->name('organization.donation.requests');
+    
+    Route::get('/dashboard/request-donasi/create', function () {
+        return view('errors.missing-view', ['view' => 'dashboard.organization.donation_requests.create']);
+    })->name('organization.donation.requests.create');
+    
+    Route::post('/dashboard/request-donasi', [DonasiController::class, 'store'])->name('organization.donation.requests.store');
+    
+    Route::get('/dashboard/request-donasi/{id}', function ($id) {
+        return view('errors.missing-view', ['view' => 'dashboard.organization.donation_requests.show', 'id' => $id]);
+    })->name('organization.donation.requests.show');
+    
+    // Received Donations Routes
+    Route::get('/dashboard/donasi-diterima', function () {
+        return view('errors.missing-view', ['view' => 'dashboard.organization.received_donations.index']);
+    })->name('organization.received.donations');
+    
+    Route::get('/dashboard/donasi-diterima/{id}', function ($id) {
+        return view('errors.missing-view', ['view' => 'dashboard.organization.received_donations.show', 'id' => $id]);
+    })->name('organization.received.donations.show');
+});
+
+
+// Organization Routes
+Route::middleware(['auth', 'role:organisasi'])->group(function () {
+    // Dashboard
     Route::get('/dashboard/organization', [DashboardOrganisasiController::class, 'index'])->name('dashboard.organization');
     
     // Donations
@@ -422,29 +468,23 @@ Route::middleware(['auth', 'role:organisasi'])->group(function () {
     
     // Reports
     Route::get('/dashboard/organization/reports', [DashboardOrganisasiController::class, 'reports'])->name('dashboard.organization.reports');
-    
-    // Legacy routes for backward compatibility
-    Route::get('/dashboard/request-donasi', function () {
-        return redirect()->route('dashboard.organization.requests');
-    })->name('organization.donation.requests');
-    
-    Route::get('/dashboard/request-donasi/create', function () {
-        return redirect()->route('dashboard.organization.requests.create');
-    })->name('organization.donation.requests.create');
-    
-    Route::post('/dashboard/request-donasi', [DonasiController::class, 'store'])->name('organization.donation.requests.store');
-    
-    Route::get('/dashboard/request-donasi/{id}', function ($id) {
-        return redirect()->route('dashboard.organization.requests.show', $id);
-    })->name('organization.donation.requests.show');
-    
-    Route::get('/dashboard/donasi-diterima', function () {
-        return redirect()->route('dashboard.organization.donations');
-    })->name('organization.received.donations');
-    
-    Route::get('/dashboard/donasi-diterima/{id}', function ($id) {
-        return redirect()->route('dashboard.organization.donations.show', $id);
-    })->name('organization.received.donations.show');
+});
+
+
+// Kurir Routes
+Route::middleware(['auth', 'role:kurir'])->group(function () {
+   // Delivery Routes
+   Route::get('/dashboard/pengiriman-kurir', function () {
+       return view('errors.missing-view', ['view' => 'dashboard.courier.deliveries.index']);
+   })->name('courier.deliveries');
+   
+   Route::get('/dashboard/pengiriman-kurir/{id}', function ($id) {
+       return view('errors.missing-view', ['view' => 'dashboard.courier.deliveries.show', 'id' => $id]);
+   })->name('courier.deliveries.show');
+   
+   Route::put('/dashboard/pengiriman-kurir/{id}/update-status', function ($id) {
+       return view('errors.missing-view', ['view' => 'dashboard.courier.deliveries.update_status', 'id' => $id]);
+   })->name('courier.deliveries.update-status');
 });
 
 // ========================================
@@ -457,6 +497,7 @@ Route::middleware(['auth', 'role:hunter'])->prefix('dashboard/hunter')->name('da
     Route::get('/riwayat-penjemputan', [DashboardHunterController::class, 'riwayatPenjemputan'])->name('.riwayat-penjemputan');
     Route::get('/detail-penjemputan/{id}', [DashboardHunterController::class, 'detailPenjemputan'])->name('.detail-penjemputan');
     Route::put('/update-status-penjemputan/{id}', [DashboardHunterController::class, 'updateStatusPenjemputan'])->name('.update-status-penjemputan');
+
 });
 
 // Hunter Legacy Routes (for backward compatibility)
@@ -496,4 +537,44 @@ Route::middleware(['auth', 'role:kurir'])->group(function () {
 // Fallback route
 Route::fallback(function () {
     return view('errors.404');
+});
+
+// Warehouse Dashboard Routes
+Route::middleware(['auth', 'role:pegawai gudang'])->prefix('dashboard/warehouse')->name('dashboard.warehouse.')->group(function () {
+    Route::get('/', [DashboardWarehouseController::class, 'index'])->name('index');
+    Route::get('/inventory', [DashboardWarehouseController::class, 'inventory'])->name('inventory');
+    Route::get('/shipments', [DashboardWarehouseController::class, 'shipments'])->name('shipments');
+    Route::get('/transactions', [DashboardWarehouseController::class, 'transactionsList'])->name('transactions');
+    
+    // Shipment management
+    Route::get('/shipment/{id}', [DashboardWarehouseController::class, 'showShipment'])->name('shipment.show');
+    Route::put('/shipment/{id}/status', [DashboardWarehouseController::class, 'updateShipmentStatus'])->name('shipment.update-status');
+    
+    // Item management
+    Route::get('/item/{id}', [DashboardWarehouseController::class, 'showItem'])->name('item.show');
+    Route::put('/item/{id}/status', [DashboardWarehouseController::class, 'updateItemStatus'])->name('item.update-status');
+    
+    // Transaction management
+    Route::post('/transaction/{id}/shipping', [DashboardWarehouseController::class, 'createShippingSchedule'])->name('create-shipping');
+    Route::post('/transaction/{id}/pickup', [DashboardWarehouseController::class, 'createPickupSchedule'])->name('create-pickup');
+    Route::get('/transaction/{id}/sales-note', [DashboardWarehouseController::class, 'generateSalesNote'])->name('sales-note');
+    Route::post('/transaction/{id}/confirm', [DashboardWarehouseController::class, 'confirmItemReceived'])->name('confirm-received');
+    Route::post('/transaction/{id}/status', [DashboardWarehouseController::class, 'updateTransactionStatus'])->name('update-transaction-status');
+});
+// Buyer Profile Routes
+Route::middleware(['auth', 'role:pembeli'])->prefix('buyer/profile')->name('buyer.profile.')->group(function () {
+    Route::get('/', [App\Http\Controllers\Api\BuyerProfileController::class, 'index'])->name('index');
+    Route::put('/update', [App\Http\Controllers\Api\BuyerProfileController::class, 'updateProfile'])->name('update');
+    Route::get('/rewards', [App\Http\Controllers\Api\BuyerProfileController::class, 'showRewardPoints'])->name('rewards');
+    Route::get('/transaction-history', [App\Http\Controllers\Api\BuyerProfileController::class, 'showTransactionHistory'])->name('transaction-history');
+    Route::get('/transaction/{id}', [App\Http\Controllers\Api\BuyerProfileController::class, 'showTransactionDetail'])->name('transaction-detail');
+});
+
+// Buyer Profile Routes - Update the existing routes
+Route::middleware(['auth', 'role:pembeli'])->prefix('dashboard/buyer/profile')->name('buyer.profile.')->group(function () {
+    Route::get('/', [App\Http\Controllers\Api\BuyerProfileController::class, 'index'])->name('index');
+    Route::put('/update', [App\Http\Controllers\Api\BuyerProfileController::class, 'updateProfile'])->name('update');
+    Route::get('/rewards', [App\Http\Controllers\Api\BuyerProfileController::class, 'showRewardPoints'])->name('rewards');
+    Route::get('/transaction-history', [App\Http\Controllers\Api\BuyerProfileController::class, 'showTransactionHistory'])->name('transaction-history');
+    Route::get('/transaction/{id}', [App\Http\Controllers\Api\BuyerProfileController::class, 'showTransactionDetail'])->name('transaction-detail');
 });
