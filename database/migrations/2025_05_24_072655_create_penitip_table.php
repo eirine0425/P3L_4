@@ -1,4 +1,4 @@
-<?php
+<?php 
 
 use Illuminate\Database\Migrations\Migration;
 use Illuminate\Database\Schema\Blueprint;
@@ -15,8 +15,8 @@ return new class extends Migration {
             $table->string('no_ktp')->nullable();
             $table->foreignId('user_id')->nullable()->constrained('users')->onDelete('set null');
             $table->string('badge', 3)->default('no');
-            $table->date('periode')->nullable();
-            $table->double('saldo')->default(0);
+            $table->string('periode')->nullable();
+            $table->string('saldo')->default(0);
             $table->softDeletes();
         });
     }

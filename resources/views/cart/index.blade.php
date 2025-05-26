@@ -1,5 +1,7 @@
 @extends('layouts.app')
 
+@section('title', 'Keranjang Belanja')
+
 @section('content')
 <div class="container py-4">
     <div class="row">
@@ -33,20 +35,24 @@
         </div>
     @endif
     
-    @if($cartItems->count() > 0)
+    @if(isset($cartItems) && $cartItems->count() > 0)
         <div class="row">
             <div class="col-lg-8">
                 <div class="card shadow-sm mb-4">
                     <div class="card-header bg-white d-flex justify-content-between align-items-center">
                         <h5 class="mb-0">Daftar Produk ({{ $cartItems->count() }} item)</h5>
-                        <a href="{{ route('cart.clear') }}" class="btn btn-sm btn-outline-danger" 
-                           onclick="return confirm('Apakah Anda yakin ingin mengosongkan keranjang?')">
-                            <i class="fas fa-trash-alt me-1"></i> Kosongkan Keranjang
-                        </a>
+                        <form action="{{ route('cart.clear') }}" method="POST" class="d-inline">
+                            @csrf
+                            @method('DELETE')
+                            <button type="submit" class="btn btn-sm btn-outline-danger" 
+                                    onclick="return confirm('Apakah Anda yakin ingin mengosongkan keranjang?')">
+                                <i class="fas fa-trash-alt me-1"></i> Kosongkan Keranjang
+                            </button>
+                        </form>
                     </div>
                     <div class="card-body p-0">
                         @foreach($cartItems as $item)
-                            <div class="border-bottom p-3" id="cart-item-{{ $item->keranjang_belanja_id }}">
+                            <div class="border-bottom p-3" id="cart-item-{{ $item->id }}">
                                 <div class="row align-items-center">
                                     <div class="col-md-6">
                                         <div class="d-flex align-items-center">
@@ -65,7 +71,7 @@
                                                 </small>
                                                 <br>
                                                 <small class="text-success">
-                                                    Stok: {{ $item->barang->stok }} tersedia
+                                                    Status: {{ $item->barang->status }}
                                                 </small>
                                             </div>
                                         </div>
@@ -76,21 +82,13 @@
                                         </div>
                                     </div>
                                     <div class="col-md-2 text-center">
-                                        <div class="input-group input-group-sm" style="width: 120px; margin: 0 auto;">
-                                            <button class="btn btn-outline-secondary decrease-qty" type="button" 
-                                                    data-id="{{ $item->keranjang_belanja_id }}">-</button>
-                                            <input type="number" class="form-control text-center qty-input" 
-                                                   value="{{ $item->jumlah }}" 
-                                                   min="1" max="{{ $item->barang->stok }}" 
-                                                   data-id="{{ $item->keranjang_belanja_id }}">
-                                            <button class="btn btn-outline-secondary increase-qty" type="button" 
-                                                    data-id="{{ $item->keranjang_belanja_id }}" 
-                                                    data-max="{{ $item->barang->stok }}">+</button>
+                                        <div class="fw-bold text-muted">
+                                            Qty: 1
                                         </div>
                                     </div>
                                     <div class="col-md-2 text-center">
-                                        <div class="fw-bold text-primary item-total" id="total-{{ $item->keranjang_belanja_id }}">
-                                            Rp {{ number_format($item->barang->harga * $item->jumlah, 0, ',', '.') }}
+                                        <div class="fw-bold text-primary item-total" id="total-{{ $item->id }}">
+                                            Rp {{ number_format($item->barang->harga, 0, ',', '.') }}
                                         </div>
                                     </div>
                                     <div class="col-md-12 col-lg-auto text-center mt-2 mt-md-0">
@@ -99,12 +97,15 @@
                                                class="btn btn-sm btn-outline-info" title="Lihat Detail">
                                                 <i class="fas fa-eye"></i>
                                             </a>
-                                            <a href="{{ route('cart.remove', $item->keranjang_belanja_id) }}" 
-                                               class="btn btn-sm btn-outline-danger"
-                                               onclick="return confirm('Apakah Anda yakin ingin menghapus produk ini dari keranjang?')"
-                                               title="Hapus dari Keranjang">
-                                                <i class="fas fa-trash"></i>
-                                            </a>
+                                            <form action="{{ route('cart.remove', $item->id) }}" method="POST" class="d-inline">
+                                                @csrf
+                                                @method('DELETE')
+                                                <button type="submit" class="btn btn-sm btn-outline-danger"
+                                                        onclick="return confirm('Apakah Anda yakin ingin menghapus produk ini dari keranjang?')"
+                                                        title="Hapus dari Keranjang">
+                                                    <i class="fas fa-trash"></i>
+                                                </button>
+                                            </form>
                                         </div>
                                     </div>
                                 </div>
@@ -129,7 +130,7 @@
                     <div class="card-body">
                         <div class="d-flex justify-content-between mb-2">
                             <span>Subtotal ({{ $cartItems->count() }} produk)</span>
-                            <span class="fw-bold" id="cart-subtotal">Rp {{ number_format($subtotal, 0, ',', '.') }}</span>
+                            <span class="fw-bold" id="cart-subtotal">Rp {{ number_format($subtotal ?? 0, 0, ',', '.') }}</span>
                         </div>
                         
                         <div class="d-flex justify-content-between mb-2">
@@ -146,7 +147,7 @@
                         
                         <div class="d-flex justify-content-between mb-3">
                             <span class="fw-bold fs-6">Total</span>
-                            <span class="fw-bold fs-5 text-primary" id="cart-total">Rp {{ number_format($subtotal, 0, ',', '.') }}</span>
+                            <span class="fw-bold fs-5 text-primary" id="cart-total">Rp {{ number_format($subtotal ?? 0, 0, ',', '.') }}</span>
                         </div>
                         
                         <div class="mb-3">
@@ -158,7 +159,7 @@
                         </div>
                         
                         <div class="d-grid gap-2">
-                            <a href="{{ url('/checkout') }}" class="btn btn-success btn-lg">
+                            <a href="{{ route('checkout.index') }}" class="btn btn-success btn-lg">
                                 <i class="fas fa-shopping-bag me-2"></i>Checkout
                             </a>
                         </div>
@@ -186,39 +187,6 @@
                 </div>
             </div>
         </div>
-        
-        @if($recommendedProducts->count() > 0)
-            <div class="mt-5">
-                <h4 class="mb-4"><i class="fas fa-thumbs-up me-2"></i>Rekomendasi Untuk Anda</h4>
-                <div class="row row-cols-2 row-cols-md-4 g-4">
-                    @foreach($recommendedProducts as $product)
-                        <div class="col">
-                            <div class="card h-100 shadow-sm">
-                                <img src="{{ $product->foto ? asset('storage/' . $product->foto) : 'https://via.placeholder.com/300x200' }}" 
-                                     class="card-img-top" alt="{{ $product->nama_barang }}" 
-                                     style="height: 180px; object-fit: cover;">
-                                <div class="card-body">
-                                    <h6 class="card-title">{{ Str::limit($product->nama_barang, 50) }}</h6>
-                                    <p class="card-text text-success fw-bold mb-2">
-                                        Rp {{ number_format($product->harga, 0, ',', '.') }}
-                                    </p>
-                                    <div class="d-grid gap-2">
-                                        <form action="{{ route('cart.add') }}" method="POST">
-                                            @csrf
-                                            <input type="hidden" name="barang_id" value="{{ $product->barang_id }}">
-                                            <input type="hidden" name="jumlah" value="1">
-                                            <button type="submit" class="btn btn-sm btn-outline-primary w-100">
-                                                <i class="fas fa-cart-plus me-1"></i> Tambah ke Keranjang
-                                            </button>
-                                        </form>
-                                    </div>
-                                </div>
-                            </div>
-                        </div>
-                    @endforeach
-                </div>
-            </div>
-        @endif
     @else
         <div class="card shadow-sm">
             <div class="card-body text-center py-5">
@@ -228,6 +196,29 @@
                 <a href="{{ route('products.index') }}" class="btn btn-primary btn-lg">
                     <i class="fas fa-shopping-bag me-2"></i>Mulai Belanja
                 </a>
+                
+                @if(isset($recommendedProducts) && $recommendedProducts->count() > 0)
+                    <div class="mt-5">
+                        <h5 class="mb-3">Produk Rekomendasi</h5>
+                        <div class="row">
+                            @foreach($recommendedProducts as $product)
+                                <div class="col-md-3 mb-3">
+                                    <div class="card h-100">
+                                        <img src="{{ $product->foto ? asset('storage/' . $product->foto) : 'https://via.placeholder.com/200x150' }}" 
+                                             class="card-img-top" alt="{{ $product->nama_barang }}" style="height: 150px; object-fit: cover;">
+                                        <div class="card-body d-flex flex-column">
+                                            <h6 class="card-title">{{ Str::limit($product->nama_barang, 50) }}</h6>
+                                            <p class="card-text text-primary fw-bold">Rp {{ number_format($product->harga, 0, ',', '.') }}</p>
+                                            <a href="{{ route('products.show', $product->barang_id) }}" class="btn btn-outline-primary btn-sm mt-auto">
+                                                Lihat Detail
+                                            </a>
+                                        </div>
+                                    </div>
+                                </div>
+                            @endforeach
+                        </div>
+                    </div>
+                @endif
             </div>
         </div>
     @endif
@@ -238,82 +229,7 @@
 <script src="https://code.jquery.com/jquery-3.6.0.min.js"></script>
 <script>
     $(document).ready(function() {
-        // Increase quantity
-        $('.increase-qty').click(function() {
-            const id = $(this).data('id');
-            const maxQty = parseInt($(this).data('max'));
-            let currentQty = parseInt($(`input[data-id="${id}"]`).val());
-            
-            if (currentQty < maxQty) {
-                currentQty++;
-                $(`input[data-id="${id}"]`).val(currentQty);
-                updateCartItem(id, currentQty);
-            } else {
-                alert('Jumlah melebihi stok yang tersedia!');
-            }
-        });
-        
-        // Decrease quantity
-        $('.decrease-qty').click(function() {
-            const id = $(this).data('id');
-            let currentQty = parseInt($(`input[data-id="${id}"]`).val());
-            
-            if (currentQty > 1) {
-                currentQty--;
-                $(`input[data-id="${id}"]`).val(currentQty);
-                updateCartItem(id, currentQty);
-            }
-        });
-        
-        // Manual input quantity
-        $('.qty-input').change(function() {
-            const id = $(this).data('id');
-            let qty = parseInt($(this).val());
-            const maxQty = parseInt($(this).attr('max'));
-            
-            if (isNaN(qty) || qty < 1) {
-                qty = 1;
-                $(this).val(1);
-            } else if (qty > maxQty) {
-                qty = maxQty;
-                $(this).val(maxQty);
-                alert('Jumlah melebihi stok yang tersedia!');
-            }
-            
-            updateCartItem(id, qty);
-        });
-        
-        // Function to update cart item via AJAX
-        function updateCartItem(cartId, quantity) {
-            $.ajax({
-                url: "{{ route('cart.update') }}",
-                type: "POST",
-                data: {
-                    _token: "{{ csrf_token() }}",
-                    cart_id: cartId,
-                    jumlah: quantity
-                },
-                success: function(response) {
-                    if (response.success) {
-                        // Update item total
-                        $(`#total-${cartId}`).text(response.itemTotal);
-                        
-                        // Update cart subtotal and total
-                        $('#cart-subtotal').text(response.subtotal);
-                        $('#cart-total').text(response.subtotal);
-                        
-                        // Show success message
-                        showMessage('success', 'Jumlah produk berhasil diperbarui');
-                    } else {
-                        showMessage('error', response.message);
-                    }
-                },
-                error: function() {
-                    showMessage('error', 'Terjadi kesalahan. Silakan coba lagi.');
-                }
-            });
-        }
-        
+        // Function to show message
         function showMessage(type, message) {
             const alertClass = type === 'success' ? 'alert-success' : 'alert-danger';
             const alertHtml = `

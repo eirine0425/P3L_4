@@ -1,153 +1,195 @@
 @extends('layouts.dashboard')
 
-@section('title', 'Admin Dashboard')
+@section('title', 'Dashboard Admin')
 
 @section('content')
 <div class="container-fluid">
+    <!-- Header -->
     <div class="row mb-4">
         <div class="col-12">
-            <h2>Dashboard Admin</h2>
-            <p class="text-muted">Selamat datang di panel kontrol Admin ReuseMart.</p>
-        </div>
-    </div>
-    
-    <div class="row">
-        <div class="col-md-3">
-            <div class="stats-card">
-                <i class="fas fa-users"></i>
-                <h3>{{ $totalUsers }}</h3>
-                <p>Total Pengguna</p>
-            </div>
-        </div>
-        <div class="col-md-3">
-            <div class="stats-card">
-                <i class="fas fa-user-tag"></i>
-                <h3>{{ $totalRoles }}</h3>
-                <p>Total Peran</p>
-            </div>
-        </div>
-        <div class="col-md-3">
-            <div class="stats-card">
-                <i class="fas fa-user-tie"></i>
-                <h3>{{ $totalEmployees }}</h3>
-                <p>Total Pegawai</p>
-            </div>
-        </div>
-        <div class="col-md-3">
-            <div class="stats-card">
-                <i class="fas fa-building"></i>
-                <h3>{{ $totalOrganizations }}</h3>
-                <p>Total Organisasi</p>
-            </div>
-        </div>
-    </div>
-    
-    <div class="row mt-4">
-        <div class="col-12">
-            <div class="card">
-                <div class="card-header">
-                    <h5 class="card-title">Pengguna Terbaru</h5>
+            <div class="d-flex justify-content-between align-items-center">
+                <h1 class="h3 mb-0">Dashboard Admin</h1>
+                <div class="btn-group">
+                    <a href="{{ route('dashboard.admin.penitips.create') }}" class="btn btn-primary">
+                        <i class="fas fa-user-plus"></i> Daftarkan Penitip
+                    </a>
                 </div>
+            </div>
+        </div>
+    </div>
+
+    <!-- Statistics Cards -->
+    <div class="row mb-4">
+        <div class="col-lg-3 col-md-6">
+            <div class="card bg-primary text-white">
                 <div class="card-body">
-                    <div class="table-responsive">
-                        <table class="table table-striped">
-                            <thead>
-                                <tr>
-                                    <th>Nama</th>
-                                    <th>Email</th>
-                                    <th>Peran</th>
-                                    <th>Tanggal Daftar</th>
-                                    <th>Aksi</th>
-                                </tr>
-                            </thead>
-                            <tbody>
-                                @foreach($recentUsers as $user)
-                                    <tr>
-                                        <td>{{ $user->name }}</td>
-                                        <td>{{ $user->email }}</td>
-                                        <td><span class="badge bg-info">{{ $user->role->nama_role }}</span></td>
-                                        <td>{{ $user->created_at->format('d M Y H:i') }}</td>
-                                        <td>
-                                            <a href="#" class="btn btn-sm btn-primary"><i class="fas fa-eye"></i></a>
-                                            <a href="#" class="btn btn-sm btn-warning"><i class="fas fa-edit"></i></a>
-                                        </td>
-                                    </tr>
-                                @endforeach
-                            </tbody>
-                        </table>
+                    <div class="d-flex justify-content-between">
+                        <div>
+                            <h4 class="mb-0">{{ $totalUsers ?? 0 }}</h4>
+                            <p class="mb-0">Total Users</p>
+                        </div>
+                        <div class="align-self-center">
+                            <i class="fas fa-users fa-2x"></i>
+                        </div>
                     </div>
                 </div>
                 <div class="card-footer">
-                    <a href="{{ route('dashboard.admin.users') }}" class="btn btn-primary">Lihat Semua Pengguna</a>
+                    <a href="{{ route('dashboard.admin.users') }}" class="text-white">
+                        <small>Lihat Detail <i class="fas fa-arrow-right"></i></small>
+                    </a>
+                </div>
+            </div>
+        </div>
+
+        <div class="col-lg-3 col-md-6">
+            <div class="card bg-success text-white">
+                <div class="card-body">
+                    <div class="d-flex justify-content-between">
+                        <div>
+                            <h4 class="mb-0">{{ $totalPenitips ?? 0 }}</h4>
+                            <p class="mb-0">Total Penitip</p>
+                        </div>
+                        <div class="align-self-center">
+                            <i class="fas fa-handshake fa-2x"></i>
+                        </div>
+                    </div>
+                </div>
+                <div class="card-footer">
+                    <a href="{{ route('dashboard.admin.penitips') }}" class="text-white">
+                        <small>Lihat Detail <i class="fas fa-arrow-right"></i></small>
+                    </a>
+                </div>
+            </div>
+        </div>
+
+        <div class="col-lg-3 col-md-6">
+            <div class="card bg-warning text-white">
+                <div class="card-body">
+                    <div class="d-flex justify-content-between">
+                        <div>
+                            <h4 class="mb-0">{{ $totalEmployees ?? 0 }}</h4>
+                            <p class="mb-0">Total Pegawai</p>
+                        </div>
+                        <div class="align-self-center">
+                            <i class="fas fa-user-tie fa-2x"></i>
+                        </div>
+                    </div>
+                </div>
+                <div class="card-footer">
+                    <a href="{{ route('dashboard.admin.employees') }}" class="text-white">
+                        <small>Lihat Detail <i class="fas fa-arrow-right"></i></small>
+                    </a>
+                </div>
+            </div>
+        </div>
+
+        <div class="col-lg-3 col-md-6">
+            <div class="card bg-info text-white">
+                <div class="card-body">
+                    <div class="d-flex justify-content-between">
+                        <div>
+                            <h4 class="mb-0">{{ $totalOrganizations ?? 0 }}</h4>
+                            <p class="mb-0">Total Organisasi</p>
+                        </div>
+                        <div class="align-self-center">
+                            <i class="fas fa-building fa-2x"></i>
+                        </div>
+                    </div>
+                </div>
+                <div class="card-footer">
+                    <a href="{{ route('dashboard.admin.organizations') }}" class="text-white">
+                        <small>Lihat Detail <i class="fas fa-arrow-right"></i></small>
+                    </a>
                 </div>
             </div>
         </div>
     </div>
-    
-    <div class="row mt-4">
-        <div class="col-md-6">
+
+    <!-- Quick Actions -->
+    <div class="row mb-4">
+        <div class="col-12">
             <div class="card">
                 <div class="card-header">
-                    <h5 class="card-title">Aktivitas Terbaru</h5>
+                    <h5 class="card-title mb-0">Aksi Cepat</h5>
                 </div>
                 <div class="card-body">
-                    <ul class="list-group">
-                        <li class="list-group-item">
-                            <div class="d-flex justify-content-between">
-                                <div>
-                                    <i class="fas fa-user-plus text-success me-2"></i>
-                                    <span>Pengguna baru terdaftar</span>
-                                </div>
-                                <small class="text-muted">5 menit yang lalu</small>
-                            </div>
-                        </li>
-                        <li class="list-group-item">
-                            <div class="d-flex justify-content-between">
-                                <div>
-                                    <i class="fas fa-edit text-primary me-2"></i>
-                                    <span>Peran diperbarui</span>
-                                </div>
-                                <small class="text-muted">1 jam yang lalu</small>
-                            </div>
-                        </li>
-                        <li class="list-group-item">
-                            <div class="d-flex justify-content-between">
-                                <div>
-                                    <i class="fas fa-trash text-danger me-2"></i>
-                                    <span>Pengguna dihapus</span>
-                                </div>
-                                <small class="text-muted">3 jam yang lalu</small>
-                            </div>
-                        </li>
-                        <li class="list-group-item">
-                            <div class="d-flex justify-content-between">
-                                <div>
-                                    <i class="fas fa-user-shield text-warning me-2"></i>
-                                    <span>Hak akses diubah</span>
-                                </div>
-                                <small class="text-muted">5 jam yang lalu</small>
-                            </div>
-                        </li>
-                        <li class="list-group-item">
-                            <div class="d-flex justify-content-between">
-                                <div>
-                                    <i class="fas fa-user-plus text-success me-2"></i>
-                                    <span>Pegawai baru ditambahkan</span>
-                                </div>
-                                <small class="text-muted">1 hari yang lalu</small>
-                            </div>
-                        </li>
-                    </ul>
+                    <div class="row">
+                        <div class="col-md-3 mb-3">
+                            <a href="{{ route('dashboard.admin.penitips.create') }}" class="btn btn-outline-primary btn-block">
+                                <i class="fas fa-user-plus fa-2x d-block mb-2"></i>
+                                Daftarkan Penitip Baru
+                            </a>
+                        </div>
+                        <div class="col-md-3 mb-3">
+                            <a href="{{ route('dashboard.admin.penitips') }}" class="btn btn-outline-success btn-block">
+                                <i class="fas fa-list fa-2x d-block mb-2"></i>
+                                Kelola Penitip
+                            </a>
+                        </div>
+                        <div class="col-md-3 mb-3">
+                            <a href="{{ route('dashboard.admin.users') }}" class="btn btn-outline-info btn-block">
+                                <i class="fas fa-users fa-2x d-block mb-2"></i>
+                                Kelola Users
+                            </a>
+                        </div>
+                        <div class="col-md-3 mb-3">
+                            <a href="{{ route('dashboard.admin.roles') }}" class="btn btn-outline-warning btn-block">
+                                <i class="fas fa-user-tag fa-2x d-block mb-2"></i>
+                                Kelola Roles
+                            </a>
+                        </div>
+                    </div>
                 </div>
             </div>
         </div>
-        <div class="col-md-6">
+    </div>
+
+    <!-- Recent Users -->
+    <div class="row">
+        <div class="col-12">
             <div class="card">
                 <div class="card-header">
-                    <h5 class="card-title">Distribusi Peran Pengguna</h5>
+                    <h5 class="card-title mb-0">Users Terbaru</h5>
                 </div>
                 <div class="card-body">
-                    <canvas id="userRolesChart"></canvas>
+                    @if(isset($recentUsers) && $recentUsers->count() > 0)
+                        <div class="table-responsive">
+                            <table class="table table-striped">
+                                <thead>
+                                    <tr>
+                                        <th>Nama</th>
+                                        <th>Email</th>
+                                        <th>Role</th>
+                                        <th>Tanggal Daftar</th>
+                                        <th>Status</th>
+                                    </tr>
+                                </thead>
+                                <tbody>
+                                    @foreach($recentUsers as $user)
+                                        <tr>
+                                            <td>{{ $user->name }}</td>
+                                            <td>{{ $user->email }}</td>
+                                            <td>
+                                                <span class="badge badge-primary">
+                                                    {{ $user->role->nama_role ?? 'No Role' }}
+                                                </span>
+                                            </td>
+                                            <td>{{ $user->created_at->format('d/m/Y H:i') }}</td>
+                                            <td>
+                                                @if($user->email_verified_at)
+                                                    <span class="badge badge-success">Verified</span>
+                                                @else
+                                                    <span class="badge badge-warning">Pending</span>
+                                                @endif
+                                            </td>
+                                        </tr>
+                                    @endforeach
+                                </tbody>
+                            </table>
+                        </div>
+                    @else
+                        <p class="text-muted">Belum ada user yang terdaftar.</p>
+                    @endif
                 </div>
             </div>
         </div>
@@ -155,37 +197,31 @@
 </div>
 @endsection
 
-@push('scripts')
-<script>
-    // Data untuk grafik distribusi peran pengguna
-    var userRolesCtx = document.getElementById('userRolesChart').getContext('2d');
-    var userRolesChart = new Chart(userRolesCtx, {
-        type: 'pie',
-        data: {
-            labels: ['Admin', 'Pegawai Gudang', 'CS', 'Penitip', 'Pembeli', 'Organisasi', 'Owner'],
-            datasets: [{
-                data: [
-                    {{ \App\Models\User::whereHas('role', function($q) { $q->where('nama_role', 'Admin'); })->count() }},
-                    {{ \App\Models\User::whereHas('role', function($q) { $q->where('nama_role', 'Pegawai Gudang'); })->count() }},
-                    {{ \App\Models\User::whereHas('role', function($q) { $q->where('nama_role', 'CS'); })->count() }},
-                    {{ \App\Models\User::whereHas('role', function($q) { $q->where('nama_role', 'Penitip'); })->count() }},
-                    {{ \App\Models\User::whereHas('role', function($q) { $q->where('nama_role', 'Pembeli'); })->count() }},
-                    {{ \App\Models\User::whereHas('role', function($q) { $q->where('nama_role', 'Organisasi'); })->count() }},
-                    {{ \App\Models\User::whereHas('role', function($q) { $q->where('nama_role', 'Owner'); })->count() }}
-                ],
-                backgroundColor: [
-                    '#4CAF50', '#2196F3', '#FFC107', '#9C27B0', '#F44336', '#FF9800', '#795548'
-                ]
-            }]
-        },
-        options: {
-            responsive: true,
-            plugins: {
-                legend: {
-                    position: 'bottom'
-                }
-            }
-        }
-    });
-</script>
+@push('styles')
+<style>
+.btn-block {
+    display: block;
+    width: 100%;
+    text-align: center;
+    padding: 1rem;
+    height: auto;
+}
+
+.card {
+    box-shadow: 0 0.125rem 0.25rem rgba(0, 0, 0, 0.075);
+    border: 1px solid rgba(0, 0, 0, 0.125);
+}
+
+.card-footer {
+    background-color: rgba(0, 0, 0, 0.03);
+}
+
+.card-footer a {
+    text-decoration: none;
+}
+
+.card-footer a:hover {
+    text-decoration: underline;
+}
+</style>
 @endpush

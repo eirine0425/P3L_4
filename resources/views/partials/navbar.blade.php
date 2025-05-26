@@ -1,5 +1,6 @@
 <nav class="navbar navbar-expand-lg navbar-light bg-white shadow-sm">
     <div class="container">
+
         <a class="navbar-brand d-flex align-items-center" href="{{ url('/') }}">
     <img src="{{ asset('assets/logoreuse.png') }}" alt="" height="40" class="me-2">
     <span style="color: #1B5E20; font-weight: bold;">ReuseMart</span>
@@ -7,9 +8,17 @@
 
 
         <button class="navbar-toggler" type="button" data-bs-toggle="collapse" data-bs-target="#navbarSupportedContent" aria-controls="navbarSupportedContent" aria-expanded="false" aria-label="Toggle navigation">
+
+        <a class="navbar-brand" href="{{ url('/') }}">
+            <i class="fas fa-recycle me-2"></i>ReuseMart
+        </a>
+        
+        <button class="navbar-toggler" type="button" data-bs-toggle="collapse" data-bs-target="#navbarNav" aria-controls="navbarNav" aria-expanded="false" aria-label="Toggle navigation">
+
             <span class="navbar-toggler-icon"></span>
         </button>
-        <div class="collapse navbar-collapse" id="navbarSupportedContent">
+        
+        <div class="collapse navbar-collapse" id="navbarNav">
             <ul class="navbar-nav me-auto mb-2 mb-lg-0">
                 <li class="nav-item">
                     <a class="nav-link {{ request()->is('/') ? 'active' : '' }}" href="{{ url('/') }}">Beranda</a>
@@ -19,6 +28,23 @@
                 </li>
                 <li class="nav-item">
                     <a class="nav-link {{ request()->is('warranty/check*') ? 'active' : '' }}" href="{{ url('/warranty/check') }}">Cek Garansi</a>
+                </li>
+                <li class="nav-item">
+                    <a class="nav-link position-relative {{ request()->is('dashboard/keranjang*') ? 'active' : '' }}" href="{{ url('/dashboard/keranjang') }}">
+                        <i class="fas fa-shopping-cart me-1"></i>Keranjang
+                        @auth
+                            @if(auth()->user()->role->nama_role == 'Pembeli')
+                                @php
+                                    $cartCount = \App\Models\KeranjangBelanja::where('user_id', auth()->id())->sum('jumlah') ?? 0;
+                                @endphp
+                                @if($cartCount > 0)
+                                    <span class="badge bg-danger rounded-pill position-absolute top-0 start-100 translate-middle cart-badge">
+                                        {{ $cartCount > 99 ? '99+' : $cartCount }}
+                                    </span>
+                                @endif
+                            @endif
+                        @endauth
+                    </a>
                 </li>
             </ul>
             
@@ -66,7 +92,10 @@
                 <a href="{{ url('/dashboard/keranjang') }}" class="btn btn-outline-success ms-2 position-relative">
                     <i class="fas fa-shopping-cart"></i>
                     <span class="badge bg-danger rounded-pill position-absolute top-0 start-100 translate-middle">
-                        {{ session('cart_count', 0) }}
+                        @php
+                            $cartCount = \App\Models\KeranjangBelanja::where('user_id', auth()->id())->sum('jumlah') ?? 0;
+                        @endphp
+                        {{ $cartCount }}
                     </span>
                 </a>
                 @endif
@@ -75,3 +104,40 @@
         </div>
     </div>
 </nav>
+
+<style>
+.cart-badge {
+    font-size: 0.7rem !important;
+    padding: 0.25em 0.4em !important;
+    min-width: 1.2em;
+    height: 1.2em;
+    display: flex;
+    align-items: center;
+    justify-content: center;
+}
+
+.nav-link.position-relative {
+    overflow: visible;
+}
+
+.nav-link:hover .cart-badge {
+    transform: translate(50%, -50%) scale(1.1);
+    transition: transform 0.2s ease;
+}
+
+@media (max-width: 991.98px) {
+    .cart-badge {
+        position: relative !important;
+        top: auto !important;
+        left: auto !important;
+        transform: none !important;
+        margin-left: 0.5rem;
+        margin-top: 0;
+        display: inline-block;
+    }
+    
+    .nav-link:hover .cart-badge {
+        transform: none;
+    }
+}
+</style>
