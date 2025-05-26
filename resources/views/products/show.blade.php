@@ -24,13 +24,13 @@
                 </div>
                 <div class="carousel-inner rounded-3">
                     <div class="carousel-item active">
-                        <img src="https://via.placeholder.com/600x400" class="d-block w-100" alt="Product Image 1">
+                        <img src="{{ asset('assets/laptop.jpg') }}" class="d-block w-100" alt="Product Image 1">
                     </div>
                     <div class="carousel-item">
-                        <img src="https://via.placeholder.com/600x400" class="d-block w-100" alt="Product Image 2">
+                        <img src="{{ asset('assets/laptop.jpg') }}" class="d-block w-100" alt="Product Image 2">
                     </div>
                     <div class="carousel-item">
-                        <img src="https://via.placeholder.com/600x400" class="d-block w-100" alt="Product Image 3">
+                        <img src="{{ asset('assets/laptop.jpg') }}" class="d-block w-100" alt="Product Image 3">
                     </div>
                 </div>
                 <button class="carousel-control-prev" type="button" data-bs-target="#productCarousel" data-bs-slide="prev">
@@ -45,13 +45,13 @@
             
             <div class="row mt-3">
                 <div class="col-4">
-                    <img src="https://via.placeholder.com/600x400" class="img-thumbnail" alt="Thumbnail 1" data-bs-target="#productCarousel" data-bs-slide-to="0">
+                    <img src="{{ asset('assets/laptop.jpg') }}" class="img-thumbnail" alt="Thumbnail 1" data-bs-target="#productCarousel" data-bs-slide-to="0">
                 </div>
                 <div class="col-4">
-                    <img src="https://via.placeholder.com/600x400" class="img-thumbnail" alt="Thumbnail 2" data-bs-target="#productCarousel" data-bs-slide-to="1">
+                    <img src="{{ asset('assets/laptop.jpg') }}" class="img-thumbnail" alt="Thumbnail 2" data-bs-target="#productCarousel" data-bs-slide-to="1">
                 </div>
                 <div class="col-4">
-                    <img src="https://via.placeholder.com/600x400" class="img-thumbnail" alt="Thumbnail 3" data-bs-target="#productCarousel" data-bs-slide-to="2">
+                    <img src="{{ asset('assets/laptop.jpg') }}" class="img-thumbnail" alt="Thumbnail 3" data-bs-target="#productCarousel" data-bs-slide-to="2">
                 </div>
             </div>
         </div>

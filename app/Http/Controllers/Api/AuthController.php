@@ -98,7 +98,7 @@ class AuthController extends Controller
         if ($request->role_id == 7 || $request->role == 'organisasi') {
             $rules['address'] = 'required|string';
             $rules['description'] = 'required|string';
-            $rules['document'] = 'required|file|mimes:pdf|max:2048';
+
         }
 
         $request->validate($rules);

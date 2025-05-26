@@ -4,43 +4,79 @@
 
 @section('content')
 <!-- Hero Section -->
-<div class="row mb-5">
-    <div class="col-12">
-        <div class="card bg-dark text-white border-0 rounded-3 overflow-hidden">
-            <img src="https://via.placeholder.com/1200x400" class="card-img opacity-50" alt="ReuseMart Hero">
-            <div class="card-img-overlay d-flex flex-column justify-content-center text-center">
-                <h1 class="card-title display-4 fw-bold">Selamat Datang di ReuseMart</h1>
-                <p class="card-text fs-5">Tempat jual beli barang bekas berkualitas. Bersama kita kurangi sampah dan berikan barang kesayangan Anda kesempatan kedua.</p>
-                <div class="mt-4">
-                    <a href="{{ url('/products') }}" class="btn btn-primary btn-lg me-2">Lihat Produk</a>
-                    <a href="{{ url('/register') }}" class="btn btn-outline-light btn-lg">Daftar Sekarang</a>
-                </div>
-            </div>
+<div class="card border-0 rounded-3 overflow-hidden" style="height: 450px;">
+  <div id="reuseCarousel" class="carousel slide h-100" data-bs-ride="carousel">
+    <div class="carousel-inner h-100">
+
+      <!-- Slide 1 -->
+      <div class="carousel-item active h-100">
+        <div class="d-flex flex-column justify-content-center align-items-center h-100 text-white text-center p-5" style="background-color: #198754;">
+          <h1 class="fw-bold">Selamat Datang di ReuseMart</h1>
+          <p>Kami percaya bahwa setiap barang punya cerita dan kesempatan kedua...</p>
         </div>
+      </div>
+
+      <!-- Slide 2 -->
+      <div class="carousel-item h-100">
+        <div class="d-flex flex-column justify-content-center align-items-center h-100 text-white text-center p-5" style="background-color: #28a745;">
+          <h1 class="fw-bold">Temukan Barang Bekas Berkualitas</h1>
+          <p>Harga terjangkau, kualitas terjamin, dan ramah lingkungan.</p>
+        </div>
+      </div>
+
+      <!-- Slide 3 -->
+      <div class="carousel-item h-100">
+        <div class="d-flex flex-column justify-content-center align-items-center h-100 text-white text-center p-5" style="background-color: #2ecc71;">
+          <h1 class="fw-bold">Ayo Bergabung Menjadi Donatur</h1>
+          <p>Sumbangkan barang bekas yang masih layak pakai untuk bantu sesama.</p>
+        </div>
+      </div>
+
     </div>
+
+    <!-- Controls -->
+    <button class="carousel-control-prev" type="button" data-bs-target="#reuseCarousel" data-bs-slide="prev">
+      <span class="carousel-control-prev-icon" aria-hidden="true"></span>
+    </button>
+    <button class="carousel-control-next" type="button" data-bs-target="#reuseCarousel" data-bs-slide="next">
+      <span class="carousel-control-next-icon" aria-hidden="true"></span>
+    </button>
+  </div>
 </div>
+
+
+
 
 <!-- Featured Products -->
 <div class="row mb-4">
     <div class="col-12">
         <div class="d-flex justify-content-between align-items-center mb-4">
             <h2><i class="fas fa-star me-2"></i>Produk Unggulan</h2>
-            <a href="{{ url('/products') }}" class="btn btn-outline-primary">Lihat Semua <i class="fas fa-arrow-right ms-1"></i></a>
+            <a href="{{ url('/products') }}" class="btn btn-outline-success">Lihat Semua <i class="fas fa-arrow-right ms-1"></i></a>
         </div>
         
         <div class="row row-cols-1 row-cols-md-2 row-cols-lg-4 g-4">
+            @php
+$images = [
+    asset('assets/laptop.jpg'),
+    asset('assets/laptop.jpg'),
+    asset('assets/laptop.jpg'),
+    asset('assets/laptop.jpg')
+];
+@endphp
+
             @for ($i = 1; $i <= 4; $i++)
             <div class="col">
                 <div class="card h-100 product-card">
                     <div class="position-relative">
-                        <img src="https://via.placeholder.com/300x200" class="card-img-top" alt="Product {{ $i }}">
+                        <img src="{{ asset('assets/laptop.jpg') }}" class="card-img-top" alt="Product {{ $i }}">
                         <span class="badge bg-success position-absolute top-0 end-0 m-2">Tersedia</span>
                     </div>
                     <div class="card-body">
                         <h5 class="card-title">Produk Unggulan {{ $i }}</h5>
                         <p class="card-text">Deskripsi singkat produk unggulan {{ $i }} yang menjelaskan kondisi dan kualitas barang.</p>
                         <div class="d-flex justify-content-between align-items-center">
-                            <span class="fw-bold text-primary">Rp {{ number_format(rand(100000, 1000000), 0, ',', '.') }}</span>
+                            <span class="fw-bold text-dark">Rp {{ number_format(rand(100000, 1000000), 0, ',', '.') }}</span>
                             <div>
                                 <i class="fas fa-star text-warning"></i>
                                 <i class="fas fa-star text-warning"></i>
@@ -53,7 +89,8 @@
                     </div>
                     <div class="card-footer bg-white border-top-0">
                         <div class="d-grid gap-2">
-                            <a href="{{ url('/products/' . $i) }}" class="btn btn-outline-primary">Detail</a>
+                           <a href="{{ url('/products/' . $i) }}" class="btn btn-outline-success">Detail</a>
+
                         </div>
                     </div>
                 </div>
@@ -76,7 +113,11 @@
                 ['name' => 'Fashion', 'icon' => 'fas fa-tshirt'],
                 ['name' => 'Buku', 'icon' => 'fas fa-book'],
                 ['name' => 'Olahraga', 'icon' => 'fas fa-futbol'],
-                ['name' => 'Lainnya', 'icon' => 'fas fa-ellipsis-h']
+                ['name' => 'Hobi', 'icon' => 'fas fa-paint-brush '],
+                ['name' => 'Baby', 'icon' => 'fas fa-baby'],
+                ['name' => 'Otomotif', 'icon' => 'fas fa-car'],
+                ['name' => 'Kesehatan', 'icon' => 'fas fa-heartbeat'],
+                ['name' => 'Peralatan Taman', 'icon' => 'fas fa-tree']
             ];
             @endphp
             
@@ -85,8 +126,9 @@
                 <a href="{{ url('/products/category/' . strtolower($category['name'])) }}" class="text-decoration-none">
                     <div class="card h-100 text-center product-card">
                         <div class="card-body">
-                            <i class="{{ $category['icon'] }} fa-3x mb-3 text-primary"></i>
-                            <h5 class="card-title">{{ $category['name'] }}</h5>
+                            <i class="{{ $category['icon'] }} fa-3x mb-3" style="color: #006400;"></i> {{-- Dark green --}}
+
+                            <h5 style="color: #006400;">{{ $category['name'] }}</h5>
                         </div>
                     </div>
                 </a>
@@ -99,7 +141,7 @@
 <!-- Top Sellers -->
 <div class="row mb-4">
     <div class="col-12">
-        <h2 class="mb-4"><i class="fas fa-crown me-2 text-warning"></i>Top Seller Bulan Ini</h2>
+        <h2 class="mb-4"><i class="fas fa-crown me-2 text-warning"></i>Top Seller 3 Bulan terakhir</h2>
         
         <div class="row row-cols-1 row-cols-md-2 row-cols-lg-3 g-4">
             @for ($i = 1; $i <= 3; $i++)
@@ -107,7 +149,6 @@
                 <div class="card h-100 product-card">
                     <div class="card-body">
                         <div class="d-flex align-items-center mb-3">
-                            <img src="https://via.placeholder.com/60" class="rounded-circle me-3" alt="Seller {{ $i }}">
                             <div>
                                 <h5 class="mb-1">Penitip {{ $i }} <span class="badge-top-seller"><i class="fas fa-crown me-1"></i>Top Seller</span></h5>
                                 <div>
@@ -125,6 +166,7 @@
                             <span class="badge bg-light text-dark me-1 mb-1">Elektronik</span>
                             <span class="badge bg-light text-dark me-1 mb-1">Fashion</span>
                             <span class="badge bg-light text-dark me-1 mb-1">Furnitur</span>
+                            <span class="badge bg-light text-dark me-1 mb-1">Otomotif</span>
                         </div>
                     </div>
                 </div>
@@ -146,7 +188,7 @@
                     'name' => 'Budi Santoso',
                     'role' => 'Penitip',
                     'text' => 'Saya sangat puas dengan layanan ReuseMart. Barang-barang saya yang tidak terpakai bisa menghasilkan uang tambahan. Prosesnya mudah dan transparan.',
-                    'rating' => 5
+                    'rating' => 4
                 ],
                 [
                     'name' => 'Siti Rahayu',
@@ -180,7 +222,7 @@
                     </div>
                     <div class="card-footer bg-white">
                         <div class="d-flex align-items-center">
-                            <img src="https://via.placeholder.com/50" class="rounded-circle me-3" alt="{{ $testimonial['name'] }}">
+                           
                             <div>
                                 <h5 class="mb-0">{{ $testimonial['name'] }}</h5>
                                 <small class="text-muted">{{ $testimonial['role'] }}</small>

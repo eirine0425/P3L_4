@@ -1,8 +1,11 @@
 <nav class="navbar navbar-expand-lg navbar-light bg-white shadow-sm">
     <div class="container">
-        <a class="navbar-brand" href="{{ url('/') }}">
-            <i class="fas fa-recycle me-2"></i>ReuseMart
-        </a>
+        <a class="navbar-brand d-flex align-items-center" href="{{ url('/') }}">
+    <img src="{{ asset('assets/logoreuse.png') }}" alt="" height="40" class="me-2">
+    <span style="color: #1B5E20; font-weight: bold;">ReuseMart</span>
+</a>
+
+
         <button class="navbar-toggler" type="button" data-bs-toggle="collapse" data-bs-target="#navbarSupportedContent" aria-controls="navbarSupportedContent" aria-expanded="false" aria-label="Toggle navigation">
             <span class="navbar-toggler-icon"></span>
         </button>
@@ -36,7 +39,6 @@
                     
                     <ul class="dropdown-menu dropdown-menu-end" aria-labelledby="dropdownMenuLink">
                         <li><a class="dropdown-item" href="{{ url('/dashboard') }}"><i class="fas fa-tachometer-alt me-2"></i>Dashboard</a></li>
-                        <li><a class="dropdown-item" href="{{ url('/dashboard/profil') }}"><i class="fas fa-user me-2"></i>Profil</a></li>
                         
                         @if(auth()->user()->role->nama_role == 'Pembeli')
                         <li><a class="dropdown-item" href="{{ url('/dashboard/keranjang') }}"><i class="fas fa-shopping-cart me-2"></i>Keranjang</a></li>

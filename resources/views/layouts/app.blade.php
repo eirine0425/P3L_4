@@ -123,7 +123,7 @@
             </div>
             <div class="row mt-3">
                 <div class="col-12 text-center">
-                    <p class="mb-0">&copy; {{ date('Y') }} ReuseMart. All rights reserved.</p>
+                    <p class="mb-0">&copy; {{ date('Y') }} ReuseMart. P3L CINTA GITA ERIN LANCAR JAYA AMIN.</p>
                 </div>
             </div>
         </div>

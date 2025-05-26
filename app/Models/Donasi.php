@@ -27,4 +27,8 @@ class Donasi extends Model
     {
         return $this->belongsTo(Barang::class, 'barang_id');
     }
+    public function requestDonasi()
+{
+    return $this->belongsTo(RequestDonasi::class, 'request_id');
+}
 }

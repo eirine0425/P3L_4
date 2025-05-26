@@ -11,11 +11,28 @@
 
     <!-- Product Grid -->
     <div class="row justify-content-center g-4">
+        @php
+    $images = [
+        asset('assets/laptop.jpg'),
+        asset('assets/laptop.jpg'),
+        asset('assets/laptop.jpg'),
+        asset('assets/laptop.jpg'),
+        asset('assets/laptop.jpg'),
+        asset('assets/laptop.jpg'),
+        asset('assets/laptop.jpg'),
+        asset('assets/laptop.jpg'),
+        asset('assets/laptop.jpg'),
+        asset('assets/laptop.jpg'),
+        asset('assets/laptop.jpg'),
+        asset('assets/laptop.jpg'),
+    ];
+@endphp
+
         @for ($i = 1; $i <= 12; $i++)
         <div class="col-sm-6 col-md-4 col-lg-3 d-flex align-items-stretch">
             <div class="card h-100 w-100 shadow-sm">
                 <div class="position-relative">
-                    <img src="https://via.placeholder.com/300x200" class="card-img-top" alt="Product {{ $i }}">
+                     <img src="{{ asset('assets/laptop.jpg') }}" class="card-img-top" alt="Product {{ $i }}">
                     <span class="badge bg-success position-absolute top-0 end-0 m-2">Tersedia</span>
                 </div>
                 <div class="card-body d-flex flex-column">
@@ -23,7 +40,7 @@
                     <p class="card-text text-center small">Deskripsi singkat produk {{ $i }} yang menjelaskan kondisi dan kualitas barang.</p>
                     <div class="mt-auto">
                         <div class="d-flex justify-content-between align-items-center">
-                            <span class="fw-bold text-primary">Rp {{ number_format(rand(100000, 1000000), 0, ',', '.') }}</span>
+                            <span class="fw-bold text-dark">Rp {{ number_format(rand(100000, 1000000), 0, ',', '.') }}</span>
                             <div>
                                 <i class="fas fa-star text-warning"></i>
                                 <i class="fas fa-star text-warning"></i>
@@ -37,7 +54,7 @@
                 </div>
                 <div class="card-footer bg-white border-top-0">
                     <div class="d-grid gap-2">
-                        <a href="{{ url('/products/' . $i) }}" class="btn btn-outline-primary">Detail</a>
+                        <a href="{{ url('/products/' . $i) }}" class="btn btn-outline-success">Detail</a>
                         @auth
                             @if(auth()->user()->role->nama_role == 'Pembeli')
                             <button class="btn btn-primary add-to-cart" data-product-id="{{ $i }}">

@@ -97,6 +97,11 @@ Route::middleware(['auth:api'])->group(function () {
     Route::post('/keranjang-belanja/clear', [KeranjangBelanjaController::class, 'clearCart']);
 });
 
+Route::get('/pengiriman/transaksi-siap', [PengirimanController::class, 'transaksiSiapKirim']);
+
+
+
+
 // Rute CRUD untuk Komisi
 Route::apiResource('komisi', KomisiController::class);
 
