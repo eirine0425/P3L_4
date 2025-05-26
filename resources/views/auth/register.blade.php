@@ -91,11 +91,6 @@
                                 </div>
                             </div>
                             
-                            <div class="mb-3 form-check">
-                                <input type="checkbox" class="form-check-input" id="terms" name="terms" required>
-                                <label class="form-check-label" for="terms">Saya menyetujui <a href="#">syarat dan ketentuan</a> yang berlaku</label>
-                            </div>
-                            
                             <div class="d-grid gap-2">
                                 <button type="submit" class="btn btn-primary">
                                     <i class="fas fa-user-plus me-2"></i>Daftar sebagai Pembeli
@@ -173,7 +168,7 @@
                             
                             <div class="row mb-3">
                                 <div class="col-md-6">
-                                    <label for="jabatan_role_id" class="form-label">Jabatan yang Dilamar</label>
+                                    <label for="jabatan_role_id" class="form-label">Posisi Jabatan</label>
                                     <select class="form-select @error('jabatan_role_id') is-invalid @enderror" id="jabatan_role_id" name="jabatan_role_id" required>
                                         <option value="">Pilih Jabatan</option>
                                         <option value="1" {{ old('jabatan_role_id') == '1' ? 'selected' : '' }}>Admin</option>
@@ -188,7 +183,6 @@
                                         {{ $message }}
                                     </div>
                                     @enderror
-                                    <small class="form-text text-muted">Pilih jabatan yang Anda lamar. Penempatan akan ditentukan oleh manajemen.</small>
                                 </div>
                                 
                                 <div class="col-md-6">
@@ -200,19 +194,7 @@
                                     </div>
                                     @enderror
                                 </div>
-                            </div>
-                            
-                            <div class="row mb-3">
-                               
-                            <div class="mb-3 form-check">
-                                <input type="checkbox" class="form-check-input" id="pegawai_terms" name="terms" required>
-                                <label class="form-check-label" for="pegawai_terms">Saya menyetujui <a href="#">syarat dan ketentuan</a> yang berlaku</label>
-                            </div>
-                            
-                            <div class="alert alert-info">
-                                <i class="fas fa-info-circle me-2"></i>
-                                <strong>Catatan:</strong> Pendaftaran pegawai akan diverifikasi oleh manajemen. Anda akan dihubungi jika lamaran diterima.
-                            </div>
+                            </div>                      
                             
                             <div class="d-grid gap-2">
                                 <button type="submit" class="btn btn-success">
@@ -222,12 +204,14 @@
                         </form>
                     </div>
                     
+                    
                     <!-- Organisasi Registration Form -->
                     <div class="tab-pane fade" id="organisasi" role="tabpanel" aria-labelledby="organisasi-tab">
                         <form method="POST" action="{{ url('/register') }}" enctype="multipart/form-data">
                             @csrf
-                            <input type="hidden" name="role_id" value="7"> <!-- role_id 7 untuk Organisasi -->
                             <input type="hidden" name="role" value="organisasi">
+                            <input type="hidden" name="role_id" value="7"> <!-- role_id 7 untuk Organisasi -->
+                            
                             
                             <div class="row mb-3">
                                 <div class="col-md-6">
@@ -267,6 +251,17 @@
                                     <input type="password" class="form-control" id="organisasi_password-confirm" name="password_confirmation" required autocomplete="new-password">
                                 </div>
                             </div>
+
+                            <div class="row mb-3">
+                                <div class="col-md-6">
+                                    <label for="dob" class="form-label">Tanggal Berdiri Organisasi</label>
+                                    <input type="date" class="form-control @error('dob') is-invalid @enderror" id="dob" name="dob" value="{{ old('dob') }}" required>
+                                    @error('dob')
+                                    <div class="invalid-feedback">
+                                        {{ $message }}
+                                    </div>
+                                    @enderror
+                                </div>
                             
                             <div class="row mb-3">
                                 <div class="col-md-6">
@@ -309,11 +304,6 @@
                                 </div>
                                 @enderror
                                 <small class="form-text text-muted">Upload dokumen legalitas organisasi (PDF, maksimal 2MB).</small>
-                            </div>
-                            
-                            <div class="mb-3 form-check">
-                                <input type="checkbox" class="form-check-input" id="organisasi_terms" name="terms" required>
-                                <label class="form-check-label" for="organisasi_terms">Saya menyetujui <a href="#">syarat dan ketentuan</a> yang berlaku</label>
                             </div>
                             
                             <div class="d-grid gap-2">

@@ -129,36 +129,8 @@
                     @endif
                 </div>
             </div>
-            
-            <div class="card mt-4">
-                <div class="card-header">
-                    <h5 class="card-title">Informasi Akun</h5>
-                </div>
-                <div class="card-body">
-                    <div class="text-center mb-3">
-                        <i class="fas fa-user-circle fa-5x text-primary"></i>
-                    </div>
-                    <table class="table">
-                        <tr>
-                            <th>Nama</th>
-                            <td>{{ $buyer->user->name ?? 'N/A' }}</td>
-                        </tr>
-                        <tr>
-                            <th>Email</th>
-                            <td>{{ $buyer->user->email ?? 'N/A' }}</td>
-                        </tr>
-                        <tr>
-                            <th>No. Telepon</th>
-                            <td>{{ $buyer->no_telepon ?? 'N/A' }}</td>
-                        </tr>
-                        <tr>
-                            <th>Poin Loyalitas</th>
-                            <td>{{ $buyer->poin_loyalitas ?? 0 }} poin</td>
-                        </tr>
-                    </table>
-                </div>
                 <div class="card-footer">
-                    <a href="{{ route('profile.show') }}" class="btn btn-primary w-100">Edit Profil</a>
+                    <a href="{{ route('profile.show') }}" class="btn btn-primary w-100">Lihat Profile</a>
                 </div>
             </div>
         </div>

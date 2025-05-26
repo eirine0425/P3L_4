@@ -1,6 +1,53 @@
 @extends('layouts.app')
 
 @section('content')
+
+<div class="container py-4">
+    <div class="text-center mb-4">
+        <h2><i class="fas fa-box-open me-2"></i>Produk</h2>
+        <p>Menampilkan 1–12 dari 100 produk</p>
+    </div>
+
+    <!-- Product Grid -->
+    <div class="row justify-content-center g-4">
+        @php
+    $images = [
+        asset('assets/laptop.jpg'),
+        asset('assets/laptop.jpg'),
+        asset('assets/laptop.jpg'),
+        asset('assets/laptop.jpg'),
+        asset('assets/laptop.jpg'),
+        asset('assets/laptop.jpg'),
+        asset('assets/laptop.jpg'),
+        asset('assets/laptop.jpg'),
+        asset('assets/laptop.jpg'),
+        asset('assets/laptop.jpg'),
+        asset('assets/laptop.jpg'),
+        asset('assets/laptop.jpg'),
+    ];
+@endphp
+
+        @for ($i = 1; $i <= 12; $i++)
+        <div class="col-sm-6 col-md-4 col-lg-3 d-flex align-items-stretch">
+            <div class="card h-100 w-100 shadow-sm">
+                <div class="position-relative">
+                     <img src="{{ asset('assets/laptop.jpg') }}" class="card-img-top" alt="Product {{ $i }}">
+                    <span class="badge bg-success position-absolute top-0 end-0 m-2">Tersedia</span>
+                </div>
+                <div class="card-body d-flex flex-column">
+                    <h5 class="card-title text-center">Produk {{ $i }}</h5>
+                    <p class="card-text text-center small">Deskripsi singkat produk {{ $i }} yang menjelaskan kondisi dan kualitas barang.</p>
+                    <div class="mt-auto">
+                        <div class="d-flex justify-content-between align-items-center">
+                            <span class="fw-bold text-dark">Rp {{ number_format(rand(100000, 1000000), 0, ',', '.') }}</span>
+                            <div>
+                                <i class="fas fa-star text-warning"></i>
+                                <i class="fas fa-star text-warning"></i>
+                                <i class="fas fa-star text-warning"></i>
+                                <i class="fas fa-star text-warning"></i>
+                                <i class="fas fa-star-half-alt text-warning"></i>
+                                <span class="ms-1 small">({{ rand(10, 50) }})</span>
+
 <div class="container">
     <div class="row">
         <!-- Sidebar Filter -->
@@ -173,6 +220,7 @@
                                         @endif
                                     @endauth
                                 </div>
+
                             </div>
                         </div>
                     </div>
@@ -183,6 +231,18 @@
                 <div class="d-flex justify-content-center">
                     {{ $products->links() }}
                 </div>
+
+                <div class="card-footer bg-white border-top-0">
+                    <div class="d-grid gap-2">
+                        <a href="{{ url('/products/' . $i) }}" class="btn btn-outline-success">Detail</a>
+                        @auth
+                            @if(auth()->user()->role->nama_role == 'Pembeli')
+                            <button class="btn btn-primary add-to-cart" data-product-id="{{ $i }}">
+                                <i class="fas fa-cart-plus me-2"></i>Tambah ke Keranjang
+                            </button>
+                            @endif
+                        @endauth
+
             @else
                 <div class="text-center py-5">
                     <h4 class="text-muted">Tidak ada produk ditemukan</h4>
@@ -196,6 +256,7 @@
                             Barang dengan status 'belum_terjual': {{ \App\Models\Barang::where('status', 'belum_terjual')->count() }}<br>
                             Kategori tersedia: {{ $categories->count() }}
                         </small>
+
                     </div>
                     @endif
                 </div>

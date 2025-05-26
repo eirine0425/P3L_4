@@ -285,7 +285,11 @@ class WebViewController extends Controller
         
         return view('checkout.thank-you', compact('transaction'));
     }
-    
+    public function profilePembeli()
+{
+    return view('profile.pembeli'); // ganti dengan nama view yang benar
+}
+
     // Dashboard
     public function dashboard()
     {

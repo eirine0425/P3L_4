@@ -9,6 +9,9 @@ use App\UseCases\User\UpdateUserUseCase;
 use App\Repositories\Interfaces\UserRepositoryInterface;
 use App\UseCases\User\UserUseCase;
 use App\DTOs\User\GetUserPaginationRequest;
+use Illuminate\Support\Facades\Auth;
+use Illuminate\Support\Facades\Hash;
+use Illuminate\Support\Facades\Log;
 
 class UserController extends Controller
 {
@@ -50,4 +53,6 @@ class UserController extends Controller
             ? response()->json(['message' => 'Deleted successfully'])
             : response()->json(['message' => 'Not found'], 404);
     }
+
+    
 }

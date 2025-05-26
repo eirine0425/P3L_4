@@ -22,16 +22,37 @@
                 </div>
                 <div class="carousel-inner rounded-3">
                     <div class="carousel-item active">
+
+                        <img src="{{ asset('assets/laptop.jpg') }}" class="d-block w-100" alt="Product Image 1">
+                    </div>
+                    <div class="carousel-item">
+                        <img src="{{ asset('assets/laptop.jpg') }}" class="d-block w-100" alt="Product Image 2">
+                    </div>
+                    <div class="carousel-item">
+                        <img src="{{ asset('assets/laptop.jpg') }}" class="d-block w-100" alt="Product Image 3">
+
                         <img src="{{ $product->photo_url ?? '/placeholder.svg?height=600&width=600&text=' . urlencode($product->nama_barang ?? 'Produk') }}" 
                              class="d-block w-100" alt="{{ $product->nama_barang ?? 'Product Image' }}" style="height: 400px; object-fit: cover;">
+
                     </div>
                 </div>
             </div>
             
             <div class="row mt-3">
+
+                <div class="col-4">
+                    <img src="{{ asset('assets/laptop.jpg') }}" class="img-thumbnail" alt="Thumbnail 1" data-bs-target="#productCarousel" data-bs-slide-to="0">
+                </div>
+                <div class="col-4">
+                    <img src="{{ asset('assets/laptop.jpg') }}" class="img-thumbnail" alt="Thumbnail 2" data-bs-target="#productCarousel" data-bs-slide-to="1">
+                </div>
+                <div class="col-4">
+                    <img src="{{ asset('assets/laptop.jpg') }}" class="img-thumbnail" alt="Thumbnail 3" data-bs-target="#productCarousel" data-bs-slide-to="2">
+
                 <div class="col-12">
                     <img src="{{ $product->photo_url ?? '/placeholder.svg?height=600&width=600&text=' . urlencode($product->nama_barang ?? 'Produk') }}" 
                          class="img-thumbnail w-100" alt="Product Thumbnail" style="height: 100px; object-fit: cover;">
+
                 </div>
             </div>
         </div>
