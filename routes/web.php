@@ -225,6 +225,7 @@ Route::middleware(['auth', 'role:pembeli'])->group(function () {
 Route::middleware(['auth'])->group(function () {
     Route::get('/profile', [App\Http\Controllers\Api\WebViewController::class, 'profilePembeli'])->name('profile.show');
     Route::put('/profile', [App\Http\Controllers\Api\WebViewController::class, 'updateProfilePembeli'])->name('profile.update');
+});
 
 
 Route::middleware(['auth', 'role:penitip'])->group(function () {
@@ -484,6 +485,7 @@ Route::middleware(['auth', 'role:kurir'])->group(function () {
    Route::put('/dashboard/pengiriman-kurir/{id}/update-status', function ($id) {
        return view('errors.missing-view', ['view' => 'dashboard.courier.deliveries.update_status', 'id' => $id]);
    })->name('courier.deliveries.update-status');
+});
 
 // ========================================
 // HUNTER ROUTES
