@@ -16,8 +16,8 @@ class DashboardCSController extends Controller
         $totalPenitip = Penitip::count();
         $totalPembeli = Pembeli::count();
         $verifikasiTertunda = Barang::where('status', 'pending')->count();
-        $diskusiBelumDibalas = DiskusiProduk::whereNull('balasan')->count();
-        $diskusiTerbaru = DiskusiProduk::latest()->take(5)->get();
+        $diskusiBelumDibalas = DiskusiProduk::whereNull('jawaban')->count();
+        $diskusiTerbaru = DiskusiProduk::with(['pembeli.user', 'barang'])->latest('tanggal_diskusi')->take(5)->get();
         $barangUntukVerifikasi = Barang::where('status', 'pending')->with(['kategori', 'penitip.user'])->take(5)->get();
 
         return view('dashboard.cs.index', compact(

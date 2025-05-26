@@ -1,131 +1,184 @@
 @extends('layouts.dashboard')
 
-@section('title', 'Consignor Dashboard')
+@section('title', 'Dashboard Penitip')
 
 @section('content')
 <div class="container-fluid">
     <div class="row mb-4">
         <div class="col-12">
             <h2>Dashboard Penitip</h2>
-            <p class="text-muted">Selamat datang di panel kontrol Penitip ReuseMart.</p>
+            <p class="text-muted">Kelola barang titipan Anda</p>
         </div>
     </div>
     
+    <!-- Statistics Cards -->
     <div class="row">
         <div class="col-md-3">
-            <div class="stats-card">
-                <i class="fas fa-box"></i>
-                <h3>{{ $totalItems }}</h3>
-                <p>Total Barang</p>
+            <div class="card bg-primary text-white">
+                <div class="card-body">
+                    <div class="d-flex justify-content-between">
+                        <div>
+                            <h3>{{ $totalItems }}</h3>
+                            <p>Total Barang</p>
+                        </div>
+                        <div>
+                            <i class="fas fa-box fa-2x"></i>
+                        </div>
+                    </div>
+                </div>
             </div>
         </div>
         <div class="col-md-3">
-            <div class="stats-card">
-                <i class="fas fa-check-circle"></i>
-                <h3>{{ $activeItems }}</h3>
-                <p>Barang Aktif</p>
+            <div class="card bg-success text-white">
+                <div class="card-body">
+                    <div class="d-flex justify-content-between">
+                        <div>
+                            <h3>{{ $activeItems }}</h3>
+                            <p>Belum Terjual</p>
+                        </div>
+                        <div>
+                            <i class="fas fa-clock fa-2x"></i>
+                        </div>
+                    </div>
+                </div>
             </div>
         </div>
         <div class="col-md-3">
-            <div class="stats-card">
-                <i class="fas fa-shopping-cart"></i>
-                <h3>{{ $soldItems }}</h3>
-                <p>Barang Terjual</p>
+            <div class="card bg-info text-white">
+                <div class="card-body">
+                    <div class="d-flex justify-content-between">
+                        <div>
+                            <h3>{{ $soldItems }}</h3>
+                            <p>Terjual</p>
+                        </div>
+                        <div>
+                            <i class="fas fa-check-circle fa-2x"></i>
+                        </div>
+                    </div>
+                </div>
             </div>
         </div>
         <div class="col-md-3">
-            <div class="stats-card">
-                <i class="fas fa-money-bill-wave"></i>
-                <h3>Rp {{ number_format($totalEarnings, 0, ',', '.') }}</h3>
-                <p>Total Pendapatan</p>
+            <div class="card bg-secondary text-white">
+                <div class="card-body">
+                    <div class="d-flex justify-content-between">
+                        <div>
+                            <h3>{{ $soldOutItems }}</h3>
+                            <p>Sold Out</p>
+                        </div>
+                        <div>
+                            <i class="fas fa-times-circle fa-2x"></i>
+                        </div>
+                    </div>
+                </div>
             </div>
         </div>
     </div>
     
-    <div class="row mt-4">
-        <div class="col-md-8">
-            <div class="card">
-                <div class="card-header">
-                    <h5 class="card-title">Penjualan Bulanan ({{ date('Y') }})</h5>
-                </div>
-                <div class="card-body">
-                    <canvas id="monthlySalesChart"></canvas>
-                </div>
-            </div>
-        </div>
-        <div class="col-md-4">
-            <div class="card">
-                <div class="card-header">
-                    <h5 class="card-title">Produk Terlaris</h5>
-                </div>
-                <div class="card-body">
-                    @if(count($topProducts) > 0)
-                        <ul class="list-group">
-                            @foreach($topProducts as $product)
-                                <li class="list-group-item d-flex justify-content-between align-items-center">
-                                    {{ $product->nama_barang }}
-                                    <span class="badge bg-primary rounded-pill">{{ $product->detail_transaksi_count }} terjual</span>
-                                </li>
-                            @endforeach
-                        </ul>
-                    @else
-                        <p class="text-center text-muted">Belum ada data produk terlaris.</p>
-                    @endif
-                </div>
-            </div>
-        </div>
-    </div>
-    
+    <!-- Quick Actions -->
     <div class="row mt-4">
         <div class="col-12">
             <div class="card">
                 <div class="card-header">
-                    <h5 class="card-title">Informasi Akun</h5>
+                    <h5 class="card-title">Aksi Cepat</h5>
                 </div>
                 <div class="card-body">
                     <div class="row">
-                        <div class="col-md-6">
-                            <h6>Informasi Pribadi</h6>
-                            <table class="table">
-                                <tr>
-                                    <th>Nama</th>
-                                    <td>{{ $consignor->user->name }}</td>
-                                </tr>
-                                <tr>
-                                    <th>Email</th>
-                                    <td>{{ $consignor->user->email }}</td>
-                                </tr>
-                                <tr>
-                                    <th>No. Telepon</th>
-                                    <td>{{ $consignor->no_telepon }}</td>
-                                </tr>
-                                <tr>
-                                    <th>Tanggal Bergabung</th>
-                                    <td>{{ $consignor->created_at->format('d M Y') }}</td>
-                                </tr>
-                            </table>
+                        <div class="col-md-4 mb-3">
+                            <a href="{{ route('consignor.items.create') }}" class="btn btn-primary btn-lg w-100">
+                                <i class="fas fa-plus me-2"></i>
+                                Tambah Barang Baru
+                            </a>
                         </div>
-                        <div class="col-md-6">
-                            <h6>Informasi Bank</h6>
-                            <table class="table">
-                                <tr>
-                                    <th>Nama Bank</th>
-                                    <td>{{ $consignor->nama_bank }}</td>
-                                </tr>
-                                <tr>
-                                    <th>No. Rekening</th>
-                                    <td>{{ $consignor->no_rekening }}</td>
-                                </tr>
-                                <tr>
-                                    <th>Atas Nama</th>
-                                    <td>{{ $consignor->nama_pemilik_rekening }}</td>
-                                </tr>
-                            </table>
+                        <div class="col-md-4 mb-3">
+                            <a href="{{ route('consignor.items') }}" class="btn btn-success btn-lg w-100">
+                                <i class="fas fa-boxes me-2"></i>Kelola Barang Saya
+                            </a>
+                        </div>
+                        <div class="col-md-4 mb-3">
+                            <a href="{{ route('consignor.transactions') }}" class="btn btn-info btn-lg w-100">
+                                <i class="fas fa-chart-line me-2"></i>Lihat Transaksi
+                            </a>
                         </div>
                     </div>
                 </div>
-                <div class="card-footer">
-                    <a href="#" class="btn btn-primary">Edit Profil</a>
+            </div>
+        </div>
+    </div>
+    
+    <!-- Recent Items -->
+    <div class="row mt-4">
+        <div class="col-md-8">
+            <div class="card">
+                <div class="card-header d-flex justify-content-between align-items-center">
+                    <h5 class="card-title">Barang Terbaru</h5>
+                    <a href="{{ route('consignor.items') }}" class="btn btn-sm btn-outline-primary">Lihat Semua</a>
+                </div>
+                <div class="card-body">
+                    @if(count($recentItems) > 0)
+                        <div class="table-responsive">
+                            <table class="table table-hover">
+                                <thead>
+                                    <tr>
+                                        <th>Nama Barang</th>
+                                        <th>Kategori</th>
+                                        <th>Harga</th>
+                                        <th>Status</th>
+                                        <th>Tanggal</th>
+                                        <th>Aksi</th>
+                                    </tr>
+                                </thead>
+                                <tbody>
+                                    @foreach($recentItems as $item)
+                                        <tr>
+                                            <td>
+                                                <strong>{{ $item->nama_barang }}</strong><br>
+                                                <small class="text-muted">{{ Str::limit($item->deskripsi, 30) }}</small>
+                                            </td>
+                                            <td>{{ $item->kategori->nama_kategori ?? '-' }}</td>
+                                            <td>Rp {{ number_format($item->harga, 0, ',', '.') }}</td>
+                                            <td>
+                                                @if($item->status == 'belum_terjual')
+                                                    <span class="badge bg-success">Belum Terjual</span>
+                                                @elseif($item->status == 'terjual')
+                                                    <span class="badge bg-info">Terjual</span>
+                                                @else
+                                                    <span class="badge bg-secondary">{{ ucfirst($item->status) }}</span>
+                                                @endif
+                                            </td>
+                                            <td>{{ $item->created_at->format('d M Y') }}</td>
+                                            <td>
+                                                <a href="{{ route('consignor.items.show', $item->barang_id) }}" 
+                                                   class="btn btn-sm btn-outline-primary">
+                                                    <i class="fas fa-eye"></i> Detail
+                                                </a>
+                                            </td>
+                                        </tr>
+                                    @endforeach
+                                </tbody>
+                            </table>
+                        </div>
+                    @else
+                        <div class="text-center py-4">
+                            <i class="fas fa-box fa-3x text-muted mb-3"></i>
+                            <p class="text-muted">Belum ada barang yang terdaftar.</p>
+                            <a href="{{ route('consignor.items.create') }}" class="btn btn-primary">
+                                <i class="fas fa-plus me-2"></i>Tambah Barang Pertama
+                            </a>
+                        </div>
+                    @endif
+                </div>
+            </div>
+        </div>
+        
+        <!-- Charts -->
+        <div class="col-md-4">
+            <div class="card">
+                <div class="card-header">
+                    <h5 class="card-title">Status Barang</h5>
+                </div>
+                <div class="card-body">
+                    <canvas id="statusChart"></canvas>
                 </div>
             </div>
         </div>
@@ -134,41 +187,36 @@
 @endsection
 
 @push('scripts')
+<script src="https://cdn.jsdelivr.net/npm/chart.js"></script>
 <script>
-    // Data untuk grafik penjualan bulanan
-    var monthlySalesData = {
-        labels: [
-            'Januari', 'Februari', 'Maret', 'April', 'Mei', 'Juni',
-            'Juli', 'Agustus', 'September', 'Oktober', 'November', 'Desember'
-        ],
-        datasets: [{
-            label: 'Penjualan (Rp)',
-            backgroundColor: 'rgba(76, 175, 80, 0.2)',
-            borderColor: 'rgba(76, 175, 80, 1)',
-            borderWidth: 1,
-            data: [
-                @for($i = 1; $i <= 12; $i++)
-                    {{ $monthlySales->where('month', $i)->first() ? $monthlySales->where('month', $i)->first()->total : 0 }}{{ $i < 12 ? ',' : '' }}
-                @endfor
-            ]
-        }]
-    };
-    
-    // Render grafik penjualan bulanan
-    var monthlySalesCtx = document.getElementById('monthlySalesChart').getContext('2d');
-    var monthlySalesChart = new Chart(monthlySalesCtx, {
-        type: 'bar',
-        data: monthlySalesData,
+    // Status Chart
+    const statusCtx = document.getElementById('statusChart').getContext('2d');
+    const statusChart = new Chart(statusCtx, {
+        type: 'doughnut',
+        data: {
+            labels: [
+                @foreach($itemsByStatus as $status)
+                    '{{ ucfirst(str_replace("_", " ", $status->status)) }}'{{ !$loop->last ? ',' : '' }}
+                @endforeach
+            ],
+            datasets: [{
+                data: [
+                    @foreach($itemsByStatus as $status)
+                        {{ $status->total }}{{ !$loop->last ? ',' : '' }}
+                    @endforeach
+                ],
+                backgroundColor: [
+                    '#28a745', // Belum Terjual - Green
+                    '#17a2b8', // Terjual - Blue
+                    '#6c757d'  // Sold Out - Gray
+                ]
+            }]
+        },
         options: {
             responsive: true,
-            scales: {
-                y: {
-                    beginAtZero: true,
-                    ticks: {
-                        callback: function(value) {
-                            return 'Rp ' + value.toString().replace(/\B(?=(\d{3})+(?!\d))/g, ".");
-                        }
-                    }
+            plugins: {
+                legend: {
+                    position: 'bottom'
                 }
             }
         }

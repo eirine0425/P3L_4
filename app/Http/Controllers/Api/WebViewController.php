@@ -28,7 +28,11 @@ class WebViewController extends Controller
     // Halaman Publik
     public function home()
     {
-        $featuredProducts = Barang::with('kategori')->where('is_featured', true)->take(8)->get();
+        $featuredProducts = Barang::with('kategori')
+            ->where('status', 'belum_terjual') // FIXED: Changed from 'tersedia' to 'belum_terjual'
+            ->orderBy('rating', 'desc')
+            ->take(8)
+            ->get();
         $categories = KategoriBarang::all();
         
         return view('home', compact('featuredProducts', 'categories'));
@@ -36,59 +40,76 @@ class WebViewController extends Controller
     
     public function products(Request $request)
     {
-        $query = Barang::with('kategori');
+        // Always load categories first
+        $categories = KategoriBarang::all();
         
-        // Filter by category
-        if ($request->has('category')) {
+        $query = Barang::with(['kategori', 'penitip']);
+        
+        // Filter by categories
+        if ($request->has('categories') && !empty($request->categories)) {
             $query->whereHas('kategori', function($q) use ($request) {
-                $q->where('id', $request->category);
+                $q->whereIn('nama_kategori', $request->categories);
             });
         }
         
-        // Filter by price
-        if ($request->has('min_price')) {
+        // Filter by conditions
+        if ($request->has('conditions') && !empty($request->conditions)) {
+            $query->whereIn('kondisi', $request->conditions);
+        }
+        
+        // Filter by price range
+        if ($request->has('min_price') && $request->min_price != '') {
             $query->where('harga', '>=', $request->min_price);
         }
         
-        if ($request->has('max_price')) {
+        if ($request->has('max_price') && $request->max_price != '') {
             $query->where('harga', '<=', $request->max_price);
         }
         
-        // Search by name
-        if ($request->has('search')) {
-            $query->where('nama', 'like', '%' . $request->search . '%');
+        // Filter by rating
+        if ($request->has('rating') && $request->rating != '') {
+            $query->where('rating', '>=', $request->rating);
         }
+        
+        // Search by name
+        if ($request->has('search') && $request->search != '') {
+            $query->where('nama_barang', 'like', '%' . $request->search . '%');
+        }
+        
+        // FIXED: Only show available products (changed from 'tersedia' to 'belum_terjual')
+        $query->where('status', 'belum_terjual');
         
         // Sort
         if ($request->has('sort')) {
             switch ($request->sort) {
-                case 'price_asc':
+                case 'price_low':
                     $query->orderBy('harga', 'asc');
                     break;
-                case 'price_desc':
+                case 'price_high':
                     $query->orderBy('harga', 'desc');
                     break;
-                case 'newest':
-                    $query->orderBy('created_at', 'desc');
+                case 'rating':
+                    $query->orderBy('rating', 'desc');
                     break;
+                case 'newest':
                 default:
-                    $query->orderBy('nama', 'asc');
+                    $query->orderBy('created_at', 'desc');
             }
         } else {
-            $query->orderBy('nama', 'asc');
+            $query->orderBy('created_at', 'desc');
         }
         
-        $products = $query->paginate(12);
-        $categories = KategoriBarang::all();
+        $products = $query->paginate(12)->appends($request->query());
         
         return view('products.index', compact('products', 'categories'));
     }
     
     public function productDetail($id)
     {
-        $product = Barang::with(['kategori', 'diskusi.user'])->findOrFail($id);
+        $product = Barang::with(['kategori', 'diskusi.user'])->where('barang_id', $id)->firstOrFail();
         $relatedProducts = Barang::where('kategori_id', $product->kategori_id)
-            ->where('id', '!=', $id)
+            ->where('barang_id', '!=', $id)
+            ->where('status', 'belum_terjual') // FIXED: Changed from 'tersedia' to 'belum_terjual'
             ->take(4)
             ->get();
             
@@ -130,13 +151,21 @@ class WebViewController extends Controller
         return view('cart.index', compact('cartItems', 'total'));
     }
     
-    // Add to cart
+    // FIXED: Updated addToCart method
     public function addToCart(Request $request)
     {
         $request->validate([
-            'product_id' => 'required|exists:barang,id',
+            'product_id' => 'required|exists:barang,barang_id', // FIXED: Changed to barang_id
             'quantity' => 'required|integer|min:1'
         ]);
+        
+        // Get product and check availability
+        $product = Barang::where('barang_id', $request->product_id)->firstOrFail();
+        
+        // Check if product is available for sale
+        if ($product->status !== 'belum_terjual') {
+            return redirect()->back()->with('error', 'Produk tidak tersedia untuk dibeli.');
+        }
         
         $existingItem = KeranjangBelanja::where('user_id', Auth::id())
             ->where('barang_id', $request->product_id)
@@ -230,7 +259,7 @@ class WebViewController extends Controller
             'tax' => $tax
         ]);
         
-        // Create transaction details
+        // Create transaction details and update product status
         foreach ($cartItems as $item) {
             DetailTransaksi::create([
                 'transaksi_id' => $transaction->id,
@@ -239,6 +268,9 @@ class WebViewController extends Controller
                 'harga' => $item->barang->harga,
                 'subtotal' => $item->barang->harga * $item->jumlah
             ]);
+            
+            // ADDED: Update product status to 'terjual' when purchased
+            $item->barang->update(['status' => 'terjual']);
         }
         
         // Clear cart
@@ -254,7 +286,11 @@ class WebViewController extends Controller
         
         return view('checkout.thank-you', compact('transaction'));
     }
-    
+    public function profilePembeli()
+{
+    return view('profile.pembeli'); // ganti dengan nama view yang benar
+}
+
     // Dashboard
     public function dashboard()
     {

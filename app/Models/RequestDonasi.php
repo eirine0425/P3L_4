@@ -17,4 +17,11 @@ class RequestDonasi extends Model
         'tanggal_request',   // Tanggal permintaan dibuat
         'status_request',    // Status permintaan (misalnya: pending, approved, rejected)
     ];
+
+    public function organisasi()
+{
+    return $this->belongsTo(Organisasi::class, 'organisasi_id');
 }
+
+}
+
