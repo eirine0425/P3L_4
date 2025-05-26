@@ -21,6 +21,7 @@ use App\Models\Penitip;
 use App\Models\Pembeli;
 use App\Models\Organisasi;
 use App\Models\Pegawai;
+use App\Models\Alamat;
 
 class WebViewController extends Controller
 {
@@ -355,5 +356,301 @@ class WebViewController extends Controller
     public function organizationDashboard()
     {
         return view('dashboard.organization.index');
+    }
+
+    // ========== ALAMAT FUNCTIONS - ADDED BELOW ==========
+    
+    /**
+     * Display a listing of addresses for the authenticated buyer
+     */
+    public function alamatIndex(Request $request)
+    {
+        try {
+            $user = Auth::user();
+        
+            // Cari data pembeli berdasarkan user_id
+            $pembeli = Pembeli::where('user_id', $user->id)->first();
+        
+            if (!$pembeli) {
+                return redirect()->route('dashboard.buyer')->with('error', 'Data pembeli tidak ditemukan');
+            }
+
+            // Ambil alamat berdasarkan pembeli_id - TIDAK MENGGUNAKAN PAGINATION
+            $alamats = Alamat::where('pembeli_id', $pembeli->id)
+                        ->orderBy('status_default', 'desc')
+                        ->orderBy('created_at', 'desc')
+                        ->get(); // GUNAKAN get() BUKAN paginate()
+    
+            // PASTIKAN RETURN VIEW BUKAN JSON
+            return view('dashboard.buyer.alamat.index', compact('alamats'));
+                        
+        } catch (\Exception $e) {
+            return redirect()->route('dashboard.buyer')->with('error', 'Terjadi kesalahan: ' . $e->getMessage());
+        }
+    }
+
+    /**
+     * Show the form for creating a new address
+     */
+    public function alamatCreate()
+    {
+        return view('dashboard.buyer.alamat.create');
+    }
+
+    /**
+     * Store a newly created address in storage
+     */
+    public function alamatStore(Request $request)
+    {
+        try {
+            $request->validate([
+                'nama_penerima' => 'required|string|max:255',
+                'no_telepon' => 'required|string|max:20',
+                'alamat' => 'required|string',
+                'kota' => 'required|string|max:100',
+                'provinsi' => 'required|string|max:100',
+                'kode_pos' => 'required|string|max:10',
+            ]);
+
+            $user = Auth::user();
+            $pembeli = Pembeli::where('user_id', $user->id)->first();
+            
+            if (!$pembeli) {
+                return redirect()->back()->with('error', 'Data pembeli tidak ditemukan');
+            }
+
+            // Cek apakah ini alamat pertama
+            $existingAlamats = Alamat::where('pembeli_id', $pembeli->id)->count();
+            $statusDefault = $existingAlamats == 0 ? 'Y' : 'N';
+
+            // Jika user memilih untuk set sebagai default
+            if ($request->has('set_default') && $request->set_default == '1') {
+                // Reset semua alamat lain menjadi tidak default
+                Alamat::where('pembeli_id', $pembeli->id)->update(['status_default' => 'N']);
+                $statusDefault = 'Y';
+            }
+
+            Alamat::create([
+                'pembeli_id' => $pembeli->id,
+                'nama_penerima' => $request->nama_penerima,
+                'no_telepon' => $request->no_telepon,
+                'alamat' => $request->alamat,
+                'kota' => $request->kota,
+                'provinsi' => $request->provinsi,
+                'kode_pos' => $request->kode_pos,
+                'status_default' => $statusDefault,
+            ]);
+
+            return redirect()->route('buyer.alamat.index')->with('success', 'Alamat berhasil ditambahkan');
+        } catch (\Exception $e) {
+            return redirect()->back()->with('error', 'Terjadi kesalahan: ' . $e->getMessage())->withInput();
+        }
+    }
+
+    /**
+     * Show the form for editing the specified address
+     */
+    public function alamatEdit($id)
+    {
+        try {
+            $alamat = Alamat::find($id);
+            
+            if (!$alamat) {
+                return redirect()->route('buyer.alamat.index')->with('error', 'Alamat tidak ditemukan');
+            }
+
+            // Check if alamat belongs to current user
+            $user = Auth::user();
+            $pembeli = Pembeli::where('user_id', $user->id)->first();
+            
+            if ($alamat->pembeli_id != $pembeli->id) {
+                return redirect()->route('buyer.alamat.index')->with('error', 'Anda tidak memiliki akses ke alamat ini');
+            }
+
+            return view('dashboard.buyer.alamat.edit', compact('alamat'));
+        } catch (\Exception $e) {
+            return redirect()->route('buyer.alamat.index')->with('error', 'Terjadi kesalahan: ' . $e->getMessage());
+        }
+    }
+
+    /**
+     * Update the specified address in storage
+     */
+    public function alamatUpdate(Request $request, $id)
+    {
+        try {
+            $request->validate([
+                'nama_penerima' => 'required|string|max:255',
+                'no_telepon' => 'required|string|max:20',
+                'alamat' => 'required|string',
+                'kota' => 'required|string|max:100',
+                'provinsi' => 'required|string|max:100',
+                'kode_pos' => 'required|string|max:10',
+            ]);
+
+            $alamat = Alamat::find($id);
+            
+            if (!$alamat) {
+                return redirect()->route('buyer.alamat.index')->with('error', 'Alamat tidak ditemukan');
+            }
+
+            // Check if alamat belongs to current user
+            $user = Auth::user();
+            $pembeli = Pembeli::where('user_id', $user->id)->first();
+            
+            if ($alamat->pembeli_id != $pembeli->id) {
+                return redirect()->route('buyer.alamat.index')->with('error', 'Anda tidak memiliki akses ke alamat ini');
+            }
+
+            // Jika user memilih untuk set sebagai default
+            if ($request->has('set_default') && $request->set_default == '1') {
+                // Reset semua alamat lain menjadi tidak default
+                Alamat::where('pembeli_id', $pembeli->id)->update(['status_default' => 'N']);
+                $statusDefault = 'Y';
+            } else {
+                $statusDefault = $alamat->status_default; // Keep existing status
+            }
+
+            $alamat->update([
+                'nama_penerima' => $request->nama_penerima,
+                'no_telepon' => $request->no_telepon,
+                'alamat' => $request->alamat,
+                'kota' => $request->kota,
+                'provinsi' => $request->provinsi,
+                'kode_pos' => $request->kode_pos,
+                'status_default' => $statusDefault,
+            ]);
+
+            return redirect()->route('buyer.alamat.index')->with('success', 'Alamat berhasil diperbarui');
+        } catch (\Exception $e) {
+            return redirect()->back()->with('error', 'Terjadi kesalahan: ' . $e->getMessage())->withInput();
+        }
+    }
+
+    /**
+     * Remove the specified address from storage
+     */
+    public function alamatDestroy($id)
+    {
+        try {
+            $alamat = Alamat::find($id);
+            
+            if (!$alamat) {
+                return redirect()->route('buyer.alamat.index')->with('error', 'Alamat tidak ditemukan');
+            }
+
+            // Check if alamat belongs to current user
+            $user = Auth::user();
+            $pembeli = Pembeli::where('user_id', $user->id)->first();
+            
+            if ($alamat->pembeli_id != $pembeli->id) {
+                return redirect()->route('buyer.alamat.index')->with('error', 'Anda tidak memiliki akses ke alamat ini');
+            }
+
+            // Check if this is the only address
+            $alamatCount = Alamat::where('pembeli_id', $pembeli->id)->count();
+            if ($alamatCount <= 1) {
+                return redirect()->route('buyer.alamat.index')->with('error', 'Tidak dapat menghapus alamat terakhir');
+            }
+
+            // If deleting default address, set another address as default
+            if ($alamat->status_default == 'Y') {
+                $nextAlamat = Alamat::where('pembeli_id', $pembeli->id)
+                                   ->where('id', '!=', $id)
+                                   ->first();
+                if ($nextAlamat) {
+                    $nextAlamat->update(['status_default' => 'Y']);
+                }
+            }
+
+            $alamat->delete();
+
+            return redirect()->route('buyer.alamat.index')->with('success', 'Alamat berhasil dihapus');
+        } catch (\Exception $e) {
+            return redirect()->route('buyer.alamat.index')->with('error', 'Terjadi kesalahan: ' . $e->getMessage());
+        }
+    }
+
+    /**
+     * Set the specified address as default
+     */
+    public function alamatSetDefault($id)
+    {
+        try {
+            $alamat = Alamat::find($id);
+            
+            if (!$alamat) {
+                return redirect()->route('buyer.alamat.index')->with('error', 'Alamat tidak ditemukan');
+            }
+
+            // Check if alamat belongs to current user
+            $user = Auth::user();
+            $pembeli = Pembeli::where('user_id', $user->id)->first();
+            
+            if ($alamat->pembeli_id != $pembeli->id) {
+                return redirect()->route('buyer.alamat.index')->with('error', 'Anda tidak memiliki akses ke alamat ini');
+            }
+
+            // Reset semua alamat lain menjadi tidak default
+            Alamat::where('pembeli_id', $pembeli->id)->update(['status_default' => 'N']);
+            
+            // Set alamat ini sebagai default
+            $alamat->update(['status_default' => 'Y']);
+
+            return redirect()->route('buyer.alamat.index')->with('success', 'Alamat berhasil dijadikan alamat utama');
+        } catch (\Exception $e) {
+            return redirect()->route('buyer.alamat.index')->with('error', 'Terjadi kesalahan: ' . $e->getMessage());
+        }
+    }
+
+    /**
+     * Get addresses for checkout selection (API ONLY)
+     */
+    public function getAlamatsForCheckout()
+    {
+        try {
+            $user = Auth::user();
+            $pembeli = Pembeli::where('user_id', $user->id)->first();
+            
+            if (!$pembeli) {
+                return response()->json(['error' => 'Data pembeli tidak ditemukan'], 404);
+            }
+
+            $alamats = Alamat::where('pembeli_id', $pembeli->id)
+                            ->orderBy('status_default', 'desc')
+                            ->orderBy('created_at', 'desc')
+                            ->get();
+
+            return response()->json(['alamats' => $alamats]);
+        } catch (\Exception $e) {
+            return response()->json(['error' => 'Terjadi kesalahan: ' . $e->getMessage()], 500);
+        }
+    }
+
+    /**
+     * Get default address for current user (API ONLY)
+     */
+    public function getDefaultAlamat()
+    {
+        try {
+            $user = Auth::user();
+            $pembeli = Pembeli::where('user_id', $user->id)->first();
+            
+            if (!$pembeli) {
+                return response()->json(['error' => 'Data pembeli tidak ditemukan'], 404);
+            }
+
+            $defaultAlamat = Alamat::where('pembeli_id', $pembeli->id)
+                                  ->where('status_default', 'Y')
+                                  ->first();
+
+            if (!$defaultAlamat) {
+                return response()->json(['error' => 'Alamat default tidak ditemukan'], 404);
+            }
+
+            return response()->json(['alamat' => $defaultAlamat]);
+        } catch (\Exception $e) {
+            return response()->json(['error' => 'Terjadi kesalahan: ' . $e->getMessage()], 500);
+        }
     }
 }

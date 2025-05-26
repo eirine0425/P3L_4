@@ -17,6 +17,9 @@ class CreateAlamatRequest extends FormRequest
             'pembeli_id'     => 'required|integer',
             'alamat'         => 'required|string|max:255',
             'kode_pos'       => 'required|string|max:10',
+            'kota'           => 'required|string|max:100',
+            'provinsi'       => 'required|string|max:100',
+            'no_telepon'     => 'required|string|max:20',
             'status_default' => 'required|string|in:Y,N',
         ];
     }

@@ -8,6 +8,7 @@ use App\DTOs\Alamat\CreateAlamatRequest;
 use App\DTOs\Alamat\UpdateALamatRequest;
 use App\Models\Alamat;
 use App\DTOs\Alamat\GetAlamatPaginationRequest;
+use Illuminate\Support\Facades\Auth;
 
 class AlamatController extends Controller
 {
@@ -50,5 +51,40 @@ class AlamatController extends Controller
         return $this->alamatUsecase->delete($id)
             ? response()->json(['message' => 'Deleted successfully'])
             : response()->json(['message' => 'Not found'], 404);
+    }
+
+    public function createWeb()
+    {
+        return view('dashboard.buyer.alamat.create');
+    }
+
+    public function showWeb($id)
+    {
+        $user = Auth::user();
+        $pembeli = $user->pembeli;
+        
+        $alamat = $pembeli->alamats()->findOrFail($id);
+        
+        return view('dashboard.buyer.alamat', compact('alamat'));
+    }
+
+    public function setDefault($id)
+    {
+        try {
+            $user = Auth::user();
+            $pembeli = $user->pembeli;
+            
+            $alamat = $pembeli->alamats()->findOrFail($id);
+            
+            // Set semua alamat pembeli menjadi tidak default
+            $pembeli->alamats()->update(['status_default' => 'N']);
+            
+            // Set alamat yang dipilih menjadi default
+            $alamat->update(['status_default' => 'Y']);
+            
+            return redirect()->route('buyer.alamat.index')->with('success', 'Alamat default berhasil diubah.');
+        } catch (\Exception $e) {
+            return redirect()->back()->with('error', 'Gagal mengubah alamat default: ' . $e->getMessage());
+        }
     }
 }

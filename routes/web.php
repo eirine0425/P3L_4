@@ -21,7 +21,11 @@ use App\Http\Controllers\Api\DashboardWarehouseController;
 use App\Http\Controllers\Api\DashboardCSController;
 use App\Http\Controllers\Api\DashboardHunterController;
 
+use App\Http\Controllers\Api\AlamatController;
+
+
 use App\Http\Controllers\Api\DashboardOrganisasiController;
+
 use App\Models\Penitip;
 use App\Models\Pembeli;
 use App\Models\Barang;
@@ -185,9 +189,43 @@ Route::middleware(['auth'])->group(function () {
    Route::put('/dashboard/profile', [UserController::class, 'update'])->name('profile.update');
 });
 
+
+// Buyer Routes
+Route::middleware(['auth', 'role:pembeli'])->group(function () {
+   // Transaction Routes
+   Route::get('/dashboard/buyer/transactions', [BuyerTransactionController::class, 'index'])->name('buyer.transactions');
+   Route::get('/dashboard/buyer/transactions/{id}', [BuyerTransactionController::class, 'show'])->name('buyer.transactions.show');
+   
+    // Alamat Routes
+    Route::get('/dashboard/alamat', [WebViewController::class, 'alamatIndex'])->name('buyer.alamat.index');
+    Route::get('/dashboard/alamat/create', [WebViewController::class, 'alamatCreate'])->name('buyer.alamat.create');
+    Route::post('/dashboard/alamat', [WebViewController::class, 'alamatStore'])->name('buyer.alamat.store');
+    Route::get('/dashboard/alamat/{id}/edit', [WebViewController::class, 'alamatEdit'])->name('buyer.alamat.edit');
+    Route::put('/dashboard/alamat/{id}', [WebViewController::class, 'alamatUpdate'])->name('buyer.alamat.update');
+    Route::delete('/dashboard/alamat/{id}', [WebViewController::class, 'alamatDestroy'])->name('buyer.alamat.destroy');
+    Route::patch('/dashboard/alamat/{id}/set-default', [WebViewController::class, 'alamatSetDefault'])->name('buyer.alamat.set-default');
+
+   // Cart Routes
+   Route::get('/dashboard/keranjang', function () {
+       return view('errors.missing-view', ['view' => 'dashboard.buyer.cart.index']);
+   })->name('cart.index');
+   
+   Route::post('/dashboard/keranjang/add', [KeranjangBelanjaController::class, 'store'])->name('cart.add');
+   Route::put('/dashboard/keranjang/update', [KeranjangBelanjaController::class, 'update'])->name('cart.update');
+   Route::delete('/dashboard/keranjang/remove/{id}', [KeranjangBelanjaController::class, 'destroy'])->name('cart.remove');
+   
+   // Checkout Routes
+   Route::get('/checkout', function () {
+       return view('errors.missing-view', ['view' => 'dashboard.buyer.checkout.index']);
+   })->name('checkout.index');
+   
+   Route::post('/checkout/process', [TransaksiController::class, 'store'])->name('checkout.process');
+});
+
 Route::middleware(['auth'])->group(function () {
     Route::get('/profile', [App\Http\Controllers\Api\WebViewController::class, 'profilePembeli'])->name('profile.show');
     Route::put('/profile', [App\Http\Controllers\Api\WebViewController::class, 'updateProfilePembeli'])->name('profile.update');
+
 
 Route::middleware(['auth', 'role:penitip'])->group(function () {
     // Dashboard
@@ -446,7 +484,7 @@ Route::middleware(['auth', 'role:kurir'])->group(function () {
    Route::put('/dashboard/pengiriman-kurir/{id}/update-status', function ($id) {
        return view('errors.missing-view', ['view' => 'dashboard.courier.deliveries.update_status', 'id' => $id]);
    })->name('courier.deliveries.update-status');
-=======
+
 // ========================================
 // HUNTER ROUTES
 // ========================================

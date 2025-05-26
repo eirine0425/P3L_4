@@ -46,6 +46,11 @@
                         @endauth
                     </a>
                 </li>
+                <li class="nav-item">
+                    <a class="nav-link {{ request()->is('dashboard/alamat*') ? 'active' : '' }}" href="{{ route('buyer.alamat.index') }}">
+                        <i class="fas fa-map-marker-alt me-1"></i>Alamat
+                    </a>
+                </li>
             </ul>
             
             <div class="d-flex">

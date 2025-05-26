@@ -110,8 +110,6 @@ class DashboardHunterController extends Controller
                 'users.email as email_penitip',
                 'users.phone as phone_penitip',
                 'alamat.alamat_lengkap',
-                'alamat.kota',
-                'alamat.provinsi',
                 'alamat.kode_pos'
             )
             ->where('transaksi_penitipan.transaksi_penitipan_id', $id)
