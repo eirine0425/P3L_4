@@ -12,6 +12,9 @@ return new class extends Migration {
             $table->foreignId('pembeli_id')->nullable();
             $table->string('alamat')->nullable();
             $table->string('kode_pos')->nullable();
+            $table->string('kota')->nullable();
+            $table->string('provinsi')->nullable();
+            $table->string('no_telepon')->nullable();
             $table->string('status_default')->nullable();
             $table->timestamps(); // created_at & updated_at
             $table->softDeletes();
