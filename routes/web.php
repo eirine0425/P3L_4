@@ -43,9 +43,7 @@ use App\Http\Controllers\Api\DashboardProfileController;
 // PUBLIC ROUTES
 // ========================================
 
-Route::get('/', function () {
-    return view('home');
-})->name('home');
+Route::get('/', [WebViewController::class, 'home'])->name('home');
 
 // Products Routes
 Route::get('/products', [WebViewController::class, 'products'])->name('products.index');
@@ -106,7 +104,7 @@ Route::middleware(['auth:web'])->group(function () {
         Route::get('/count', [KeranjangBelanjaController::class, 'getCartCount'])->name('count');
     });
 
-    // Debug routes (remove in production)
+    // Debug routes (development only)
     if (config('app.debug')) {
         Route::get('/cart/debug', [KeranjangBelanjaController::class, 'debug'])->name('cart.debug');
         Route::get('/cart/test-add', [KeranjangBelanjaController::class, 'testAdd'])->name('cart.test-add');
@@ -124,13 +122,9 @@ Route::middleware(['auth'])->get('/dashboard', function () {
     return match ($role) {
         'owner' => redirect()->route('dashboard.owner'),
         'admin' => redirect()->route('dashboard.admin.index'),
-<<<<<<< Updated upstream
         'pegawai', 'gudang', 'pegawai gudang' => redirect()->route('dashboard.warehouse.index'),
-=======
-        'pegawai gudang', 'gudang' => redirect()->route('dashboard.warehouse.index'),
->>>>>>> Stashed changes
         'cs' => redirect()->route('dashboard.cs'),
-        'penitip' => redirect()->route('dashboard.consignor'),
+        'penitip', 'penjual' => redirect()->route('dashboard.consignor'),
         'organisasi' => redirect()->route('dashboard.organization'),
         'pembeli' => redirect()->route('dashboard.buyer'),
         'hunter' => redirect()->route('dashboard.hunter'),
@@ -143,6 +137,7 @@ Route::middleware(['auth'])->get('/dashboard', function () {
 // ========================================
 
 Route::middleware(['auth'])->group(function () {
+    // Main profile routes
     Route::get('/dashboard/profil', function () {
         return view('errors.missing-view', ['view' => 'dashboard.profile.show']);
     })->name('profile.show');
@@ -152,6 +147,13 @@ Route::middleware(['auth'])->group(function () {
     // Alternative profile routes
     Route::get('/profile', [WebViewController::class, 'profilePembeli'])->name('profile.pembeli.show');
     Route::put('/profile', [WebViewController::class, 'updateProfilePembeli'])->name('profile.pembeli.update');
+    
+    // Dashboard profile routes
+    Route::get('/dashboard/profile', function () {
+        return view('errors.missing-view', ['view' => 'dashboard.profile.show']);
+    })->name('dashboard.profile.show');
+    
+    Route::put('/dashboard/profile', [UserController::class, 'update'])->name('dashboard.profile.update');
 });
 
 // ========================================
@@ -171,6 +173,15 @@ Route::middleware(['auth', 'role:pembeli'])->group(function () {
     Route::post('/dashboard/keranjang/add', [KeranjangBelanjaController::class, 'store'])->name('buyer.cart.add');
     Route::put('/dashboard/keranjang/update', [KeranjangBelanjaController::class, 'update'])->name('buyer.cart.update');
     Route::delete('/dashboard/keranjang/remove/{id}', [KeranjangBelanjaController::class, 'destroy'])->name('buyer.cart.remove');
+    
+    // Alternative cart routes for compatibility
+    Route::get('/dashboard/keranjang/alt', function () {
+        return view('errors.missing-view', ['view' => 'dashboard.buyer.cart.index']);
+    })->name('cart.index');
+    
+    Route::post('/dashboard/keranjang/alt/add', [KeranjangBelanjaController::class, 'store'])->name('cart.add');
+    Route::put('/dashboard/keranjang/alt/update', [KeranjangBelanjaController::class, 'update'])->name('cart.update');
+    Route::delete('/dashboard/keranjang/alt/remove/{id}', [KeranjangBelanjaController::class, 'destroy'])->name('cart.remove');
     
     // Alamat Routes
     Route::get('/dashboard/alamat', [WebViewController::class, 'alamatIndex'])->name('buyer.alamat.index');
@@ -211,57 +222,6 @@ Route::middleware(['auth', 'role:pembeli'])->group(function () {
 // CONSIGNOR/PENITIP ROUTES
 // ========================================
 
-<<<<<<< Updated upstream
-=======
-
-// Profile Routes
-Route::middleware(['auth'])->group(function () {
-   Route::get('/dashboard/profile', function () {
-       return view('errors.missing-view', ['view' => 'dashboard.profile.show']);
-   })->name('profile.show');
-   
-   Route::put('/dashboard/profile', [UserController::class, 'update'])->name('profile.update');
-});
-
-
-// Buyer Routes
-Route::middleware(['auth', 'role:pembeli'])->group(function () {
-   // Transaction Routes
-   Route::get('/dashboard/buyer/transactions', [BuyerTransactionController::class, 'index'])->name('buyer.transactions');
-   Route::get('/dashboard/buyer/transactions/{id}', [BuyerTransactionController::class, 'show'])->name('buyer.transactions.show');
-   
-    // Alamat Routes
-    Route::get('/dashboard/alamat', [WebViewController::class, 'alamatIndex'])->name('buyer.alamat.index');
-    Route::get('/dashboard/alamat/create', [WebViewController::class, 'alamatCreate'])->name('buyer.alamat.create');
-    Route::post('/dashboard/alamat', [WebViewController::class, 'alamatStore'])->name('buyer.alamat.store');
-    Route::get('/dashboard/alamat/{id}/edit', [WebViewController::class, 'alamatEdit'])->name('buyer.alamat.edit');
-    Route::put('/dashboard/alamat/{id}', [WebViewController::class, 'alamatUpdate'])->name('buyer.alamat.update');
-    Route::delete('/dashboard/alamat/{id}', [WebViewController::class, 'alamatDestroy'])->name('buyer.alamat.destroy');
-    Route::patch('/dashboard/alamat/{id}/set-default', [WebViewController::class, 'alamatSetDefault'])->name('buyer.alamat.set-default');
-
-   // Cart Routes
-   Route::get('/dashboard/keranjang', function () {
-       return view('errors.missing-view', ['view' => 'dashboard.buyer.cart.index']);
-   })->name('cart.index');
-   
-   Route::post('/dashboard/keranjang/add', [KeranjangBelanjaController::class, 'store'])->name('cart.add');
-   Route::put('/dashboard/keranjang/update', [KeranjangBelanjaController::class, 'update'])->name('cart.update');
-   Route::delete('/dashboard/keranjang/remove/{id}', [KeranjangBelanjaController::class, 'destroy'])->name('cart.remove');
-   
-   // Checkout Routes
-   Route::get('/checkout', function () {
-       return view('errors.missing-view', ['view' => 'dashboard.buyer.checkout.index']);
-   })->name('checkout.index');
-   
-   Route::post('/checkout/process', [TransaksiController::class, 'store'])->name('checkout.process');
-});
-
-Route::middleware(['auth'])->group(function () {
-    Route::get('/profile', [App\Http\Controllers\Api\WebViewController::class, 'profilePembeli'])->name('profile.show');
-    Route::put('/profile', [App\Http\Controllers\Api\WebViewController::class, 'updateProfilePembeli'])->name('profile.update');
-});
-
->>>>>>> Stashed changes
 Route::middleware(['auth', 'role:penitip'])->group(function () {
     // Dashboard
     Route::get('/dashboard/consignor', [DashboardConsignorController::class, 'index'])->name('dashboard.consignor');
@@ -275,14 +235,21 @@ Route::middleware(['auth', 'role:penitip'])->group(function () {
     Route::put('/dashboard/barang-saya/{id}', [DashboardConsignorController::class, 'updateItem'])->name('consignor.items.update');
     Route::delete('/dashboard/barang-saya/{id}', [DashboardConsignorController::class, 'destroyItem'])->name('consignor.items.destroy');
     
-    // Consignment Transaction Routes
-    Route::get('/dashboard/transaksi', function () {
-        return view('errors.missing-view', ['view' => 'dashboard.consignor.transactions.index']);
-    })->name('consignor.transactions');
+    // Consignment Transaction Routes - Enhanced
+    Route::get('/dashboard/transaksi', [DashboardConsignorController::class, 'transactions'])->name('consignor.transactions');
+    Route::get('/dashboard/transaksi/{id}', [DashboardConsignorController::class, 'showTransaction'])->name('consignor.transactions.show');
     
-    Route::get('/dashboard/transaksi/{id}', function ($id) {
+    // Extension Route - NEW
+    Route::post('/dashboard/transaksi/extend', [DashboardConsignorController::class, 'extendTransaction'])->name('consignor.transactions.extend');
+    
+    // Fallback routes for missing views
+    Route::get('/dashboard/transaksi/fallback', function () {
+        return view('errors.missing-view', ['view' => 'dashboard.consignor.transactions.index']);
+    })->name('consignor.transactions.fallback');
+    
+    Route::get('/dashboard/transaksi/fallback/{id}', function ($id) {
         return view('errors.missing-view', ['view' => 'dashboard.consignor.transactions.show', 'id' => $id]);
-    })->name('consignor.transactions.show');
+    })->name('consignor.transactions.show.fallback');
 });
 
 // ========================================
@@ -306,6 +273,10 @@ Route::middleware(['auth', 'role:gudang,pegawai gudang'])->group(function () {
         Route::get('/items/{id}/edit', [DashboardWarehouseController::class, 'editItem'])->name('item.edit');
         Route::put('/items/{id}', [DashboardWarehouseController::class, 'updateItem'])->name('item.update');
         Route::put('/items/{id}/update-status', [DashboardWarehouseController::class, 'updateItemStatus'])->name('item.update-status');
+        
+        // Alternative item routes for compatibility
+        Route::get('/item/{id}', [DashboardWarehouseController::class, 'showItem'])->name('item.show.alt');
+        Route::put('/item/{id}/status', [DashboardWarehouseController::class, 'updateItemStatus'])->name('item.update-status.alt');
         
         // Consignment Transactions with search functionality
         Route::get('/consignment/transactions', [DashboardWarehouseController::class, 'consignmentTransactions'])->name('consignment.transactions');
@@ -428,6 +399,9 @@ Route::middleware(['auth', 'role:admin'])->prefix('dashboard/admin')->name('dash
     Route::put('/employee-verifications/{id}/reject', [PegawaiController::class, 'reject'])->name('employee.reject');
 });
 
+// Alternative admin route for compatibility
+Route::get('/dashboard/admin', [DashboardAdminController::class, 'index'])->name('dashboard.admin');
+
 // ========================================
 // OWNER ROUTES
 // ========================================
@@ -497,10 +471,30 @@ Route::middleware(['auth', 'role:organisasi'])->group(function () {
         return redirect()->route('dashboard.organization.requests');
     })->name('organization.donation.requests');
     
+    Route::get('/dashboard/request-donasi/create', function () {
+        return redirect()->route('dashboard.organization.requests.create');
+    })->name('organization.donation.requests.create');
+    
+    Route::post('/dashboard/request-donasi', [DonasiController::class, 'store'])->name('organization.donation.requests.store');
+    
+    Route::get('/dashboard/request-donasi/{id}', function ($id) {
+        return redirect()->route('dashboard.organization.requests.show', $id);
+    })->name('organization.donation.requests.show');
+    
     Route::get('/dashboard/donasi-diterima', function () {
         return redirect()->route('dashboard.organization.donations');
     })->name('organization.received.donations');
+    
+    Route::get('/dashboard/donasi-diterima/{id}', function ($id) {
+        return redirect()->route('dashboard.organization.donations.show', $id);
+    })->name('organization.received.donations.show');
+    
+    // Alternative organization dashboard route
+    Route::get('/dashboard/organization/alt', function () {
+        return view('dashboard.organization.index');
+    })->name('dashboard.organization.alt');
 });
+
 // ========================================
 // HUNTER ROUTES
 // ========================================
