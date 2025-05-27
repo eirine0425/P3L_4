@@ -11,9 +11,6 @@
                     <h2>Barang Saya</h2>
                     <p class="text-muted">Kelola semua barang titipan Anda</p>
                 </div>
-                <a href="{{ route('consignor.items.create') }}" class="btn btn-primary">
-                    <i class="fas fa-plus me-2"></i>Tambah Barang
-                </a>
             </div>
         </div>
     </div>
@@ -155,9 +152,6 @@
                             <i class="fas fa-box fa-4x text-muted mb-3"></i>
                             <h4 class="text-muted">Belum ada barang</h4>
                             <p class="text-muted">Mulai tambahkan barang titipan Anda sekarang!</p>
-                            <a href="{{ route('consignor.items.create') }}" class="btn btn-primary">
-                                <i class="fas fa-plus me-2"></i>Tambah Barang Pertama
-                            </a>
                         </div>
                     @endif
                 </div>

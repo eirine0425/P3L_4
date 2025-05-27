@@ -7,7 +7,7 @@ use App\UseCases\TransaksiPenitipan\TransaksiPenitipanUseCase;
 use App\DTOs\TransaksiPenitipan\CreateTransaksiPenitipanRequest;
 use App\DTOs\TransaksiPenitipan\UpdateTransaksiPenitipanRequest;
 use App\DTOs\TransaksiPenitipan\GetTransaksiPenitipanPaginationRequest;
-use Illuminate\Http\Request;
+use App\DTOs\TransaksiPenitipan\ExtendTransaksiPenitipanRequest;
 
 class TransaksiPenitipanController extends Controller
 {
@@ -48,36 +48,20 @@ class TransaksiPenitipanController extends Controller
             : response()->json(['message' => 'Not found'], 404);
     }
 
-    public function expiring(Request $request)
+    public function extend(ExtendTransaksiPenitipanRequest $request)
     {
-        $days = $request->get('days', 7);
-        $expiring = $this->transaksiPenitipanUseCase->getExpiringConsignments($days);
-        return response()->json($expiring);
-    }
+        $transaksiPenitipanId = $request->input('transaksi_penitipan_id');
+        $result = $this->transaksiPenitipanUseCase->extendPenitipan($transaksiPenitipanId);
 
-    public function expired()
-    {
-        $expired = $this->transaksiPenitipanUseCase->getExpiredConsignments();
-        return response()->json($expired);
-    }
+        if (!$result) {
+            return response()->json([
+                'message' => 'Gagal memperpanjang masa penitipan. Transaksi tidak ditemukan atau sudah diperpanjang.'
+            ], 400);
+        }
 
-    public function byStatus($status)
-    {
-        $consignments = $this->transaksiPenitipanUseCase->getConsignmentsByStatus($status);
-        return response()->json($consignments);
-    }
-
-    public function extend(Request $request, $id)
-    {
-        $request->validate([
-            'additional_days' => 'integer|min:1|max:365'
-        ]);
-
-        $additionalDays = $request->get('additional_days', 30);
-        $result = $this->transaksiPenitipanUseCase->extendConsignment($id, $additionalDays);
-
-        return $result
-            ? response()->json($result)
-            : response()->json(['message' => 'Transaksi Penitipan not found'], 404);
+        return response()->json([
+            'message' => 'Masa penitipan berhasil diperpanjang +30 hari',
+            'data' => $result
+        ], 200);
     }
 }
