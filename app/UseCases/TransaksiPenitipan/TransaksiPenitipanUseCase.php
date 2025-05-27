@@ -75,24 +75,28 @@ class TransaksiPenitipanUseCase
         return $this->repository->delete($id);
     }
 
-    public function extendPenitipan($id, $jumlahHari)
+    public function extendPenitipan($id)
     {
         $transaksi = $this->repository->find($id);
 
         if (!$transaksi) {
-            return null; // Or throw an exception
+            return null;
         }
 
-        $tanggalSelesai = Carbon::parse($transaksi->tanggal_selesai);
-        $tanggalSelesai->addDays($jumlahHari);
+        // Check if extension is already used
+        if ($transaksi->status_perpanjangan == true) {
+            return false; // Extension already used
+        }
 
-        $data = ['tanggal_selesai' => $tanggalSelesai];
+        // Add 30 days to batas_penitipan
+        $batasPenitipan = Carbon::parse($transaksi->batas_penitipan);
+        $batasPenitipan->addDays(30);
+
+        $data = [
+            'batas_penitipan' => $batasPenitipan->format('Y-m-d'),
+            'status_perpanjangan' => true
+        ];
 
         return $this->repository->update($id, $data);
-    }
-
-    public function getByPenitipId($penitipId)
-    {
-        return $this->repository->getByPenitipId($penitipId);
     }
 }

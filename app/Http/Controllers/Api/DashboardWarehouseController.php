@@ -5,7 +5,7 @@ namespace App\Http\Controllers\Api;
 use App\Http\Controllers\Controller;
 use Illuminate\Http\Request;
 use App\Models\Transaksi;
-
+use App\Models\Barang;
 use App\Models\Pengiriman;
 use App\Models\KategoriBarang;
 use App\Models\Penitip;
@@ -167,6 +167,9 @@ class DashboardWarehouseController extends Controller
             ]);
         }
 
+        // Define $query for filtering items
+        $query = Barang::query();
+
         // Filter berdasarkan status
         if ($request->has('status') && $request->status != '') {
             $query->where('status', $request->status);
@@ -306,14 +309,6 @@ class DashboardWarehouseController extends Controller
             }
         }
 
-            'status' => 'required|in:belum_terjual,terjual,sold out'
-        ]);
-        
-        $item = Barang::findOrFail($id);
-        $item->status = $request->status;
-        $item->save();
-
-        
         return redirect()->back()->with('success', 'Status transaksi berhasil diperbarui.');
     }
 }

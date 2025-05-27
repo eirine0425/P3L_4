@@ -7,7 +7,6 @@
         <h2><i class="fas fa-box-open me-2"></i>Produk</h2>
         <p>Menampilkan {{ $products->firstItem() ?? 0 }}–{{ $products->lastItem() ?? 0 }} dari {{ $products->total() }} produk</p>
     </div>
-<<<<<<< Updated upstream
 
 
         <!-- Produk -->
@@ -20,10 +19,6 @@
         @endforeach
     </div>
 </div>
-=======
-        <!-- Produk -->
-        <div class="col-md-9">
->>>>>>> Stashed changes
             @if($products->count() > 0)
                 <div class="row">
                     @foreach ($products as $product)

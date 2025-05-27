@@ -78,4 +78,39 @@ class BarangUseCase
 
         return $this->repository->delete($id);
     }
+
+    public function searchByPenitip(int $penitipId, GetBarangPaginationRequest $request): array
+    {
+        $filters = $request->getFilters();
+        $filters['penitip_id'] = $penitipId;
+        
+        return $this->repository->getAll(
+            perPage: $request->getPerPage(),
+            filters: $filters,
+            page: $request->getPage()
+        );
+    }
+
+    public function getAdvancedSearch(GetBarangPaginationRequest $request): array
+    {
+        return $this->repository->getAdvancedSearch(
+            filters: $request->getFilters(),
+            perPage: $request->getPerPage(),
+            page: $request->getPage()
+        );
+    }
+
+    public function getItemsSummary(int $penitipId): array
+    {
+        $statusCounts = $this->repository->getStatusCounts($penitipId);
+        
+        return [
+            'total_items' => $statusCounts['semua_status'],
+            'active_items' => $statusCounts['aktif'],
+            'pending_verification' => $statusCounts['menunggu_verifikasi'],
+            'sold_items' => $statusCounts['terjual'],
+            'inactive_items' => $statusCounts['tidak_aktif'],
+            'rejected_items' => $statusCounts['ditolak'],
+        ];
+    }
 }

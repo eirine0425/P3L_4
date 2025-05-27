@@ -175,5 +175,13 @@ class Barang extends Model
         
         return '/placeholder.svg?height=200&width=200&text=' . urlencode($this->nama_barang);
     }
+
+    public function foto()
+{
+    return $this->hasMany(FotoBarang::class, 'barang_id');
+}
+
+    
+    
 }
         
