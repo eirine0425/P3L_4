@@ -268,6 +268,12 @@ Route::middleware(['auth', 'role:gudang,pegawai gudang'])->group(function () {
         Route::get('/transactions', [DashboardWarehouseController::class, 'transactionsList'])->name('transactions');
         Route::get('/shipments', [DashboardWarehouseController::class, 'shipments'])->name('shipments');
         
+        // NEW ROUTES FOR SEARCH FUNCTIONALITY
+        Route::get('/export', [DashboardWarehouseController::class, 'exportResults'])->name('export');
+        Route::post('/bulk-update', [DashboardWarehouseController::class, 'bulkUpdate'])->name('bulk-update');
+        Route::post('/save-search', [DashboardWarehouseController::class, 'saveSearch'])->name('save-search');
+        Route::get('/saved-searches', [DashboardWarehouseController::class, 'getSavedSearches'])->name('saved-searches');
+        
         // Consignment management
         Route::get('/consignment/create', [DashboardWarehouseController::class, 'createConsignmentItem'])->name('consignment.create');
         Route::post('/consignment', [DashboardWarehouseController::class, 'storeConsignmentItem'])->name('consignment.store');
