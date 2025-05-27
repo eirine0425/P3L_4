@@ -177,7 +177,7 @@ class AuthController extends Controller
             case 6: // Kurir
             case 9: // Hunter
             case 10: // Gudang
-                return redirect()->route('dashboard.warehouse')->with('success', 'Registrasi berhasil! Akun pegawai Anda sedang dalam proses verifikasi.');
+                return redirect()->route('dashboard.warehouse.index')->with('success', 'Registrasi berhasil! Akun pegawai Anda sedang dalam proses verifikasi.');
             case 8: // Owner
                 return redirect()->route('dashboard.owner')->with('success', 'Registrasi berhasil! Akun owner Anda sedang dalam proses verifikasi.');
             case 7: // Organisasi
