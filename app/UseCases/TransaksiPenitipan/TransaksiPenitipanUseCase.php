@@ -6,7 +6,8 @@ use App\Repositories\Interfaces\TransaksiPenitipanRepositoryInterface;
 use App\DTOs\TransaksiPenitipan\CreateTransaksiPenitipanRequest;
 use App\DTOs\TransaksiPenitipan\UpdateTransaksiPenitipanRequest;
 use App\DTOs\TransaksiPenitipan\GetTransaksiPenitipanPaginationRequest;
-
+use App\Repositories\TransaksiPenitipanRepository;
+use Carbon\Carbon;
 class TransaksiPenitipanUseCase
 {
     public function __construct(
@@ -72,5 +73,26 @@ class TransaksiPenitipanUseCase
         }
 
         return $this->repository->delete($id);
+    }
+
+    public function extendPenitipan($id, $jumlahHari)
+    {
+        $transaksi = $this->repository->find($id);
+
+        if (!$transaksi) {
+            return null; // Or throw an exception
+        }
+
+        $tanggalSelesai = Carbon::parse($transaksi->tanggal_selesai);
+        $tanggalSelesai->addDays($jumlahHari);
+
+        $data = ['tanggal_selesai' => $tanggalSelesai];
+
+        return $this->repository->update($id, $data);
+    }
+
+    public function getByPenitipId($penitipId)
+    {
+        return $this->repository->getByPenitipId($penitipId);
     }
 }

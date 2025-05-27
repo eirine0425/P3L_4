@@ -41,4 +41,13 @@ class TransaksiPenitipanRepository implements TransaksiPenitipanRepositoryInterf
     {
         return TransaksiPenitipan::destroy($id) > 0;
     }
+
+    public function getByPenitipId(int $penitipId): array
+    {
+        return TransaksiPenitipan::with(['penitip', 'barang'])
+            ->where('penitip_id', $penitipId)
+            ->orderBy('created_at', 'desc')
+            ->get()
+            ->toArray();
+    }
 }

@@ -56,8 +56,11 @@ Route::get('/', function () {
 })->name('home');
 
 // Products Routes
+
 Route::get('/products', [WebViewController::class, 'products'])->name('products.index');
 Route::get('/products/{id}', [WebViewController::class, 'productDetail'])->name('products.show');
+
+Route::get('/', [WebViewController::class, 'home'])->name('home');
 
 // Alias for backward compatibility
 Route::redirect('/products-alias', '/products')->name('products');
@@ -241,15 +244,12 @@ Route::middleware(['auth', 'role:penitip'])->group(function () {
     Route::put('/dashboard/barang-saya/{id}', [DashboardConsignorController::class, 'updateItem'])->name('consignor.items.update');
     Route::delete('/dashboard/barang-saya/{id}', [DashboardConsignorController::class, 'destroyItem'])->name('consignor.items.destroy');
     
-    // Consignment Transaction Routes
-    Route::get('/dashboard/transaksi', function () {
-        return view('errors.missing-view', ['view' => 'dashboard.consignor.transactions.index']);
-    })->name('consignor.transactions');
+    // Consignment Transaction Routes - UPDATED
+    Route::get('/dashboard/transaksi', [DashboardConsignorController::class, 'transactions'])->name('consignor.transactions');
+    Route::get('/dashboard/transaksi/{id}', [DashboardConsignorController::class, 'showTransaction'])->name('consignor.transactions.show');
     
-    Route::get('/dashboard/transaksi/{id}', function ($id) {
-        return view('errors.missing-view', ['view' => 'dashboard.consignor.transactions.show', 'id' => $id]);
-    })->name('consignor.transactions.show');
-
+    // Extension Route - NEW
+    Route::post('/dashboard/transaksi/extend', [DashboardConsignorController::class, 'extendTransaction'])->name('consignor.transactions.extend');
 });
 
 // ========================================
@@ -371,6 +371,8 @@ Route::middleware(['auth', 'role:admin'])->prefix('dashboard/admin')->name('dash
     Route::put('/employee-verifications/{id}/approve', [PegawaiController::class, 'approve'])->name('employee.approve');
     Route::put('/employee-verifications/{id}/reject', [PegawaiController::class, 'reject'])->name('employee.reject');
 });
+
+Route::get('/dashboard/admin', [DashboardAdminController::class, 'index'])->name('dashboard.admin');
 
 // ========================================
 // OWNER ROUTES
