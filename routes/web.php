@@ -250,6 +250,10 @@ Route::middleware(['auth', 'role:penitip'])->group(function () {
     Route::get('/dashboard/transaksi/fallback/{id}', function ($id) {
         return view('errors.missing-view', ['view' => 'dashboard.consignor.transactions.show', 'id' => $id]);
     })->name('consignor.transactions.show.fallback');
+
+    Route::prefix('dashboard/consignor')->name('dashboard.consignor.')->middleware(['auth', 'role:penitip'])->group(function () {
+    Route::get('/', [DashboardConsignorController::class, 'index'])->name('index');
+});
 });
 
 // ========================================

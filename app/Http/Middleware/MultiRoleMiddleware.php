@@ -27,13 +27,6 @@ class MultiRoleMiddleware
         // Periksa apakah pengguna memiliki salah satu peran yang diperlukan
         foreach ($roles as $role) {
             $requiredRole = strtolower(trim($role));
-            
-            // Support alias untuk pegawai gudang
-            if (($requiredRole === 'pegawai gudang' || $requiredRole === 'gudang') && 
-                ($userRole === 'pegawai gudang' || $userRole === 'gudang')) {
-                return $next($request);
-            }
-            
             if ($userRole === $requiredRole) {
                 return $next($request);
             }

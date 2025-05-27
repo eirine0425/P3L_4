@@ -47,17 +47,26 @@ class PenitipTransaksiController extends Controller
             return response()->json(['message' => 'Transaksi penitipan tidak ditemukan atau bukan milik Anda'], 404);
         }
 
+        // Check if extension is already used
+        if ($transaksi->status_perpanjangan == true) {
+            return response()->json([
+                'message' => 'Masa penitipan sudah pernah diperpanjang sebelumnya. Setiap transaksi hanya dapat diperpanjang sekali.'
+            ], 400);
+        }
+
         $result = $this->transaksiPenitipanUseCase->extendPenitipan($transaksiPenitipanId);
 
         if (!$result) {
             return response()->json([
-                'message' => 'Gagal memperpanjang masa penitipan. Transaksi sudah diperpanjang sebelumnya.'
+                'message' => 'Gagal memperpanjang masa penitipan.'
             ], 400);
         }
 
         return response()->json([
             'message' => 'Masa penitipan berhasil diperpanjang +30 hari',
-            'data' => $result
+            'data' => $result,
+            'new_expiry_date' => $result->batas_penitipan,
+            'status_perpanjangan' => $result->status_perpanjangan
         ], 200);
     }
 }

@@ -6,279 +6,250 @@
 <div class="container py-4">
     <div class="row">
         <div class="col-12">
-            <h2 class="mb-4">
-                <i class="fas fa-shopping-cart me-2"></i>Keranjang Belanja
-                @if($cartItems->count() > 0)
-                    <span class="badge bg-primary">{{ $cartItems->count() }} item</span>
-                @endif
-            </h2>
+            <nav aria-label="breadcrumb">
+                <ol class="breadcrumb">
+                    <li class="breadcrumb-item"><a href="{{ url('/') }}">Beranda</a></li>
+                    <li class="breadcrumb-item active" aria-current="page">Keranjang Belanja</li>
+                </ol>
+            </nav>
         </div>
     </div>
 
+    <div class="row mb-4">
+        <div class="col-12">
+            <h2 class="mb-0"><i class="fas fa-shopping-cart me-2"></i>Keranjang Belanja</h2>
+        </div>
+    </div>
+    
     @if(session('success'))
         <div class="alert alert-success alert-dismissible fade show" role="alert">
-            <i class="fas fa-check-circle me-2"></i>{{ session('success') }}
+            {{ session('success') }}
             <button type="button" class="btn-close" data-bs-dismiss="alert" aria-label="Close"></button>
         </div>
     @endif
-
+    
     @if(session('error'))
         <div class="alert alert-danger alert-dismissible fade show" role="alert">
-            <i class="fas fa-exclamation-triangle me-2"></i>{{ session('error') }}
+            {{ session('error') }}
             <button type="button" class="btn-close" data-bs-dismiss="alert" aria-label="Close"></button>
         </div>
     @endif
-
-    @if($cartItems->count() > 0)
+    
+    @if(isset($cartItems) && $cartItems->count() > 0)
         <div class="row">
             <div class="col-lg-8">
-                <div class="card shadow-sm">
-                    <div class="card-header d-flex justify-content-between align-items-center">
-                        <h5 class="mb-0">Item dalam Keranjang</h5>
-                        <form action="{{ route('cart.clear') }}" method="POST" class="d-inline" 
-                              onsubmit="return confirm('Apakah Anda yakin ingin mengosongkan keranjang?')">
+                <div class="card shadow-sm mb-4">
+                    <div class="card-header bg-white d-flex justify-content-between align-items-center">
+                        <h5 class="mb-0">Daftar Produk ({{ $cartItems->count() }} item)</h5>
+                        <form action="{{ route('cart.clear') }}" method="POST" class="d-inline">
                             @csrf
                             @method('DELETE')
-                            <button type="submit" class="btn btn-outline-danger btn-sm">
-                                <i class="fas fa-trash me-1"></i>Kosongkan Keranjang
+                            <button type="submit" class="btn btn-sm btn-outline-danger" 
+                                    onclick="return confirm('Apakah Anda yakin ingin mengosongkan keranjang?')">
+                                <i class="fas fa-trash-alt me-1"></i> Kosongkan Keranjang
                             </button>
                         </form>
                     </div>
                     <div class="card-body p-0">
                         @foreach($cartItems as $item)
-                            <div class="border-bottom p-3" id="cart-item-{{ $item->keranjang_id }}">
+                            <div class="border-bottom p-3" id="cart-item-{{ $item->id }}">
                                 <div class="row align-items-center">
-                                    <div class="col-md-2">
-                                        @if($item->barang && $item->barang->foto_barang)
-                                            <img src="{{ asset('storage/' . $item->barang->foto_barang) }}" 
-                                                 alt="{{ $item->barang->nama_barang }}" 
-                                                 class="img-fluid rounded" 
-                                                 style="height: 80px; width: 80px; object-fit: cover;">
-                                        @else
-                                            <div class="bg-light rounded d-flex align-items-center justify-content-center" 
-                                                 style="height: 80px; width: 80px;">
-                                                <i class="fas fa-image text-muted"></i>
-                                            </div>
-                                        @endif
-                                    </div>
                                     <div class="col-md-6">
-                                        <h6 class="mb-1">
-                                            {{ $item->barang->nama_barang ?? 'Nama tidak tersedia' }}
-                                        </h6>
-                                        <p class="text-muted mb-1">
-                                            @if($item->barang && $item->barang->kategoriBarang)
-                                                {{ $item->barang->kategoriBarang->nama_kategori }}
-                                            @else
-                                                Tanpa Kategori
-                                            @endif
-                                        </p>
-                                        <small class="text-muted">
-                                            Kondisi: {{ ucfirst($item->barang->kondisi ?? 'Baik') }}
-                                        </small>
-                                        @if($item->barang && $item->barang->deskripsi)
-                                            <p class="text-muted small mb-0">
-                                                {{ Str::limit($item->barang->deskripsi, 100) }}
-                                            </p>
-                                        @endif
+                                        <div class="d-flex align-items-center">
+                                            <img src="{{ $item->barang->foto ? asset('storage/' . $item->barang->foto) : 'https://via.placeholder.com/100x100' }}" 
+                                                 alt="{{ $item->barang->nama_barang }}" 
+                                                 class="img-thumbnail me-3" 
+                                                 style="width: 80px; height: 80px; object-fit: cover;">
+                                            <div>
+                                                <h6 class="mb-1">{{ $item->barang->nama_barang }}</h6>
+                                                <small class="text-muted">
+                                                    Kategori: {{ $item->barang->kategoriBarang->nama_kategori ?? 'Tanpa Kategori' }}
+                                                </small>
+                                                <br>
+                                                <small class="text-muted">
+                                                    Kondisi: {{ $item->barang->kondisi ?? 'Baik' }}
+                                                </small>
+                                                <br>
+                                                <small class="text-success">
+                                                    Status: {{ $item->barang->status }}
+                                                </small>
+                                            </div>
+                                        </div>
                                     </div>
                                     <div class="col-md-2 text-center">
-                                        <span class="fw-bold text-primary">
-                                            Rp {{ number_format($item->barang->harga ?? 0, 0, ',', '.') }}
-                                        </span>
+                                        <div class="fw-bold">
+                                            Rp {{ number_format($item->barang->harga, 0, ',', '.') }}
+                                        </div>
                                     </div>
-                                    <div class="col-md-2 text-end">
-                                        <form action="{{ route('cart.remove', $item->keranjang_id) }}" method="POST" class="d-inline remove-item-form">
-                                            @csrf
-                                            @method('DELETE')
-                                            <button type="submit" class="btn btn-outline-danger btn-sm" 
-                                                    onclick="return confirm('Hapus item ini dari keranjang?')">
-                                                <i class="fas fa-trash"></i>
-                                            </button>
-                                        </form>
+                                    <div class="col-md-2 text-center">
+                                        <div class="fw-bold text-muted">
+                                            Qty: 1
+                                        </div>
+                                    </div>
+                                    <div class="col-md-2 text-center">
+                                        <div class="fw-bold text-primary item-total" id="total-{{ $item->id }}">
+                                            Rp {{ number_format($item->barang->harga, 0, ',', '.') }}
+                                        </div>
+                                    </div>
+                                    <div class="col-md-12 col-lg-auto text-center mt-2 mt-md-0">
+                                        <div class="d-flex gap-2 justify-content-center">
+                                            <a href="{{ route('products.show', $item->barang->barang_id) }}" 
+                                               class="btn btn-sm btn-outline-info" title="Lihat Detail">
+                                                <i class="fas fa-eye"></i>
+                                            </a>
+                                            <form action="{{ route('cart.remove', $item->id) }}" method="POST" class="d-inline">
+                                                @csrf
+                                                @method('DELETE')
+                                                <button type="submit" class="btn btn-sm btn-outline-danger"
+                                                        onclick="return confirm('Apakah Anda yakin ingin menghapus produk ini dari keranjang?')"
+                                                        title="Hapus dari Keranjang">
+                                                    <i class="fas fa-trash"></i>
+                                                </button>
+                                            </form>
+                                        </div>
                                     </div>
                                 </div>
                             </div>
                         @endforeach
                     </div>
+                    <div class="card-footer bg-white">
+                        <div class="d-flex justify-content-between align-items-center">
+                            <a href="{{ route('products.index') }}" class="btn btn-outline-primary">
+                                <i class="fas fa-arrow-left me-2"></i>Lanjutkan Belanja
+                            </a>
+                        </div>
+                    </div>
                 </div>
             </div>
             
             <div class="col-lg-4">
-                <div class="card shadow-sm">
-                    <div class="card-header">
+                <div class="card shadow-sm mb-4">
+                    <div class="card-header bg-white">
                         <h5 class="mb-0">Ringkasan Belanja</h5>
                     </div>
                     <div class="card-body">
                         <div class="d-flex justify-content-between mb-2">
-                            <span>Subtotal ({{ $cartItems->count() }} item):</span>
-                            <span class="fw-bold">Rp {{ number_format($subtotal, 0, ',', '.') }}</span>
+                            <span>Subtotal ({{ $cartItems->count() }} produk)</span>
+                            <span class="fw-bold" id="cart-subtotal">Rp {{ number_format($subtotal ?? 0, 0, ',', '.') }}</span>
                         </div>
+                        
+                        <div class="d-flex justify-content-between mb-2">
+                            <span>Ongkos Kirim</span>
+                            <span class="text-muted">Dihitung saat checkout</span>
+                        </div>
+                        
                         <div class="d-flex justify-content-between mb-3">
-                            <span>Ongkos Kirim:</span>
-                            <span class="text-muted">Akan dihitung di checkout</span>
+                            <span>Diskon</span>
+                            <span class="text-success">- Rp 0</span>
                         </div>
+                        
                         <hr>
+                        
                         <div class="d-flex justify-content-between mb-3">
-                            <span class="fw-bold">Total:</span>
-                            <span class="fw-bold text-primary fs-5">Rp {{ number_format($subtotal, 0, ',', '.') }}</span>
+                            <span class="fw-bold fs-6">Total</span>
+                            <span class="fw-bold fs-5 text-primary" id="cart-total">Rp {{ number_format($subtotal ?? 0, 0, ',', '.') }}</span>
                         </div>
+                        
+                        <div class="mb-3">
+                            <label for="promo" class="form-label">Kode Promo</label>
+                            <div class="input-group">
+                                <input type="text" class="form-control" id="promo" placeholder="Masukkan kode promo">
+                                <button class="btn btn-outline-secondary" type="button">Terapkan</button>
+                            </div>
+                        </div>
+                        
                         <div class="d-grid gap-2">
-                            <a href="{{ route('checkout.index') }}" class="btn btn-primary btn-lg">
-                                <i class="fas fa-credit-card me-2"></i>Checkout
+                            <a href="{{ route('checkout.index') }}" class="btn btn-success btn-lg">
+                                <i class="fas fa-shopping-bag me-2"></i>Checkout
                             </a>
-                            <a href="{{ route('products.index') }}" class="btn btn-outline-secondary">
-                                <i class="fas fa-arrow-left me-2"></i>Lanjut Belanja
-                            </a>
+                        </div>
+                    </div>
+                </div>
+                
+                <div class="card shadow-sm">
+                    <div class="card-header bg-white">
+                        <h6 class="mb-0"><i class="fas fa-shield-alt me-2"></i>Jaminan ReuseMart</h6>
+                    </div>
+                    <div class="card-body">
+                        <div class="d-flex align-items-center mb-2">
+                            <i class="fas fa-check-circle text-success me-2"></i>
+                            <small>100% Produk Original</small>
+                        </div>
+                        <div class="d-flex align-items-center mb-2">
+                            <i class="fas fa-check-circle text-success me-2"></i>
+                            <small>Garansi Uang Kembali</small>
+                        </div>
+                        <div class="d-flex align-items-center">
+                            <i class="fas fa-check-circle text-success me-2"></i>
+                            <small>Pengiriman Aman & Cepat</small>
                         </div>
                     </div>
                 </div>
             </div>
         </div>
     @else
-        <div class="row">
-            <div class="col-12">
-                <div class="card shadow-sm">
-                    <div class="card-body text-center py-5">
-                        <i class="fas fa-shopping-cart fa-3x text-muted mb-3"></i>
-                        <h4 class="text-muted mb-3">Keranjang Belanja Kosong</h4>
-                        <p class="text-muted mb-4">Belum ada produk yang ditambahkan ke keranjang Anda.</p>
-                        <a href="{{ route('products.index') }}" class="btn btn-primary">
-                            <i class="fas fa-shopping-bag me-2"></i>Mulai Belanja
-                        </a>
-                    </div>
-                </div>
-            </div>
-        </div>
-        
-        @if(isset($recommendedProducts) && $recommendedProducts->count() > 0)
-            <div class="row mt-4">
-                <div class="col-12">
-                    <h4 class="mb-3">Produk Rekomendasi</h4>
-                    <div class="row">
-                        @foreach($recommendedProducts as $product)
-                            <div class="col-md-3 mb-3">
-                                <div class="card h-100 shadow-sm">
-                                    @if($product->foto_barang)
-                                        <img src="{{ asset('storage/' . $product->foto_barang) }}" 
-                                             class="card-img-top" alt="{{ $product->nama_barang }}" 
-                                             style="height: 200px; object-fit: cover;">
-                                    @else
-                                        <div class="card-img-top bg-light d-flex align-items-center justify-content-center" 
-                                             style="height: 200px;">
-                                            <i class="fas fa-image fa-3x text-muted"></i>
-                                        </div>
-                                    @endif
-                                    <div class="card-body d-flex flex-column">
-                                        <h6 class="card-title">{{ Str::limit($product->nama_barang, 50) }}</h6>
-                                        <p class="card-text text-primary fw-bold">
-                                            Rp {{ number_format($product->harga, 0, ',', '.') }}
-                                        </p>
-                                        <div class="mt-auto">
-                                            <a href="{{ route('products.show', $product->barang_id) }}" 
-                                               class="btn btn-outline-primary btn-sm w-100">
+        <div class="card shadow-sm">
+            <div class="card-body text-center py-5">
+                <i class="fas fa-shopping-cart fa-4x text-muted mb-4"></i>
+                <h3 class="mb-3">Keranjang Belanja Kosong</h3>
+                <p class="text-muted mb-4">Anda belum menambahkan produk apapun ke keranjang belanja.</p>
+                <a href="{{ route('products.index') }}" class="btn btn-primary btn-lg">
+                    <i class="fas fa-shopping-bag me-2"></i>Mulai Belanja
+                </a>
+                
+                @if(isset($recommendedProducts) && $recommendedProducts->count() > 0)
+                    <div class="mt-5">
+                        <h5 class="mb-3">Produk Rekomendasi</h5>
+                        <div class="row">
+                            @foreach($recommendedProducts as $product)
+                                <div class="col-md-3 mb-3">
+                                    <div class="card h-100">
+                                        <img src="{{ $product->foto ? asset('storage/' . $product->foto) : 'https://via.placeholder.com/200x150' }}" 
+                                             class="card-img-top" alt="{{ $product->nama_barang }}" style="height: 150px; object-fit: cover;">
+                                        <div class="card-body d-flex flex-column">
+                                            <h6 class="card-title">{{ Str::limit($product->nama_barang, 50) }}</h6>
+                                            <p class="card-text text-primary fw-bold">Rp {{ number_format($product->harga, 0, ',', '.') }}</p>
+                                            <a href="{{ route('products.show', $product->barang_id) }}" class="btn btn-outline-primary btn-sm mt-auto">
                                                 Lihat Detail
                                             </a>
                                         </div>
                                     </div>
                                 </div>
-                            </div>
-                        @endforeach
+                            @endforeach
+                        </div>
                     </div>
-                </div>
-            </div>
-        @endif
-    @endif
-</div>
-
-<!-- Debug Information (remove in production) -->
-@if(config('app.debug'))
-    <div class="container mt-4">
-        <div class="card">
-            <div class="card-header">
-                <h6 class="mb-0">Debug Information</h6>
-            </div>
-            <div class="card-body">
-                <p><strong>Cart Items Count:</strong> {{ $cartItems->count() }}</p>
-                <p><strong>Subtotal:</strong> {{ $subtotal }}</p>
-                <p><strong>User ID:</strong> {{ auth()->id() }}</p>
-                <p><strong>User Role:</strong> {{ auth()->user()->role->nama_role ?? 'No Role' }}</p>
-                
-                <div class="mt-3">
-                    <a href="{{ route('cart.debug') }}" class="btn btn-info btn-sm" target="_blank">
-                        View Debug Data
-                    </a>
-                </div>
-                
-                @if($cartItems->count() > 0)
-                    <details class="mt-3">
-                        <summary>Cart Items Data</summary>
-                        <pre>{{ json_encode($cartItems->toArray(), JSON_PRETTY_PRINT) }}</pre>
-                    </details>
                 @endif
             </div>
         </div>
-    </div>
-@endif
+    @endif
+</div>
 @endsection
 
 @section('scripts')
+<script src="https://code.jquery.com/jquery-3.6.0.min.js"></script>
 <script>
-$(document).ready(function() {
-    // Handle remove item with AJAX
-    $('.remove-item-form').on('submit', function(e) {
-        e.preventDefault();
-        
-        if (!confirm('Hapus item ini dari keranjang?')) {
-            return;
+    $(document).ready(function() {
+        // Function to show message
+        function showMessage(type, message) {
+            const alertClass = type === 'success' ? 'alert-success' : 'alert-danger';
+            const alertHtml = `
+                <div class="alert ${alertClass} alert-dismissible fade show" role="alert">
+                    ${message}
+                    <button type="button" class="btn-close" data-bs-dismiss="alert" aria-label="Close"></button>
+                </div>
+            `;
+            
+            // Remove existing alerts
+            $('.alert').remove();
+            
+            // Add new alert at the top
+            $('.container').prepend(alertHtml);
+            
+            // Auto dismiss after 3 seconds
+            setTimeout(function() {
+                $('.alert').fadeOut();
+            }, 3000);
         }
-        
-        const form = $(this);
-        const itemRow = form.closest('[id^="cart-item-"]');
-        
-        $.ajax({
-            url: form.attr('action'),
-            method: 'POST',
-            data: form.serialize(),
-            success: function(response) {
-                // Remove item from DOM
-                itemRow.fadeOut(300, function() {
-                    $(this).remove();
-                    
-                    // Reload page to update totals
-                    location.reload();
-                });
-                
-                // Show success message
-                showAlert('success', 'Item berhasil dihapus dari keranjang');
-            },
-            error: function(xhr) {
-                let message = 'Terjadi kesalahan saat menghapus item';
-                if (xhr.responseJSON && xhr.responseJSON.message) {
-                    message = xhr.responseJSON.message;
-                }
-                showAlert('error', message);
-            }
-        });
     });
-
-    function showAlert(type, message) {
-        const alertClass = type === 'success' ? 'alert-success' : 'alert-danger';
-        const iconClass = type === 'success' ? 'fas fa-check-circle' : 'fas fa-exclamation-triangle';
-        
-        const alertHtml = `
-            <div class="alert ${alertClass} alert-dismissible fade show" role="alert">
-                <i class="${iconClass} me-2"></i>${message}
-                <button type="button" class="btn-close" data-bs-dismiss="alert" aria-label="Close"></button>
-            </div>
-        `;
-        
-        $('.alert').remove();
-        $('.container').first().prepend(alertHtml);
-        
-        setTimeout(function() {
-            $('.alert').fadeOut();
-        }, 5000);
-    }
-});
 </script>
 @endsection

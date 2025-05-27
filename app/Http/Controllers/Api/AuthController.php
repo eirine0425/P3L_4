@@ -45,7 +45,7 @@ class AuthController extends Controller
                     return redirect()->route('dashboard.admin');
                 case 'pegawai':
                 case 'gudang':
-                    return redirect()->route('dashboard.warehouse.index'); // Pegawai dan Gudang menggunakan dashboard warehouse
+                    return redirect()->route('dashboard.warehouse');
                 case 'cs':
                     return redirect()->route('dashboard.cs');
                 case 'penjual':
@@ -55,9 +55,9 @@ class AuthController extends Controller
                 case 'pembeli':
                     return redirect()->route('dashboard.buyer');
                 case 'kurir':
-                    return redirect()->route('dashboard.warehouse.index'); // Kurir menggunakan dashboard warehouse
+                    return redirect()->route('dashboard.warehouse'); // Kurir menggunakan dashboard warehouse
                 case 'hunter':
-                    return redirect()->route('dashboard.warehouse.index'); // Hunter menggunakan dashboard warehouse
+                    return redirect()->route('dashboard.warehouse'); // Hunter menggunakan dashboard warehouse
                 default:
                     // Fallback ke dashboard buyer jika role tidak dikenali
                     Log::warning('Unrecognized role: ' . $roleName . ' for user: ' . $user->email);

@@ -22,43 +22,20 @@ use App\Models\Pembeli;
 use App\Models\Organisasi;
 use App\Models\Pegawai;
 use App\Models\Alamat;
-use Illuminate\Support\Facades\Log;
 
 class WebViewController extends Controller
 {
     // Halaman Publik
-     public function home()
+    public function home()
     {
-        try {
-            $featuredProducts = Barang::with(['kategori', 'penitip'])
-                ->where('status', 'belum_terjual')
-                ->orderBy('rating', 'desc')
-                ->take(8)
-                ->get();
+        $featuredProducts = Barang::with(['kategori', 'penitip'])
+            ->where('status', 'belum_terjual')
+            ->orderBy('rating', 'desc')
+            ->take(8)
+            ->get();
+        $categories = KategoriBarang::all();
         
-            $categories = KategoriBarang::all();
-        
-            // Ensure we always have collections, even if empty
-            if (!$featuredProducts) {
-                $featuredProducts = collect();
-            }
-        
-            if (!$categories) {
-                $categories = collect();
-            }
-        
-            return view('home', compact('featuredProducts', 'categories'));
-        } catch (\Exception $e) {
-            // Log the error for debugging
-            Log::error('Error in home method: ' . $e->getMessage());
-        
-            // Return view with empty collections to prevent undefined variable errors
-            $featuredProducts = collect();
-            $categories = collect();
-        
-            return view('home', compact('featuredProducts', 'categories'))
-                ->with('error', 'Terjadi kesalahan saat memuat halaman. Silakan coba lagi.');
-        }
+        return view('home', compact('featuredProducts', 'categories'));
     }
     
     public function products(Request $request)
@@ -66,7 +43,7 @@ class WebViewController extends Controller
         // Always load categories first
         $categories = KategoriBarang::all();
         
-        $query = Barang::with(['kategori', 'penitip', 'transaksiPenitipan']);
+        $query = Barang::with(['kategori', 'penitip']);
         
         // Filter by categories
         if ($request->has('categories') && !empty($request->categories)) {
@@ -140,71 +117,6 @@ class WebViewController extends Controller
             ->get();
             
         return view('products.show', compact('product', 'relatedProducts'));
-    }
-
-    public function showProduct($id)
-    {
-        // Load product with all necessary relationships
-        $product = Barang::with([
-            'kategori',
-            'penitip.user',
-            'garansi',
-            'diskusi.user',
-            'transaksiPenitipan'
-        ])->findOrFail($id);
-
-        // Debug: Log detailed information
-        Log::info('Product Debug Info:', [
-            'product_id' => $product->barang_id,
-            'product_name' => $product->nama_barang,
-            'penitip_id_in_barang' => $product->penitip_id,
-            'penitip_relationship_loaded' => $product->relationLoaded('penitip'),
-            'penitip_exists' => $product->penitip ? true : false,
-        ]);
-
-        if ($product->penitip) {
-            Log::info('Penitip Data:', [
-                'penitip_id' => $product->penitip->penitip_id,
-                'penitip_nama' => $product->penitip->nama,
-                'penitip_user_id' => $product->penitip->user_id,
-                'user_relationship_loaded' => $product->penitip->relationLoaded('user'),
-                'user_exists' => $product->penitip->user ? true : false,
-            ]);
-
-            if ($product->penitip->user) {
-                Log::info('User Data:', [
-                    'user_id' => $product->penitip->user->id,
-                    'user_name' => $product->penitip->user->name,
-                    'user_email' => $product->penitip->user->email,
-                ]);
-            }
-        } else {
-            Log::warning('No penitip found for product', [
-                'product_id' => $product->barang_id,
-                'penitip_id' => $product->penitip_id
-            ]);
-        }
-
-        // Get related products
-        $relatedProducts = Barang::where('kategori_id', $product->kategori_id)
-            ->where('barang_id', '!=', $product->barang_id)
-            ->where('status', 'belum_terjual')
-            ->with(['kategori', 'penitip.user'])
-            ->limit(4)
-            ->get();
-
-        return view('products.show', compact('product', 'relatedProducts'));
-    }
-
-    public function index()
-    {
-        $products = Barang::with(['kategori', 'penitip.user', 'transaksiPenitipan'])
-            ->where('status', 'belum_terjual')
-            ->paginate(12);
-
-        $categories = KategoriBarang::all();
-
-        return view('products.index', compact('products', 'categories'));
     }
     
     public function warrantyCheck(Request $request)
