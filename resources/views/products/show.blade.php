@@ -277,12 +277,12 @@
                             @if($product->isAvailable())
                                 <!-- Pembeli - Show Cart Actions -->
                                 <div class="d-grid gap-2">
-                                    <form action="{{ route('cart.add') }}" method="POST" id="add-to-cart-form">
+                                    <form action="{{ route('cart.add') }}" method="POST" id="addToCartForm">
                                         @csrf
                                         <input type="hidden" name="barang_id" value="{{ $product->barang_id }}">
-                                        
-                                        <button type="submit" class="btn btn-primary btn-lg w-100" id="add-to-cart-btn">
-                                            <i class="fas fa-cart-plus me-2"></i>Tambah ke Keranjang
+                                        <input type="hidden" name="redirect_to_cart" value="1">
+                                        <button type="submit" class="btn btn-success btn-lg" id="addToCartBtn">
+                                            <i class="fas fa-shopping-cart me-2"></i>Tambah ke Keranjang
                                         </button>
                                     </form>
 

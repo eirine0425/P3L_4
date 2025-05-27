@@ -152,7 +152,7 @@
                                                     <a href="{{ route('cart.index') }}" class="btn btn-sm btn-outline-primary">
                                                         <i class="fas fa-edit me-1"></i>Edit
                                                     </a>
-                                                    <form action="{{ route('cart.remove', $item->keranjang_belanja_id) }}" method="POST" class="d-inline">
+                                                    <form action="{{ route('cart.remove', $item->keranjang_id) }}" method="POST" class="d-inline">
                                                         @csrf
                                                         @method('DELETE')
                                                         <button type="submit" class="btn btn-sm btn-outline-danger w-100"

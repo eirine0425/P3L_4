@@ -40,9 +40,14 @@ class Barang extends Model
         return $this->belongsTo(Penitip::class, 'penitip_id');
     }
 
+    public function kategoriBarang()
+    {
+        return $this->belongsTo(KategoriBarang::class, 'kategori_id', 'kategori_id');
+    }
+
     public function kategori()
     {
-        return $this->belongsTo(KategoriBarang::class, 'kategori_id');
+        return $this->kategoriBarang();
     }
 
     public function garansi()
@@ -56,6 +61,11 @@ class Barang extends Model
         return $this->hasMany(DiskusiProduk::class, 'barang_id');
     }
 
+
+    public function keranjangBelanja()
+    {
+        return $this->hasMany(KeranjangBelanja::class, 'barang_id', 'barang_id');
+
     public function detailTransaksi()
     {
         return $this->hasMany(DetailTransaksi::class, 'barang_id', 'barang_id');
@@ -64,6 +74,7 @@ class Barang extends Model
     public function transaksiPenitipan()
     {
         return $this->hasOne(TransaksiPenitipan::class, 'barang_id', 'barang_id');
+
     }
 
     // FIXED: Accessor for rating - use the rating column directly from barang table
