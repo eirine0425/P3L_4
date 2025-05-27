@@ -14,6 +14,9 @@
                 <a href="{{ route('dashboard.warehouse.inventory') }}" class="btn btn-secondary">
                     <i class="fas fa-arrow-left"></i> Kembali
                 </a>
+                <a href="{{ route('dashboard.warehouse.item.edit', $item->barang_id) }}" class="btn btn-warning">
+                    <i class="fas fa-edit"></i> Edit Barang
+                </a>
                 <button type="button" class="btn btn-primary" data-bs-toggle="modal" data-bs-target="#updateStatusModal">
                     <i class="fas fa-check-circle"></i> Update Status
                 </button>

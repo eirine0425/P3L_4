@@ -135,11 +135,15 @@
                                             <td>
                                                 <div class="btn-group" role="group">
                                                     <a href="{{ route('dashboard.warehouse.item.show', $item->barang_id) }}" 
-                                                       class="btn btn-sm btn-outline-primary">
+                                                       class="btn btn-sm btn-outline-primary" title="Lihat Detail">
                                                         <i class="fas fa-eye"></i>
                                                     </a>
+                                                    <a href="{{ route('dashboard.warehouse.item.edit', $item->barang_id) }}" 
+                                                       class="btn btn-sm btn-outline-warning" title="Edit Barang">
+                                                        <i class="fas fa-edit"></i>
+                                                    </a>
                                                     <a href="{{ route('products.show', $item->barang_id) }}" 
-                                                       class="btn btn-sm btn-outline-info" target="_blank">
+                                                       class="btn btn-sm btn-outline-info" target="_blank" title="Lihat di Katalog">
                                                         <i class="fas fa-external-link-alt"></i>
                                                     </a>
                                                 </div>
