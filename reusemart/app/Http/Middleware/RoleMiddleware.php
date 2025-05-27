@@ -49,7 +49,7 @@ class RoleMiddleware
                 return redirect()->route('dashboard.admin.index');
             case 'pegawai gudang':
             case 'gudang':
-                return redirect()->route('dashboard.warehouse');
+                return redirect()->route('dashboard.warehouse.index');
             case 'cs':
                 return redirect()->route('dashboard.cs');
             case 'penitip':
@@ -59,11 +59,8 @@ class RoleMiddleware
                 return redirect()->route('dashboard.organization');
             case 'pembeli':
                 return redirect()->route('dashboard.buyer');
-            case 'hunter':
-                return redirect()->route('dashboard.hunter');
             default:
-                Log::error('Unknown role: ' . $userRole . ' for user: ' . $user->email);
-                return redirect()->route('dashboard')->with('error', 'Anda tidak memiliki izin untuk mengakses halaman ini. Role: ' . $userRole);
+                return redirect()->route('dashboard')->with('error', 'Anda tidak memiliki izin untuk mengakses halaman ini.');
         }
     }
 }
