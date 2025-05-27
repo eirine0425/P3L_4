@@ -65,6 +65,7 @@ class Barang extends Model
     public function keranjangBelanja()
     {
         return $this->hasMany(KeranjangBelanja::class, 'barang_id', 'barang_id');
+    }
 
     public function detailTransaksi()
     {

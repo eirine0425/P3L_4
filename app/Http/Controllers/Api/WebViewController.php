@@ -27,16 +27,38 @@ use Illuminate\Support\Facades\Log;
 class WebViewController extends Controller
 {
     // Halaman Publik
-    public function home()
+     public function home()
     {
-        $featuredProducts = Barang::with(['kategori', 'penitip'])
-            ->where('status', 'belum_terjual')
-            ->orderBy('rating', 'desc')
-            ->take(8)
-            ->get();
-        $categories = KategoriBarang::all();
+        try {
+            $featuredProducts = Barang::with(['kategori', 'penitip'])
+                ->where('status', 'belum_terjual')
+                ->orderBy('rating', 'desc')
+                ->take(8)
+                ->get();
         
-        return view('home', compact('featuredProducts', 'categories'));
+            $categories = KategoriBarang::all();
+        
+            // Ensure we always have collections, even if empty
+            if (!$featuredProducts) {
+                $featuredProducts = collect();
+            }
+        
+            if (!$categories) {
+                $categories = collect();
+            }
+        
+            return view('home', compact('featuredProducts', 'categories'));
+        } catch (\Exception $e) {
+            // Log the error for debugging
+            Log::error('Error in home method: ' . $e->getMessage());
+        
+            // Return view with empty collections to prevent undefined variable errors
+            $featuredProducts = collect();
+            $categories = collect();
+        
+            return view('home', compact('featuredProducts', 'categories'))
+                ->with('error', 'Terjadi kesalahan saat memuat halaman. Silakan coba lagi.');
+        }
     }
     
     public function products(Request $request)
