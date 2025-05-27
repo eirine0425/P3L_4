@@ -250,10 +250,6 @@ Route::middleware(['auth', 'role:penitip'])->group(function () {
     Route::get('/dashboard/transaksi/fallback/{id}', function ($id) {
         return view('errors.missing-view', ['view' => 'dashboard.consignor.transactions.show', 'id' => $id]);
     })->name('consignor.transactions.show.fallback');
-
-    Route::prefix('dashboard/consignor')->name('dashboard.consignor.')->middleware(['auth', 'role:penitip'])->group(function () {
-    Route::get('/', [DashboardConsignorController::class, 'index'])->name('index');
-});
 });
 
 // ========================================
@@ -267,6 +263,12 @@ Route::middleware(['auth', 'role:gudang,pegawai gudang'])->group(function () {
         Route::get('/inventory', [DashboardWarehouseController::class, 'inventory'])->name('inventory');
         Route::get('/transactions', [DashboardWarehouseController::class, 'transactionsList'])->name('transactions');
         Route::get('/shipments', [DashboardWarehouseController::class, 'shipments'])->name('shipments');
+        
+        // NEW ROUTES FOR SEARCH FUNCTIONALITY
+        Route::get('/export', [DashboardWarehouseController::class, 'exportResults'])->name('export');
+        Route::post('/bulk-update', [DashboardWarehouseController::class, 'bulkUpdate'])->name('bulk-update');
+        Route::post('/save-search', [DashboardWarehouseController::class, 'saveSearch'])->name('save-search');
+        Route::get('/saved-searches', [DashboardWarehouseController::class, 'getSavedSearches'])->name('saved-searches');
         
         // Consignment management
         Route::get('/consignment/create', [DashboardWarehouseController::class, 'createConsignmentItem'])->name('consignment.create');
