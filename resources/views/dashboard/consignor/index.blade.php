@@ -77,20 +77,29 @@
     
     <!-- Quick Actions -->
     <div class="row mt-4">
-        <div class="col-8">
+        <div class="col-12">
             <div class="card">
                 <div class="card-header">
-                    <h5 class="card-title">Aksi Cepat</h5>
+                    <h5 class="card-title mb-0">Menu Utama</h5>
                 </div>
-                <div class="card-body">
-                        <div class="col-md-4 mb-3">
-                            <a href="{{ route('consignor.items') }}" class="btn btn-success btn-lg w-100">
-                                <i class="fas fa-boxes me-2"></i>Kelola Barang Saya
+                <div class="card-body py-4">
+                    <div class="row g-3">
+                        <div class="col-md-6">
+                            <a href="{{ route('consignor.items') }}" class="btn btn-success btn-lg w-100 text-decoration-none" style="min-height: 100px;">
+                                <div class="d-flex flex-column align-items-center justify-content-center h-100">
+                                    <i class="fas fa-boxes fa-3x mb-3"></i>
+                                    <h6 class="mb-1 fw-bold">Kelola Barang Saya</h6>
+                                    <small class="opacity-75">Lihat dan kelola barang titipan</small>
+                                </div>
                             </a>
                         </div>
-                        <div class="col-md-4 mb-3">
-                            <a href="{{ route('consignor.transactions') }}" class="btn btn-info btn-lg w-100">
-                                <i class="fas fa-chart-line me-2"></i>Lihat Transaksi
+                        <div class="col-md-6">
+                            <a href="{{ route('consignor.transactions') }}" class="btn btn-info btn-lg w-100 text-decoration-none" style="min-height: 100px;">
+                                <div class="d-flex flex-column align-items-center justify-content-center h-100">
+                                    <i class="fas fa-chart-line fa-3x mb-3"></i>
+                                    <h6 class="mb-1 fw-bold">Lihat Transaksi</h6>
+                                    <small class="opacity-75">Riwayat penjualan barang</small>
+                                </div>
                             </a>
                         </div>
                     </div>
@@ -152,10 +161,10 @@
                             </table>
                         </div>
                     @else
-                        <div class="text-center py-4">
-                            <i class="fas fa-box fa-3x text-muted mb-3"></i>
-                            <p class="text-muted">Belum ada barang yang terdaftar.</p>
-
+                        <div class="text-center py-5">
+                            <i class="fas fa-box fa-4x text-muted mb-3"></i>
+                            <h4 class="text-muted">Belum ada barang</h4>
+                            <p class="text-muted">Barang titipan Anda akan muncul di sini setelah didaftarkan oleh admin.</p>
                         </div>
                     @endif
                 </div>
@@ -169,7 +178,14 @@
                     <h5 class="card-title">Status Barang</h5>
                 </div>
                 <div class="card-body">
-                    <canvas id="statusChart"></canvas>
+                    @if(count($itemsByStatus) > 0)
+                        <canvas id="statusChart"></canvas>
+                    @else
+                        <div class="text-center py-4">
+                            <i class="fas fa-chart-pie fa-3x text-muted mb-3"></i>
+                            <p class="text-muted">Belum ada data untuk ditampilkan</p>
+                        </div>
+                    @endif
                 </div>
             </div>
         </div>
@@ -178,6 +194,7 @@
 @endsection
 
 @push('scripts')
+@if(count($itemsByStatus) > 0)
 <script src="https://cdn.jsdelivr.net/npm/chart.js"></script>
 <script>
     // Status Chart
@@ -213,4 +230,5 @@
         }
     });
 </script>
+@endif
 @endpush
