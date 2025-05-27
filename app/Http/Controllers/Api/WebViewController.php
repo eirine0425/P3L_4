@@ -28,8 +28,8 @@ class WebViewController extends Controller
     // Halaman Publik
     public function home()
     {
-        $featuredProducts = Barang::with('kategori')
-            ->where('status', 'belum_terjual') // FIXED: Changed from 'tersedia' to 'belum_terjual'
+        $featuredProducts = Barang::with(['kategori', 'penitip'])
+            ->where('status', 'belum_terjual')
             ->orderBy('rating', 'desc')
             ->take(8)
             ->get();
@@ -106,10 +106,13 @@ class WebViewController extends Controller
     
     public function productDetail($id)
     {
-        $product = Barang::with(['kategori', 'diskusi.user'])->where('barang_id', $id)->firstOrFail();
+        $product = Barang::with(['kategori', 'diskusi.user', 'penitip'])
+            ->where('barang_id', $id)
+            ->firstOrFail();
+            
         $relatedProducts = Barang::where('kategori_id', $product->kategori_id)
             ->where('barang_id', '!=', $id)
-            ->where('status', 'belum_terjual') // FIXED: Changed from 'tersedia' to 'belum_terjual'
+            ->where('status', 'belum_terjual')
             ->take(4)
             ->get();
             

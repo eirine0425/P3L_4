@@ -8,91 +8,17 @@
         <p>Menampilkan {{ $products->firstItem() ?? 0 }}–{{ $products->lastItem() ?? 0 }} dari {{ $products->total() }} produk</p>
     </div>
 
-    <div class="row">
-        <!-- Sidebar Filter -->
-        <div class="col-md-3">
-            <div class="card">
-                <div class="card-header">
-                    <h5 class="mb-0">Filter</h5>
-                </div>
-                <div class="card-body">
-                    <form action="{{ url('/products') }}" method="GET">
-                        <div class="mb-3">
-                            <label for="search" class="form-label">Cari Produk</label>
-                            <input type="text" class="form-control" id="search" name="search" value="{{ request('search') }}" placeholder="Nama produk...">
-                        </div>
-
-                        <div class="mb-3">
-                            <label class="form-label">Kategori</label>
-                            @foreach ($categories as $category)
-                                <div class="form-check">
-                                    <input class="form-check-input" type="checkbox" name="categories[]" value="{{ $category->nama_kategori }}" id="category-{{ $category->id }}" {{ in_array($category->nama_kategori, request('categories', [])) ? 'checked' : '' }}>
-                                    <label class="form-check-label" for="category-{{ $category->id }}">
-                                        {{ $category->nama_kategori }}
-                                    </label>
-                                </div>
-                            @endforeach
-                        </div>
-
-                        <div class="mb-3">
-                            <label class="form-label">Kondisi</label>
-                            @php
-                                $conditions = ['baru' => 'Baru', 'sangat_layak' => 'Sangat Layak', 'layak' => 'Layak'];
-                            @endphp
-                            @foreach ($conditions as $value => $label)
-                                <div class="form-check">
-                                    <input class="form-check-input" type="checkbox" name="conditions[]" value="{{ $value }}" id="condition-{{ $loop->index }}" {{ in_array($value, request('conditions', [])) ? 'checked' : '' }}>
-                                    <label class="form-check-label" for="condition-{{ $loop->index }}">
-                                        {{ $label }}
-                                    </label>
-                                </div>
-                            @endforeach
-                        </div>
-
-                        <div class="mb-3">
-                            <label class="form-label">Rentang Harga</label>
-                            <div class="row">
-                                <div class="col">
-                                    <input type="number" class="form-control" name="min_price" placeholder="Min" value="{{ request('min_price') }}">
-                                </div>
-                                <div class="col">
-                                    <input type="number" class="form-control" name="max_price" placeholder="Max" value="{{ request('max_price') }}">
-                                </div>
-                            </div>
-                        </div>
-
-                        <div class="mb-3">
-                            <label class="form-label">Rating Minimum</label>
-                            <select class="form-select" name="rating">
-                                <option value="">Semua Rating</option>
-                                <option value="4" {{ request('rating') == '4' ? 'selected' : '' }}>4+ Bintang</option>
-                                <option value="3" {{ request('rating') == '3' ? 'selected' : '' }}>3+ Bintang</option>
-                                <option value="2" {{ request('rating') == '2' ? 'selected' : '' }}>2+ Bintang</option>
-                                <option value="1" {{ request('rating') == '1' ? 'selected' : '' }}>1+ Bintang</option>
-                            </select>
-                        </div>
-
-                        <div class="mb-3">
-                            <label class="form-label">Urutkan</label>
-                            <select class="form-select" name="sort">
-                                <option value="newest" {{ request('sort') == 'newest' ? 'selected' : '' }}>Terbaru</option>
-                                <option value="price_low" {{ request('sort') == 'price_low' ? 'selected' : '' }}>Harga: Rendah ke Tinggi</option>
-                                <option value="price_high" {{ request('sort') == 'price_high' ? 'selected' : '' }}>Harga: Tinggi ke Rendah</option>
-                                <option value="rating" {{ request('sort') == 'rating' ? 'selected' : '' }}>Rating Tertinggi</option>
-                            </select>
-                        </div>
-
-                        <div class="d-grid gap-2">
-                            <button type="submit" class="btn btn-primary">Terapkan Filter</button>
-                            <a href="{{ url('/products') }}" class="btn btn-outline-secondary">Reset Filter</a>
-                        </div>
-                    </form>
-                </div>
-            </div>
-        </div>
 
         <!-- Produk -->
-        <div class="col-md-9">
+        <div class="col-12">
+    <div class="row justify-content-center">
+        @foreach ($products as $product)
+            <div class="col-md-4 mb-4">
+                <!-- kartu produk -->
+            </div>
+        @endforeach
+    </div>
+</div>
             @if($products->count() > 0)
                 <div class="row">
                     @foreach ($products as $product)

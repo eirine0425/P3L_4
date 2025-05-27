@@ -7,6 +7,7 @@ use App\UseCases\TransaksiPenitipan\TransaksiPenitipanUseCase;
 use App\DTOs\TransaksiPenitipan\CreateTransaksiPenitipanRequest;
 use App\DTOs\TransaksiPenitipan\UpdateTransaksiPenitipanRequest;
 use App\DTOs\TransaksiPenitipan\GetTransaksiPenitipanPaginationRequest;
+use App\DTOs\TransaksiPenitipan\ExtendTransaksiPenitipanRequest;
 
 class TransaksiPenitipanController extends Controller
 {
@@ -45,5 +46,22 @@ class TransaksiPenitipanController extends Controller
         return $this->transaksiPenitipanUseCase->delete($id)
             ? response()->json(['message' => 'Deleted successfully'])
             : response()->json(['message' => 'Not found'], 404);
+    }
+
+    public function extend(ExtendTransaksiPenitipanRequest $request)
+    {
+        $transaksiPenitipanId = $request->input('transaksi_penitipan_id');
+        $result = $this->transaksiPenitipanUseCase->extendPenitipan($transaksiPenitipanId);
+
+        if (!$result) {
+            return response()->json([
+                'message' => 'Gagal memperpanjang masa penitipan. Transaksi tidak ditemukan atau sudah diperpanjang.'
+            ], 400);
+        }
+
+        return response()->json([
+            'message' => 'Masa penitipan berhasil diperpanjang +30 hari',
+            'data' => $result
+        ], 200);
     }
 }

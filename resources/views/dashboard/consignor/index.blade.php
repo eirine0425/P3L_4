@@ -77,19 +77,12 @@
     
     <!-- Quick Actions -->
     <div class="row mt-4">
-        <div class="col-12">
+        <div class="col-8">
             <div class="card">
                 <div class="card-header">
                     <h5 class="card-title">Aksi Cepat</h5>
                 </div>
                 <div class="card-body">
-                    <div class="row">
-                        <div class="col-md-4 mb-3">
-                            <a href="{{ route('consignor.items.create') }}" class="btn btn-primary btn-lg w-100">
-                                <i class="fas fa-plus me-2"></i>
-                                Tambah Barang Baru
-                            </a>
-                        </div>
                         <div class="col-md-4 mb-3">
                             <a href="{{ route('consignor.items') }}" class="btn btn-success btn-lg w-100">
                                 <i class="fas fa-boxes me-2"></i>Kelola Barang Saya
@@ -162,9 +155,7 @@
                         <div class="text-center py-4">
                             <i class="fas fa-box fa-3x text-muted mb-3"></i>
                             <p class="text-muted">Belum ada barang yang terdaftar.</p>
-                            <a href="{{ route('consignor.items.create') }}" class="btn btn-primary">
-                                <i class="fas fa-plus me-2"></i>Tambah Barang Pertama
-                            </a>
+
                         </div>
                     @endif
                 </div>

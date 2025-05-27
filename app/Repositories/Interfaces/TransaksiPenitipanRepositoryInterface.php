@@ -11,4 +11,5 @@ interface TransaksiPenitipanRepositoryInterface
     public function create(array $data): TransaksiPenitipan;
     public function update(int $id, array $data): TransaksiPenitipan;
     public function delete(int $id): bool;
+    public function getByPenitipId(int $penitipId): array;
 }
