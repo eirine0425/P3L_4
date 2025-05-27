@@ -3,113 +3,219 @@
 @section('title', $product->nama_barang ?? 'Detail Produk')
 
 @section('content')
-<div class="row">
-    <div class="col-12 mb-4">
-        <nav aria-label="breadcrumb">
-            <ol class="breadcrumb">
-                <li class="breadcrumb-item"><a href="{{ url('/') }}">Beranda</a></li>
-                <li class="breadcrumb-item"><a href="{{ url('/products') }}">Produk</a></li>
-                <li class="breadcrumb-item active" aria-current="page">{{ $product->nama_barang ?? 'Detail Produk' }}</li>
-            </ol>
-        </nav>
-    </div>
-    
-    <div class="col-md-6 mb-4">
-        <div class="card border-0">
-            <div id="productCarousel" class="carousel slide" data-bs-ride="carousel">
-                <div class="carousel-indicators">
-                    <button type="button" data-bs-target="#productCarousel" data-bs-slide-to="0" class="active" aria-current="true" aria-label="Slide 1"></button>
-                </div>
-                <div class="carousel-inner rounded-3">
-                    <div class="carousel-item active">
-
-                        <img src="{{ asset('assets/laptop.jpg') }}" class="d-block w-100" alt="Product Image 1">
+<div class="container mt-4">
+    <div class="row">
+        <div class="col-md-6">
+            <!-- Product Image -->
+            <div class="product-image-container">
+                @if($product->foto_barang && file_exists(storage_path('app/public/' . $product->foto_barang)))
+                    <img src="{{ asset('storage/' . $product->foto_barang) }}" 
+                         alt="{{ $product->nama_barang }}" 
+                         class="img-fluid rounded shadow">
+                @else
+                    <div class="no-image-placeholder d-flex align-items-center justify-content-center bg-light rounded" style="height: 400px;">
+                        <div class="text-center">
+                            <i class="fas fa-image fa-5x text-muted mb-3"></i>
+                            <p class="text-muted">Tidak ada gambar</p>
+                        </div>
                     </div>
-                    <div class="carousel-item">
-                        <img src="{{ asset('assets/laptop.jpg') }}" class="d-block w-100" alt="Product Image 2">
-                    </div>
-                    <div class="carousel-item">
-                        <img src="{{ asset('assets/laptop.jpg') }}" class="d-block w-100" alt="Product Image 3">
-
-                        <img src="{{ $product->photo_url ?? '/placeholder.svg?height=600&width=600&text=' . urlencode($product->nama_barang ?? 'Produk') }}" 
-                             class="d-block w-100" alt="{{ $product->nama_barang ?? 'Product Image' }}" style="height: 400px; object-fit: cover;">
-
-                    </div>
-                </div>
+                @endif
             </div>
-            
-            <div class="row mt-3">
 
-                <div class="col-4">
-                    <img src="{{ asset('assets/laptop.jpg') }}" class="img-thumbnail" alt="Thumbnail 1" data-bs-target="#productCarousel" data-bs-slide-to="0">
-                </div>
-                <div class="col-4">
-                    <img src="{{ asset('assets/laptop.jpg') }}" class="img-thumbnail" alt="Thumbnail 2" data-bs-target="#productCarousel" data-bs-slide-to="1">
-                </div>
-                <div class="col-4">
-                    <img src="{{ asset('assets/laptop.jpg') }}" class="img-thumbnail" alt="Thumbnail 3" data-bs-target="#productCarousel" data-bs-slide-to="2">
-
-                <div class="col-12">
-                    <img src="{{ $product->photo_url ?? '/placeholder.svg?height=600&width=600&text=' . urlencode($product->nama_barang ?? 'Produk') }}" 
-                         class="img-thumbnail w-100" alt="Product Thumbnail" style="height: 100px; object-fit: cover;">
-
-                </div>
+            <!-- Debug Info (Remove in production) -->
+            @if(config('app.debug'))
+            <div class="mt-3 p-3 bg-light rounded">
+                <h6>Debug Info:</h6>
+                <small>
+                    <strong>Product ID:</strong> {{ $product->barang_id }}<br>
+                    <strong>Penitip ID:</strong> {{ $product->penitip_id ?? 'NULL' }}<br>
+                    <strong>Penitip Exists:</strong> {{ $product->penitip ? 'YES' : 'NO' }}<br>
+                    @if($product->penitip)
+                        <strong>Penitip Name:</strong> {{ $product->penitip->nama ?? 'NULL' }}<br>
+                        <strong>User ID:</strong> {{ $product->penitip->user_id ?? 'NULL' }}<br>
+                        <strong>User Exists:</strong> {{ $product->penitip->user ? 'YES' : 'NO' }}<br>
+                        @if($product->penitip->user)
+                            <strong>User Name:</strong> {{ $product->penitip->user->name ?? 'NULL' }}<br>
+                        @endif
+                    @endif
+                    <strong>Foto Path:</strong> {{ $product->foto_barang ?? 'NULL' }}<br>
+                    <strong>File Exists:</strong> {{ $product->foto_barang && file_exists(storage_path('app/public/' . $product->foto_barang)) ? 'YES' : 'NO' }}<br>
+                    <strong>Transaksi Penitipan:</strong> {{ $product->transaksiPenitipan ? 'YES' : 'NO' }}
+                </small>
             </div>
+            @endif
         </div>
-    </div>
-    
-    <div class="col-md-6">
-        <div class="card shadow-sm">
-            <div class="card-body">
-                <h2 class="card-title mb-3">{{ $product->nama_barang ?? 'Nama Produk Tidak Tersedia' }}</h2>
+
+        <div class="col-md-6">
+            <!-- Product Details -->
+            <div class="product-details">
+                <h1 class="product-title">{{ $product->nama_barang }}</h1>
                 
-                <div class="d-flex align-items-center mb-3">
-                    <div class="me-3">
+                <!-- Rating -->
+                <div class="product-rating mb-3">
+                    @for($i = 1; $i <= 5; $i++)
+                        @if($i <= ($product->rating ?? 0))
+                            <i class="fas fa-star text-warning"></i>
+                        @else
+                            <i class="far fa-star text-muted"></i>
+                        @endif
+                    @endfor
+                    <span class="text-muted ms-2">({{ $product->jumlah_ulasan ?? 0 }} ulasan)</span>
+                </div>
+
+                <!-- Price -->
+                <div class="product-price mb-4">
+                    <h2 class="text-primary">Rp {{ number_format($product->harga, 0, ',', '.') }}</h2>
+                </div>
+
+                <!-- Consignment Duration Information -->
+                @if($product->transaksiPenitipan)
+                <div class="consignment-info mb-4">
+                    <h5><i class="fas fa-clock"></i> Informasi Durasi Penitipan</h5>
+                    <div class="consignment-card p-3 border rounded">
                         @php
-                            $rating = $product->rating ?? 0;
-                            $fullStars = floor($rating);
-                            $hasHalfStar = ($rating - $fullStars) >= 0.5;
-                            $emptyStars = 5 - $fullStars - ($hasHalfStar ? 1 : 0);
+                            $transaksi = $product->transaksiPenitipan;
+                            $statusClass = '';
+                            $statusIcon = '';
+                            $statusText = '';
+                            
+                            switch($transaksi->status_durasi) {
+                                case 'expired':
+                                    $statusClass = 'danger';
+                                    $statusIcon = 'fas fa-exclamation-triangle';
+                                    $statusText = 'Masa Penitipan Berakhir';
+                                    break;
+                                case 'warning':
+                                    $statusClass = 'warning';
+                                    $statusIcon = 'fas fa-clock';
+                                    $statusText = 'Segera Berakhir';
+                                    break;
+                                default:
+                                    $statusClass = 'success';
+                                    $statusIcon = 'fas fa-check-circle';
+                                    $statusText = 'Masa Penitipan Aktif';
+                            }
                         @endphp
                         
-                        @for($i = 0; $i < $fullStars; $i++)
-                            <i class="fas fa-star text-warning"></i>
-                        @endfor
+                        <div class="row">
+                            <div class="col-md-6">
+                                <div class="info-item mb-2">
+                                    <small class="text-muted">Tanggal Penitipan</small>
+                                    <div class="fw-bold">
+                                        <i class="fas fa-calendar-plus text-primary me-1"></i>
+                                        {{ $transaksi->tanggal_penitipan ? \Carbon\Carbon::parse($transaksi->tanggal_penitipan)->format('d M Y') : '-' }}
+                                    </div>
+                                </div>
+                                
+                                <div class="info-item mb-2">
+                                    <small class="text-muted">Batas Penitipan</small>
+                                    <div class="fw-bold">
+                                        <i class="fas fa-calendar-times text-danger me-1"></i>
+                                        {{ $transaksi->batas_penitipan ? \Carbon\Carbon::parse($transaksi->batas_penitipan)->format('d M Y') : '-' }}
+                                    </div>
+                                </div>
+                            </div>
+                            
+                            <div class="col-md-6">
+                                <div class="info-item mb-2">
+                                    <small class="text-muted">Durasi Penitipan</small>
+                                    <div class="fw-bold">
+                                        <i class="fas fa-hourglass-half text-info me-1"></i>
+                                        {{ $transaksi->durasi_penitipan }} Hari
+                                    </div>
+                                </div>
+                                
+                                <div class="info-item mb-2">
+                                    <small class="text-muted">Sisa Waktu</small>
+                                    <div class="fw-bold">
+                                        @if($transaksi->sisa_hari !== null)
+                                            @if($transaksi->sisa_hari >= 0)
+                                                <i class="fas fa-calendar-check text-{{ $statusClass }} me-1"></i>
+                                                {{ $transaksi->sisa_hari }} Hari Lagi
+                                            @else
+                                                <i class="fas fa-calendar-times text-danger me-1"></i>
+                                                Terlambat {{ abs($transaksi->sisa_hari) }} Hari
+                                            @endif
+                                        @else
+                                            <i class="fas fa-question-circle text-muted me-1"></i>
+                                            Tidak Diketahui
+                                        @endif
+                                    </div>
+                                </div>
+                            </div>
+                        </div>
                         
-                        @if($hasHalfStar)
-                            <i class="fas fa-star-half-alt text-warning"></i>
+                        <!-- Status Badge -->
+                        <div class="mt-3">
+                            <span class="badge bg-{{ $statusClass }} fs-6">
+                                <i class="{{ $statusIcon }} me-1"></i>
+                                {{ $statusText }}
+                            </span>
+                            
+                            @if($transaksi->status_durasi === 'warning')
+                                <small class="text-muted d-block mt-1">
+                                    <i class="fas fa-info-circle me-1"></i>
+                                    Masa penitipan akan berakhir dalam {{ $transaksi->sisa_hari }} hari
+                                </small>
+                            @elseif($transaksi->status_durasi === 'expired')
+                                <small class="text-muted d-block mt-1">
+                                    <i class="fas fa-exclamation-triangle me-1"></i>
+                                    Produk ini sudah melewati batas masa penitipan
+                                </small>
+                            @endif
+                        </div>
+                        
+                        <!-- Progress Bar -->
+                        @if($transaksi->tanggal_penitipan && $transaksi->batas_penitipan)
+                            @php
+                                $totalDays = \Carbon\Carbon::parse($transaksi->tanggal_penitipan)->diffInDays(\Carbon\Carbon::parse($transaksi->batas_penitipan));
+                                $passedDays = \Carbon\Carbon::parse($transaksi->tanggal_penitipan)->diffInDays(\Carbon\Carbon::now());
+                                $progressPercentage = $totalDays > 0 ? min(($passedDays / $totalDays) * 100, 100) : 0;
+                                
+                                $progressClass = 'success';
+                                if ($progressPercentage > 80) {
+                                    $progressClass = 'danger';
+                                } elseif ($progressPercentage > 60) {
+                                    $progressClass = 'warning';
+                                }
+                            @endphp
+                            
+                            <div class="mt-3">
+                                <small class="text-muted">Progress Masa Penitipan</small>
+                                <div class="progress mt-1" style="height: 8px;">
+                                    <div class="progress-bar bg-{{ $progressClass }}" 
+                                         role="progressbar" 
+                                         style="width: {{ $progressPercentage }}%"
+                                         aria-valuenow="{{ $progressPercentage }}" 
+                                         aria-valuemin="0" 
+                                         aria-valuemax="100">
+                                    </div>
+                                </div>
+                                <small class="text-muted">{{ number_format($progressPercentage, 1) }}% dari masa penitipan telah berlalu</small>
+                            </div>
                         @endif
-                        
-                        @for($i = 0; $i < $emptyStars; $i++)
-                            <i class="far fa-star text-warning"></i>
-                        @endfor
-                        
-                        <span class="ms-1">({{ $product->jumlah_ulasan ?? 0 }} ulasan)</span>
                     </div>
-                    <span class="badge {{ $product->getStatusBadgeClass() ?? 'bg-secondary' }}">
-                        {{ $product->getStatusDisplayText() ?? 'Status Tidak Diketahui' }}
-                    </span>
                 </div>
-                
-                <h3 class="text-primary mb-3">{{ $product->formatted_price ?? 'Harga Tidak Tersedia' }}</h3>
-                
-                <div class="mb-3">
-                    <h5><i class="fas fa-info-circle me-2"></i>Informasi Produk</h5>
+                @endif
+
+                <!-- Product Information -->
+                <div class="product-info mb-4">
+                    <h5><i class="fas fa-info-circle"></i> Informasi Produk</h5>
                     <table class="table table-borderless">
                         <tr>
-                            <td width="150">Kondisi</td>
-                            <td>: <span class="badge {{ $product->getConditionBadgeClass() ?? 'bg-secondary' }}">{{ ucfirst($product->kondisi ?? 'Tidak Diketahui') }}</span></td>
+                            <td width="30%"><strong>Kondisi</strong></td>
+                            <td>: {{ ucfirst($product->kondisi ?? 'Tidak tersedia') }}</td>
                         </tr>
                         <tr>
-                            <td>Kategori</td>
-                            <td>: {{ $product->kategori->nama_kategori ?? 'Tidak Berkategori' }}</td>
+                            <td><strong>Kategori</strong></td>
+                            <td>: {{ $product->kategori->nama_kategori ?? 'Tidak tersedia' }}</td>
                         </tr>
                         <tr>
-                            <td>Tanggal Masuk</td>
-                            <td>: {{ $product->tanggal_penitipan ? \Carbon\Carbon::parse($product->tanggal_penitipan)->format('d M Y') : 'Tidak Diketahui' }}</td>
+                            <td><strong>Tanggal Masuk</strong></td>
+                            <td>: {{ $product->tanggal_penitipan ? \Carbon\Carbon::parse($product->tanggal_penitipan)->format('d M Y') : 'Tidak tersedia' }}</td>
                         </tr>
                         <tr>
-                            <td>Garansi</td>
+                            <td><strong>Garansi</strong></td>
                             <td>: 
                                 @if($product->garansi)
                                     <span class="badge bg-success">Bergaransi</span>
@@ -120,45 +226,48 @@
                         </tr>
                     </table>
                 </div>
-                
-                @if($product->penitip)
-                <div class="mb-4">
-                    <h5><i class="fas fa-user-tag me-2"></i>Informasi Penitip</h5>
-                    <div class="d-flex align-items-center">
-                        <img src="/placeholder.svg?height=50&width=50&text={{ urlencode(substr($product->penitip->nama_penitip ?? 'P', 0, 1)) }}" 
-                             class="rounded-circle me-3" alt="Seller">
-                        <div>
-                            <h6 class="mb-1">{{ $product->penitip->nama_penitip ?? 'Nama Penitip Tidak Tersedia' }}</h6>
-                            <div>
-                                <i class="fas fa-star text-warning"></i>
-                                <i class="fas fa-star text-warning"></i>
-                                <i class="fas fa-star text-warning"></i>
-                                <i class="fas fa-star text-warning"></i>
-                                <i class="fas fa-star text-warning"></i>
-                                <span class="ms-1">(Rating Penitip)</span>
+
+                <!-- Seller Information -->
+                <div class="seller-info mb-4">
+                    <h5><i class="fas fa-user"></i> Informasi Penitip</h5>
+                    <div class="seller-card p-3 border rounded">
+                        @if($product->penitip)
+                            <div class="d-flex align-items-center">
+                                <div class="seller-avatar me-3">
+                                    <i class="fas fa-user-circle fa-3x text-primary"></i>
+                                </div>
+                                <div class="seller-details">
+                                    <h6 class="mb-1">Seller</h6>
+                                    <p class="mb-1">
+                                        <strong>
+                                            @if($product->penitip->nama)
+                                                {{ $product->penitip->nama }}
+                                            @elseif($product->penitip->user && $product->penitip->user->name)
+                                                {{ $product->penitip->user->name }}
+                                            @else
+                                                Nama Penitip Tidak Tersedia
+                                            @endif
+                                        </strong>
+                                    </p>
+                                    <div class="seller-rating">
+                                        @for($i = 1; $i <= 5; $i++)
+                                            <i class="fas fa-star text-warning"></i>
+                                        @endfor
+                                        <span class="text-muted ms-1">(Rating Penitip)</span>
+                                    </div>
+                                </div>
                             </div>
-                        </div>
+                        @else
+                            <div class="text-center text-muted">
+                                <i class="fas fa-user-slash fa-2x mb-2"></i>
+                                <p>Informasi penitip tidak tersedia</p>
+                            </div>
+                        @endif
                     </div>
                 </div>
-                @endif
-                
-                <!-- Debug Information (remove this in production) -->
-                @if(config('app.debug'))
-                <div class="alert alert-info">
-                    <strong>Debug Info:</strong><br>
-                    Auth Status: {{ Auth::check() ? 'Logged In' : 'Not Logged In' }}<br>
-                    @auth
-                    User Role: {{ auth()->user()->role->nama_role ?? 'No Role' }}<br>
-                    User ID: {{ auth()->user()->id }}<br>
-                    @endauth
-                    Product ID: {{ $product->barang_id ?? 'No Product ID' }}<br>
-                    Product Status: {{ $product->status ?? 'No Status' }}<br>
-                    Product Available: {{ $product->isAvailable() ? 'Yes' : 'No' }}
-                </div>
-                @endif
 
-                <!-- Cart Actions -->
-                <div class="cart-actions">
+                <!-- Action Buttons -->
+                <div class="product-actions">
                     @auth
                         @php
                             $userRole = strtolower(auth()->user()->role->nama_role ?? '');
@@ -202,231 +311,108 @@
             </div>
         </div>
     </div>
-</div>
 
-<div class="row mt-4">
-    <div class="col-12">
-        <div class="card shadow-sm">
-            <div class="card-body">
-                <ul class="nav nav-tabs" id="productTabs" role="tablist">
-                    <li class="nav-item" role="presentation">
-                        <button class="nav-link active" id="description-tab" data-bs-toggle="tab" data-bs-target="#description" type="button" role="tab" aria-controls="description" aria-selected="true">Deskripsi</button>
-                    </li>
-                    <li class="nav-item" role="presentation">
-                        <button class="nav-link" id="reviews-tab" data-bs-toggle="tab" data-bs-target="#reviews" type="button" role="tab" aria-controls="reviews" aria-selected="false">Ulasan ({{ $product->jumlah_ulasan ?? 0 }})</button>
-                    </li>
-                    <li class="nav-item" role="presentation">
-                        <button class="nav-link" id="discussion-tab" data-bs-toggle="tab" data-bs-target="#discussion" type="button" role="tab" aria-controls="discussion" aria-selected="false">Diskusi</button>
-                    </li>
-                </ul>
-                <div class="tab-content p-3" id="productTabsContent">
-                    <div class="tab-pane fade show active" id="description" role="tabpanel" aria-labelledby="description-tab">
-                        <h4>Deskripsi Produk</h4>
-                        <div class="description-content">
-                            @if($product->deskripsi)
-                                {!! nl2br(e($product->deskripsi)) !!}
-                            @else
-                                <p class="text-muted">Deskripsi produk belum tersedia.</p>
-                            @endif
-                        </div>
-                        
-                        <div class="mt-4">
-                            <h5>Informasi Tambahan</h5>
-                            <table class="table table-striped">
-                                <tbody>
-                                    <tr>
-                                        <th width="200">Nama Produk</th>
-                                        <td>{{ $product->nama_barang ?? 'Tidak tersedia' }}</td>
-                                    </tr>
-                                    <tr>
-                                        <th>Kondisi</th>
-                                        <td>{{ ucfirst($product->kondisi ?? 'Tidak diketahui') }}</td>
-                                    </tr>
-                                    <tr>
-                                        <th>Kategori</th>
-                                        <td>{{ $product->kategori->nama_kategori ?? 'Tidak berkategori' }}</td>
-                                    </tr>
-                                    <tr>
-                                        <th>Status</th>
-                                        <td>{{ $product->getStatusDisplayText() ?? 'Tidak diketahui' }}</td>
-                                    </tr>
-                                    <tr>
-                                        <th>Tanggal Penitipan</th>
-                                        <td>{{ $product->tanggal_penitipan ? \Carbon\Carbon::parse($product->tanggal_penitipan)->format('d M Y') : 'Tidak diketahui' }}</td>
-                                    </tr>
-                                    @if($product->garansi)
-                                    <tr>
-                                        <th>Garansi</th>
-                                        <td>Tersedia</td>
-                                    </tr>
-                                    @endif
-                                </tbody>
-                            </table>
-                        </div>
-                    </div>
-                    
-                    <div class="tab-pane fade" id="reviews" role="tabpanel" aria-labelledby="reviews-tab">
-                        <div class="d-flex justify-content-between align-items-center mb-4">
-                            <h4>Ulasan Produk</h4>
-                            <div>
-                                <span class="fs-4 fw-bold">{{ number_format($product->rating ?? 0, 1) }}</span>
-                                @php
-                                    $rating = $product->rating ?? 0;
-                                    $fullStars = floor($rating);
-                                    $hasHalfStar = ($rating - $fullStars) >= 0.5;
-                                    $emptyStars = 5 - $fullStars - ($hasHalfStar ? 1 : 0);
-                                @endphp
-                                
-                                @for($i = 0; $i < $fullStars; $i++)
-                                    <i class="fas fa-star text-warning"></i>
-                                @endfor
-                                
-                                @if($hasHalfStar)
-                                    <i class="fas fa-star-half-alt text-warning"></i>
-                                @endif
-                                
-                                @for($i = 0; $i < $emptyStars; $i++)
-                                    <i class="far fa-star text-warning"></i>
-                                @endfor
-                                
-                                <span class="ms-1">({{ $product->jumlah_ulasan ?? 0 }} ulasan)</span>
-                            </div>
-                        </div>
-                        
-                        @if(($product->jumlah_ulasan ?? 0) > 0)
-                            <div class="alert alert-info">
-                                <i class="fas fa-info-circle me-2"></i>Fitur ulasan akan segera tersedia.
-                            </div>
+    <!-- Product Description -->
+    <div class="row mt-5">
+        <div class="col-12">
+            <div class="product-description">
+                <h5>Deskripsi Produk</h5>
+                <div class="description-content p-3 border rounded bg-light">
+                    <p>{!! nl2br(e($product->deskripsi)) !!}</p>
+                </div>
+            </div>
+        </div>
+    </div>
+
+    <!-- Related Products -->
+    @if($relatedProducts && $relatedProducts->count() > 0)
+    <div class="row mt-5">
+        <div class="col-12">
+            <h5>Produk Terkait</h5>
+            <div class="row">
+                @foreach($relatedProducts as $relatedProduct)
+                <div class="col-md-3 mb-4">
+                    <div class="card h-100">
+                        @if($relatedProduct->foto_barang && file_exists(storage_path('app/public/' . $relatedProduct->foto_barang)))
+                            <img src="{{ asset('storage/' . $relatedProduct->foto_barang) }}" 
+                                 class="card-img-top" 
+                                 alt="{{ $relatedProduct->nama_barang }}"
+                                 style="height: 200px; object-fit: cover;">
                         @else
-                            <div class="text-center py-5">
-                                <i class="fas fa-star-o fa-3x text-muted mb-3"></i>
-                                <h5 class="text-muted">Belum ada ulasan</h5>
-                                <p class="text-muted">Jadilah yang pertama memberikan ulasan untuk produk ini.</p>
+                            <div class="card-img-top bg-light d-flex align-items-center justify-content-center" style="height: 200px;">
+                                <i class="fas fa-image fa-3x text-muted"></i>
                             </div>
                         @endif
-                        
-                        @auth
-                            @if(auth()->user()->role->nama_role == 'Pembeli')
-                            <div class="mt-4">
-                                <h5>Berikan Ulasan</h5>
-                                <div class="alert alert-info">
-                                    <i class="fas fa-info-circle me-2"></i>Fitur memberikan ulasan akan segera tersedia.
-                                </div>
-                            </div>
-                            @endif
-                        @endauth
-                    </div>
-                    
-                    <div class="tab-pane fade" id="discussion" role="tabpanel" aria-labelledby="discussion-tab">
-                        <h4>Diskusi Produk</h4>
-                        
-                        <div class="discussion-list mb-4">
-                            @if($product->diskusi && $product->diskusi->count() > 0)
-                                @foreach($product->diskusi->take(5) as $diskusi)
-                                <div class="card mb-3">
-                                    <div class="card-body">
-                                        <div class="d-flex align-items-start mb-3">
-                                            <img src="/placeholder.svg?height=40&width=40&text={{ urlencode(substr($diskusi->user->name ?? 'U', 0, 1)) }}" 
-                                                 class="rounded-circle me-2" alt="User">
-                                            <div>
-                                                <h6 class="mb-0">{{ $diskusi->user->name ?? 'Pengguna' }}</h6>
-                                                <small class="text-muted">{{ $diskusi->tanggal_diskusi ? \Carbon\Carbon::parse($diskusi->tanggal_diskusi)->format('d M Y H:i') : 'Tanggal tidak tersedia' }}</small>
-                                                <p class="mt-2">{{ $diskusi->isi_diskusi ?? 'Isi diskusi tidak tersedia' }}</p>
-                                            </div>
-                                        </div>
-                                    </div>
-                                </div>
-                                @endforeach
-                            @else
-                                <div class="text-center py-5">
-                                    <i class="fas fa-comments fa-3x text-muted mb-3"></i>
-                                    <h5 class="text-muted">Belum ada diskusi</h5>
-                                    <p class="text-muted">Jadilah yang pertama mengajukan pertanyaan tentang produk ini.</p>
+                        <div class="card-body">
+                            <h6 class="card-title">{{ $relatedProduct->nama_barang }}</h6>
+                            <p class="card-text text-primary">Rp {{ number_format($relatedProduct->harga, 0, ',', '.') }}</p>
+                            
+                            <!-- Duration info for related products -->
+                            @if($relatedProduct->transaksiPenitipan)
+                                <div class="mb-2">
+                                    @php $relatedTransaksi = $relatedProduct->transaksiPenitipan; @endphp
+                                    @if($relatedTransaksi->status_durasi === 'expired')
+                                        <small class="badge bg-danger">
+                                            <i class="fas fa-exclamation-triangle me-1"></i>Expired
+                                        </small>
+                                    @elseif($relatedTransaksi->status_durasi === 'warning')
+                                        <small class="badge bg-warning">
+                                            <i class="fas fa-clock me-1"></i>{{ $relatedTransaksi->sisa_hari }} hari lagi
+                                        </small>
+                                    @else
+                                        <small class="badge bg-success">
+                                            <i class="fas fa-check me-1"></i>{{ $relatedTransaksi->sisa_hari }} hari lagi
+                                        </small>
+                                    @endif
                                 </div>
                             @endif
+                            
+                            <a href="{{ route('products.show', $relatedProduct->barang_id) }}" class="btn btn-sm btn-outline-primary">Lihat Detail</a>
                         </div>
-                        
-                        @auth
-                        <div class="card">
-                            <div class="card-body">
-                                <h5>Ajukan Pertanyaan</h5>
-                                <form action="{{ route('product.discussion.store', $product->barang_id) }}" method="POST">
-                                    @csrf
-                                    <div class="mb-3">
-                                        <textarea class="form-control" id="question" name="question" rows="3" placeholder="Tulis pertanyaan Anda tentang produk ini..." required></textarea>
-                                    </div>
-                                    <button type="submit" class="btn btn-primary">Kirim Pertanyaan</button>
-                                </form>
-                            </div>
-                        </div>
-                        @else
-                        <div class="alert alert-info">
-                            <i class="fas fa-info-circle me-2"></i>Silakan <a href="{{ route('login') }}">login</a> untuk mengajukan pertanyaan.
-                        </div>
-                        @endauth
                     </div>
                 </div>
+                @endforeach
             </div>
         </div>
     </div>
+    @endif
 </div>
 
-<!-- Related Products -->
-@if($relatedProducts && $relatedProducts->count() > 0)
-<div class="row mt-4">
-    <div class="col-12">
-        <h3 class="mb-4"><i class="fas fa-tags me-2"></i>Produk Terkait</h3>
-        
-        <div class="row row-cols-1 row-cols-md-2 row-cols-lg-4 g-4">
-            @foreach($relatedProducts as $relatedProduct)
-            <div class="col">
-                <div class="card h-100 product-card">
-                    <div class="position-relative">
-                        <img src="{{ $relatedProduct->photo_url ?? '/placeholder.svg?height=300&width=300&text=' . urlencode($relatedProduct->nama_barang) }}" 
-                             class="card-img-top" alt="{{ $relatedProduct->nama_barang }}" style="height: 200px; object-fit: cover;">
-                        <span class="badge {{ $relatedProduct->getStatusBadgeClass() }} position-absolute top-0 end-0 m-2">
-                            {{ $relatedProduct->getStatusDisplayText() }}
-                        </span>
-                    </div>
-                    <div class="card-body">
-                        <h5 class="card-title">{{ Str::limit($relatedProduct->nama_barang, 50) }}</h5>
-                        <p class="card-text">{{ Str::limit($relatedProduct->deskripsi ?? 'Deskripsi tidak tersedia', 80) }}</p>
-                        <div class="d-flex justify-content-between align-items-center">
-                            <span class="fw-bold text-primary">{{ $relatedProduct->formatted_price }}</span>
-                            <div>
-                                @php
-                                    $rating = $relatedProduct->rating ?? 0;
-                                    $fullStars = floor($rating);
-                                    $hasHalfStar = ($rating - $fullStars) >= 0.5;
-                                    $emptyStars = 5 - $fullStars - ($hasHalfStar ? 1 : 0);
-                                @endphp
-                                
-                                @for($i = 0; $i < $fullStars; $i++)
-                                    <i class="fas fa-star text-warning"></i>
-                                @endfor
-                                
-                                @if($hasHalfStar)
-                                    <i class="fas fa-star-half-alt text-warning"></i>
-                                @endif
-                                
-                                @for($i = 0; $i < $emptyStars; $i++)
-                                    <i class="far fa-star text-warning"></i>
-                                @endfor
-                            </div>
-                        </div>
-                    </div>
-                    <div class="card-footer bg-white border-top-0">
-                        <div class="d-grid">
-                            <a href="{{ route('products.show', $relatedProduct->barang_id) }}" class="btn btn-outline-primary">Detail</a>
-                        </div>
-                    </div>
-                </div>
-            </div>
-            @endforeach
-        </div>
-    </div>
-</div>
-@endif
+<style>
+.product-image-container {
+    position: sticky;
+    top: 20px;
+}
+
+.seller-card, .consignment-card {
+    background-color: #f8f9fa;
+}
+
+.product-actions .btn {
+    min-width: 150px;
+}
+
+.description-content {
+    min-height: 100px;
+}
+
+.consignment-info .info-item {
+    border-left: 3px solid #e9ecef;
+    padding-left: 10px;
+}
+
+.consignment-info .badge {
+    font-size: 0.9em;
+}
+
+.progress {
+    border-radius: 10px;
+}
+
+.progress-bar {
+    border-radius: 10px;
+}
+</style>
 @endsection
 
 @push('scripts')

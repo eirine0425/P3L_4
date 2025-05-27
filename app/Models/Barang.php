@@ -9,6 +9,7 @@ use App\Models\Penitip;
 use App\Models\Garansi;
 use App\Models\DiskusiProduk;
 use App\Models\DetailTransaksi;
+use App\Models\TransaksiPenitipan;
 
 class Barang extends Model
 {
@@ -60,9 +61,20 @@ class Barang extends Model
         return $this->hasMany(DiskusiProduk::class, 'barang_id');
     }
 
+
     public function keranjangBelanja()
     {
         return $this->hasMany(KeranjangBelanja::class, 'barang_id', 'barang_id');
+
+    public function detailTransaksi()
+    {
+        return $this->hasMany(DetailTransaksi::class, 'barang_id', 'barang_id');
+    }
+
+    public function transaksiPenitipan()
+    {
+        return $this->hasOne(TransaksiPenitipan::class, 'barang_id', 'barang_id');
+
     }
 
     // FIXED: Accessor for rating - use the rating column directly from barang table
@@ -102,9 +114,23 @@ class Barang extends Model
             ->get();
     }
 
-    public function detailTransaksi()
+    /**
+     * Get consignment status information
+     */
+    public function getConsignmentStatusAttribute()
     {
-        return $this->hasMany(DetailTransaksi::class, 'barang_id', 'barang_id');
+        if (!$this->transaksiPenitipan) {
+            return null;
+        }
+        
+        return [
+            'tanggal_penitipan' => $this->transaksiPenitipan->tanggal_penitipan,
+            'batas_penitipan' => $this->transaksiPenitipan->batas_penitipan,
+            'durasi_penitipan' => $this->transaksiPenitipan->durasi_penitipan,
+            'sisa_hari' => $this->transaksiPenitipan->sisa_hari,
+            'is_expired' => $this->transaksiPenitipan->is_expired,
+            'status_durasi' => $this->transaksiPenitipan->status_durasi,
+        ];
     }
 
     // ADDED: Scope for available products
@@ -186,4 +212,3 @@ class Barang extends Model
         return '/placeholder.svg?height=200&width=200&text=' . urlencode($this->nama_barang);
     }
 }
-        

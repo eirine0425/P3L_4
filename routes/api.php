@@ -25,6 +25,7 @@ use App\Http\Controllers\Api\RoleController;
 use App\Http\Controllers\Api\TransaksiMerchController;
 use App\Http\Controllers\Api\TransaksiPenitipanController;
 use App\Http\Controllers\Api\AlamatController;
+use App\Http\Controllers\Api\PenitipTransaksiController;
 
 /*
 |--------------------------------------------------------------------------
@@ -42,6 +43,14 @@ Route::post('/register', [AuthController::class, 'register']);
 Route::post('/login', [AuthController::class, 'login']);
 Route::post('/logout', [AuthController::class, 'logout'])->middleware('auth:api');
 Route::get('/me', [AuthController::class, 'me'])->middleware('auth:api');
+
+Route::middleware(['auth:sanctum'])->group(function () {
+    Route::post('/logout', [AuthController::class, 'logout']);
+
+    // Routes for Penitip to manage their own transaksi
+    Route::get('/penitip/my-transaksi', [PenitipTransaksiController::class, 'myTransaksi']);
+    Route::post('/penitip/extend-penitipan', [PenitipTransaksiController::class, 'extendMyPenitipan']);
+});
 
 // Rute Web View
 Route::get('/beranda', [WebViewController::class, 'beranda']);
@@ -65,6 +74,7 @@ Route::middleware('auth:api')->group(function () {
     Route::get('/dashboard/pembeli', [WebViewController::class, 'dashboardPembeli'])->middleware('role:pembeli');
     Route::get('/dashboard/organisasi', [WebViewController::class, 'dashboardOrganisasi'])->middleware('role:organisasi');
 });
+
 
 // Rute CRUD untuk Alamat
 Route::apiResource('alamat', AlamatController::class);
@@ -123,6 +133,7 @@ Route::apiResource('pengiriman', PengirimanController::class);
 // Rute CRUD untuk Penitip
 Route::apiResource('penitip', PenitipController::class);
 
+
 // Rute CRUD untuk RequestDonasi
 Route::apiResource('request-donasi', RequestDonasiController::class);
 
@@ -137,6 +148,7 @@ Route::apiResource('transaksi-merch', TransaksiMerchController::class);
 
 // Rute CRUD untuk TransaksiPenitipan
 Route::apiResource('transaksi-penitipan', TransaksiPenitipanController::class);
+Route::post('/transaksi-penitipan/{id}/extend', [TransaksiPenitipanController::class, 'extendPenitipan']);
 
 // Rute CRUD untuk User
 Route::apiResource('users', UserController::class);
