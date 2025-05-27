@@ -10,7 +10,7 @@
 
       <!-- Slide 1 -->
       <div class="carousel-item active h-100">
-        <div class="d-flex flex-column justify-content-center align-items-center h-100 text-white text-center p-5" style="background-color: #198754;">
+        <div class="d-flex flex-column justify-content-center align-items-center h-100 text-black text-center p-5" style="background: url('{{ asset('assets/1.png') }}') center center / cover no-repeat;">
           <h1 class="fw-bold">Selamat Datang di ReuseMart</h1>
           <p>Kami percaya bahwa setiap barang punya cerita dan kesempatan kedua...</p>
         </div>
@@ -18,7 +18,7 @@
 
       <!-- Slide 2 -->
       <div class="carousel-item h-100">
-        <div class="d-flex flex-column justify-content-center align-items-center h-100 text-white text-center p-5" style="background-color: #28a745;">
+        <div class="d-flex flex-column justify-content-center align-items-center h-100 text-black text-center p-5" style="background: url('{{ asset('assets/2.png') }}') center center / cover no-repeat;">
           <h1 class="fw-bold">Temukan Barang Bekas Berkualitas</h1>
           <p>Harga terjangkau, kualitas terjamin, dan ramah lingkungan.</p>
         </div>
@@ -26,11 +26,13 @@
 
       <!-- Slide 3 -->
       <div class="carousel-item h-100">
-        <div class="d-flex flex-column justify-content-center align-items-center h-100 text-white text-center p-5" style="background-color: #2ecc71;">
+        <div class="d-flex flex-column justify-content-center align-items-center h-100 text-black text-center p-5" style="background: url('{{ asset('assets/3.png') }}') center center / cover no-repeat;">
           <h1 class="fw-bold">Ayo Bergabung Menjadi Donatur</h1>
           <p>Sumbangkan barang bekas yang masih layak pakai untuk bantu sesama.</p>
         </div>
       </div>
+
+    </div>
 
     </div>
 
