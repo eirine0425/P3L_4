@@ -14,7 +14,7 @@
             </div>
         </div>
     </div>
-    
+
     <!-- Filters -->
     <div class="row mb-4">
         <div class="col-12">
@@ -52,7 +52,7 @@
             </div>
         </div>
     </div>
-    
+
     <!-- Items List -->
     <div class="row">
         <div class="col-12">
@@ -113,7 +113,7 @@
                                                     <span class="badge bg-secondary">{{ $item->status_barang }}</span>
                                                 @endif
                                             </td>
-                                            <td>{{ $item->created_at->format('d M Y') }}</td>
+                                            <td>{{ $item->created_at ? $item->created_at->format('d M Y') : '-' }}</td>
                                             <td>
                                                 <div class="btn-group" role="group">
                                                     <a href="{{ route('consignor.items.show', $item->barang_id) }}" 
@@ -142,7 +142,7 @@
                                 </tbody>
                             </table>
                         </div>
-                        
+
                         <!-- Pagination -->
                         <div class="d-flex justify-content-center mt-4">
                             {{ $items->appends(request()->query())->links() }}

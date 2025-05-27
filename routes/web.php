@@ -488,7 +488,10 @@ Route::middleware(['auth', 'role:kurir'])->group(function () {
        return view('errors.missing-view', ['view' => 'dashboard.courier.deliveries.update_status', 'id' => $id]);
    })->name('courier.deliveries.update-status');
 });
+<<<<<<< Updated upstream
 
+=======
+>>>>>>> Stashed changes
 // ========================================
 // HUNTER ROUTES
 // ========================================

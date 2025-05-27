@@ -83,6 +83,10 @@
                     <h5 class="card-title">Aksi Cepat</h5>
                 </div>
                 <div class="card-body">
+<<<<<<< Updated upstream
+=======
+                    <div class="row">
+>>>>>>> Stashed changes
                         <div class="col-md-4 mb-3">
                             <a href="{{ route('consignor.items') }}" class="btn btn-success btn-lg w-100">
                                 <i class="fas fa-boxes me-2"></i>Kelola Barang Saya

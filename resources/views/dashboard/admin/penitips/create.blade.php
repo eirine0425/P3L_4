@@ -192,6 +192,20 @@
                                 </div>
 
                                 <div class="form-group">
+    <label for="foto_ktp">Upload Foto KTP <span class="text-danger">*</span></label>
+    <input type="file" 
+           class="form-control @error('foto_ktp') is-invalid @enderror" 
+           id="foto_ktp" 
+           name="foto_ktp" 
+           accept="image/*"
+           required>
+    <small class="form-text text-muted">Format gambar JPG, PNG maksimal 2MB.</small>
+    @error('foto_ktp')
+        <div class="invalid-feedback">{{ $message }}</div>
+    @enderror
+</div>
+
+                                <div class="form-group">
                                     <label for="periode">Periode</label>
                                     <input type="text" 
                                            class="form-control @error('periode') is-invalid @enderror" 
