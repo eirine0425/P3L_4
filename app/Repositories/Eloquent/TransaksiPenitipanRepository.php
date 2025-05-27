@@ -41,4 +41,48 @@ class TransaksiPenitipanRepository implements TransaksiPenitipanRepositoryInterf
     {
         return TransaksiPenitipan::destroy($id) > 0;
     }
+
+    public function getExpiringConsignments(int $days = 7): array
+    {
+        return TransaksiPenitipan::with(['penitip', 'barang'])
+            ->whereNotNull('batas_penitipan')
+            ->where('batas_penitipan', '<=', now()->addDays($days))
+            ->where('batas_penitipan', '>=', now())
+            ->where('status_penitipan', '!=', 'selesai')
+            ->get()
+            ->toArray();
+    }
+
+    public function getExpiredConsignments(): array
+    {
+        return TransaksiPenitipan::with(['penitip', 'barang'])
+            ->whereNotNull('batas_penitipan')
+            ->where('batas_penitipan', '<', now())
+            ->where('status_penitipan', '!=', 'selesai')
+            ->get()
+            ->toArray();
+    }
+
+    public function getConsignmentsByStatus(string $statusDurasi): array
+    {
+        $query = TransaksiPenitipan::with(['penitip', 'barang']);
+        
+        switch ($statusDurasi) {
+            case 'expired':
+                $query->whereNotNull('batas_penitipan')
+                      ->where('batas_penitipan', '<', now());
+                break;
+            case 'warning':
+                $query->whereNotNull('batas_penitipan')
+                      ->where('batas_penitipan', '<=', now()->addDays(7))
+                      ->where('batas_penitipan', '>=', now());
+                break;
+            case 'normal':
+                $query->whereNotNull('batas_penitipan')
+                      ->where('batas_penitipan', '>', now()->addDays(7));
+                break;
+        }
+        
+        return $query->get()->toArray();
+    }
 }
