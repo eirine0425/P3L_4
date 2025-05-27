@@ -153,6 +153,66 @@ class DashboardWarehouseController extends Controller
         ));
     }
 
+    public function inventory(Request $request)
+    {
+        $query = Barang::with(['kategori', 'penitip.user']);
+
+        // Filter berdasarkan status
+        if ($request->has('status') && $request->status != '') {
+            $query->where('status', $request->status);
+        }
+        
+        // Filter berdasarkan kategori
+        if ($request->has('kategori') && $request->kategori != '') {
+            $query->where('kategori_id', $request->kategori);
+        }
+        
+        // Pencarian
+        if ($request->has('search') && $request->search != '') {
+            $search = $request->search;
+            $query->where(function($q) use ($search) {
+                $q->where('nama_barang', 'like', "%{$search}%")
+                  ->orWhere('deskripsi', 'like', "%{$search}%")
+                  ->orWhereHas('penitip.user', function($subQ) use ($search) {
+                      $subQ->where('name', 'like', "%{$search}%");
+                  });
+            });
+        }
+        
+        // Pengurutan
+        if ($request->has('sort')) {
+            switch ($request->sort) {
+                case 'name_asc':
+                    $query->orderBy('nama_barang', 'asc');
+                    break;
+                case 'name_desc':
+                    $query->orderBy('nama_barang', 'desc');
+                    break;
+                case 'price_asc':
+                    $query->orderBy('harga', 'asc');
+                    break;
+                case 'price_desc':
+                    $query->orderBy('harga', 'desc');
+                    break;
+                case 'newest':
+                    $query->orderBy('created_at', 'desc');
+                    break;
+                case 'oldest':
+                    $query->orderBy('created_at', 'asc');
+                    break;
+                default:
+                    $query->orderBy('created_at', 'desc');
+            }
+        } else {
+            $query->orderBy('created_at', 'desc');
+        }
+        
+        $items = $query->paginate(15)->appends($request->query());
+        $categories = KategoriBarang::all();
+        
+        return view('dashboard.warehouse.inventory', compact('items', 'categories'));
+    }
+
     public function exportResults(Request $request)
     {
         $query = Barang::with(['kategori', 'penitip.user']);
@@ -286,34 +346,6 @@ class DashboardWarehouseController extends Controller
     
     // ... rest of the existing methods remain the same ...
     
-    public function inventory(Request $request)
-    {
-        $query = Transaksi::with(['pembeli.user', 'detailTransaksi.barang', 'pengiriman'])
-            ->where('status_transaksi', 'Lunas');
-
-        // Filter berdasarkan status pengiriman
-        if ($request->has('shipping_status') && $request->shipping_status != '') {
-            $query->whereHas('pengiriman', function($q) use ($request) {
-                $q->where('status_pengiriman', $request->shipping_status);
-            });
-        }
-        
-        // Pencarian
-        if ($request->has('search') && $request->search != '') {
-            $search = $request->search;
-            $query->where(function($q) use ($search) {
-                $q->where('transaksi_id', 'like', "%{$search}%")
-                  ->orWhereHas('pembeli.user', function($subQ) use ($search) {
-                      $subQ->where('name', 'like', "%{$search}%");
-                  });
-            });
-        }
-        
-        $transactions = $query->orderBy('created_at', 'desc')->paginate(10);
-        
-        return view('dashboard.warehouse.transactions', compact('transactions'));
-    }
-
     public function createShippingSchedule(Request $request, $transactionId)
     {
         $request->validate([
