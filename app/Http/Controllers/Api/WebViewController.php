@@ -280,10 +280,10 @@ class WebViewController extends Controller
     public function removeFromCart(Request $request)
     {
         $request->validate([
-            'cart_id' => 'required|exists:keranjang_belanja,id'
+            'cart_id' => 'required|exists:keranjang_id'
         ]);
         
-        KeranjangBelanja::where('id', $request->cart_id)
+        KeranjangBelanja::where('keranjang_id', $request->cart_id)
             ->where('user_id', Auth::id())
             ->delete();
             

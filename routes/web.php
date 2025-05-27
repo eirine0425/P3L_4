@@ -173,12 +173,7 @@ Route::middleware(['auth', 'role:pembeli'])->group(function () {
     Route::post('/dashboard/keranjang/add', [KeranjangBelanjaController::class, 'store'])->name('buyer.cart.add');
     Route::put('/dashboard/keranjang/update', [KeranjangBelanjaController::class, 'update'])->name('buyer.cart.update');
     Route::delete('/dashboard/keranjang/remove/{id}', [KeranjangBelanjaController::class, 'destroy'])->name('buyer.cart.remove');
-    
-    // Alternative cart routes for compatibility
-    Route::get('/dashboard/keranjang/alt', function () {
-        return view('errors.missing-view', ['view' => 'dashboard.buyer.cart.index']);
-    })->name('cart.index');
-    
+
     Route::post('/dashboard/keranjang/alt/add', [KeranjangBelanjaController::class, 'store'])->name('cart.add');
     Route::put('/dashboard/keranjang/alt/update', [KeranjangBelanjaController::class, 'update'])->name('cart.update');
     Route::delete('/dashboard/keranjang/alt/remove/{id}', [KeranjangBelanjaController::class, 'destroy'])->name('cart.remove');
