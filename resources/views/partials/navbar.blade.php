@@ -35,7 +35,7 @@
                         @auth
                             @if(auth()->user()->role->nama_role == 'Pembeli')
                                 @php
-                                    $cartCount = \App\Models\KeranjangBelanja::where('user_id', auth()->id())->sum('jumlah') ?? 0;
+                                    $cartCount = \App\Models\KeranjangBelanja::where('pembeli_id', auth()->id())->sum('jumlah') ?? 0;
                                 @endphp
                                 @if($cartCount > 0)
                                     <span class="badge bg-danger rounded-pill position-absolute top-0 start-100 translate-middle cart-badge">
@@ -98,7 +98,7 @@
                     <i class="fas fa-shopping-cart"></i>
                     <span class="badge bg-danger rounded-pill position-absolute top-0 start-100 translate-middle">
                         @php
-                            $cartCount = \App\Models\KeranjangBelanja::where('user_id', auth()->id())->sum('jumlah') ?? 0;
+                            $cartCount = \App\Models\KeranjangBelanja::where('pembeli_id', auth()->id())->sum('jumlah') ?? 0;
                         @endphp
                         {{ $cartCount }}
                     </span>

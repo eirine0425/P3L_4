@@ -12,6 +12,7 @@ return new class extends Migration {
             $table->foreignId('barang_id');
             $table->foreignId('pembeli_id')->nullable();
             $table->softDeletes();
+            $table->timestamps();
         });
     }
 
