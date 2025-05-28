@@ -298,6 +298,10 @@ Route::middleware(['auth', 'role:gudang,pegawai gudang'])->group(function () {
         Route::get('/transaction/{id}/sales-note', [DashboardWarehouseController::class, 'generateSalesNote'])->name('sales-note');
         Route::post('/transaction/{id}/confirm', [DashboardWarehouseController::class, 'confirmItemReceived'])->name('confirm-received');
         Route::post('/transaction/{id}/status', [DashboardWarehouseController::class, 'updateTransactionStatus'])->name('update-transaction-status');
+
+        // Add this route for extending consignment
+        Route::put('/item/{id}/extend', [DashboardWarehouseController::class, 'extendConsignment'])
+            ->name('item.extend');
     });
     
     // Legacy Routes (for backward compatibility)
