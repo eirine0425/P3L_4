@@ -325,6 +325,10 @@ Route::middleware(['auth', 'role:gudang,pegawai gudang'])->group(function () {
         Route::post('/save-search', [DashboardWarehouseController::class, 'saveSearch'])->name('save-search');
         Route::get('/saved-searches', [DashboardWarehouseController::class, 'getSavedSearches'])->name('saved-searches');
         
+        // PDF PRINTING ROUTES
+        Route::get('/print-note/{id}', [DashboardWarehouseController::class, 'printConsignmentNote'])->name('print-note');
+        Route::post('/print-bulk-notes', [DashboardWarehouseController::class, 'printBulkConsignmentNotes'])->name('print-bulk-notes');
+        
         // Consignment management
         Route::get('/consignment/create', [DashboardWarehouseController::class, 'createConsignmentItem'])->name('consignment.create');
         Route::post('/consignment', [DashboardWarehouseController::class, 'storeConsignmentItem'])->name('consignment.store');
