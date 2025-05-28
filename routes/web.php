@@ -319,6 +319,12 @@ Route::middleware(['auth', 'role:gudang,pegawai gudang'])->group(function () {
         Route::get('/shipments', [DashboardWarehouseController::class, 'shipments'])->name('shipments');
         Route::get('/verification', [DashboardWarehouseController::class, 'verification'])->name('verification');
         
+        // NEW ROUTES FOR SEARCH FUNCTIONALITY
+        Route::get('/export', [DashboardWarehouseController::class, 'exportResults'])->name('export');
+        Route::post('/bulk-update', [DashboardWarehouseController::class, 'bulkUpdate'])->name('bulk-update');
+        Route::post('/save-search', [DashboardWarehouseController::class, 'saveSearch'])->name('save-search');
+        Route::get('/saved-searches', [DashboardWarehouseController::class, 'getSavedSearches'])->name('saved-searches');
+        
         // Consignment management
         Route::get('/consignment/create', [DashboardWarehouseController::class, 'createConsignmentItem'])->name('consignment.create');
         Route::post('/consignment', [DashboardWarehouseController::class, 'storeConsignmentItem'])->name('consignment.store');
@@ -347,6 +353,10 @@ Route::middleware(['auth', 'role:gudang,pegawai gudang'])->group(function () {
         Route::get('/transaction/{id}/sales-note', [DashboardWarehouseController::class, 'generateSalesNote'])->name('sales-note');
         Route::post('/transaction/{id}/confirm', [DashboardWarehouseController::class, 'confirmItemReceived'])->name('confirm-received');
         Route::post('/transaction/{id}/status', [DashboardWarehouseController::class, 'updateTransactionStatus'])->name('update-transaction-status');
+
+        // Add this route for extending consignment
+        Route::put('/item/{id}/extend', [DashboardWarehouseController::class, 'extendConsignment'])
+            ->name('item.extend');
     });
     
     // Legacy Routes (for backward compatibility)

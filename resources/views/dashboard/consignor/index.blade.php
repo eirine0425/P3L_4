@@ -148,7 +148,11 @@
                                                     <span class="badge bg-secondary">{{ ucfirst($item->status) }}</span>
                                                 @endif
                                             </td>
-                                            <td>{{ $item->created_at->format('d M Y') }}</td>
+                                            <td>@if ($item->created_at)
+        {{ $item->created_at->format('d M Y') }}
+    @else
+        <span class="text-muted">-</span>
+    @endif</td>
                                             <td>
                                                 <a href="{{ route('consignor.items.show', $item->barang_id) }}" 
                                                    class="btn btn-sm btn-outline-primary">

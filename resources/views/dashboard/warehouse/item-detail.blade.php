@@ -1,122 +1,54 @@
 @extends('layouts.dashboard')
 
-@section('title', 'Item Detail')
+@section('title', 'Detail Barang')
 
 @section('content')
 <div class="container-fluid">
     <div class="row mb-4">
-        <div class="col-12 d-flex justify-content-between align-items-center">
-            <div>
-                <h2>Detail Barang: {{ $item->nama_barang }}</h2>
-                <p class="text-muted">Informasi lengkap tentang barang.</p>
-            </div>
-            <div>
-                <a href="{{ route('dashboard.warehouse.inventory') }}" class="btn btn-secondary">
-                    <i class="fas fa-arrow-left"></i> Kembali
-                </a>
-                <button type="button" class="btn btn-primary" data-bs-toggle="modal" data-bs-target="#updateStatusModal">
-                    <i class="fas fa-check-circle"></i> Update Status
-                </button>
+        <div class="col-12">
+            <div class="d-flex justify-content-between align-items-center">
+                <div>
+                    <h2>Detail Barang</h2>
+                    <p class="text-muted">{{ $item->nama_barang }}</p>
+                </div>
+                <div>
+                    <a href="{{ route('dashboard.warehouse.inventory') }}" class="btn btn-secondary me-2">
+                        <i class="fas fa-arrow-left me-2"></i>Kembali
+                    </a>
+                    <a href="{{ route('dashboard.warehouse.item.edit', $item->barang_id) }}" class="btn btn-warning">
+                        <i class="fas fa-edit me-2"></i>Edit Barang
+                    </a>
+                </div>
             </div>
         </div>
     </div>
-    
+
     <div class="row">
         <div class="col-md-4">
-            <div class="card mb-4">
-                <div class="card-body text-center">
-                    @if($item->foto_barang && file_exists(storage_path('app/public/' . $item->foto_barang)))
-                        <img src="{{ asset('storage/' . $item->foto_barang) }}" alt="{{ $item->nama_barang }}" class="img-fluid mb-3" style="max-height: 300px;">
-                    @else
-                        <div class="no-image p-5 bg-light mb-3">
-                            <i class="fas fa-image fa-5x text-muted"></i>
-                            <p class="mt-3">Tidak ada gambar</p>
-                        </div>
-                    @endif
-                    
-                    <h4>{{ $item->nama_barang }}</h4>
-                    <p class="text-muted">{{ $item->kategori->nama_kategori ?? 'Kategori tidak tersedia' }}</p>
-                    <h5 class="text-primary">Rp {{ number_format($item->harga, 0, ',', '.') }}</h5>
-                    
-                    <div class="mt-3">
-                        @if($item->status == 'belum_terjual')
-                            <span class="badge bg-success">Tersedia</span>
-                        @elseif($item->status == 'terjual')
-                            <span class="badge bg-info">Terjual</span>
-                        @elseif($item->status == 'sold out')
-                            <span class="badge bg-danger">Sold Out</span>
-                        @else
-                            <span class="badge bg-warning">{{ ucfirst($item->status) }}</span>
-                        @endif
-                    </div>
-                </div>
-            </div>
-            
-            <!-- Informasi Penitip -->
-            <div class="card mb-4">
+            <div class="card">
                 <div class="card-header">
-                    <h5 class="card-title">Informasi Penitip</h5>
+                    <h5 class="card-title">Foto Barang</h5>
                 </div>
-                <div class="card-body">
-                    @if($item->penitip)
-                        <div class="d-flex align-items-center mb-3">
-                            <div class="avatar-circle me-3">
-                                <i class="fas fa-user fa-2x text-primary"></i>
-                            </div>
-                            <div>
-                                <h6 class="mb-1">{{ $item->penitip->nama ?? $item->penitip->user->name ?? 'Nama tidak tersedia' }}</h6>
-                                <small class="text-muted">Penitip</small>
-                            </div>
-                        </div>
-                        
-                        <div class="row">
-                            <div class="col-12">
-                                <table class="table table-borderless table-sm">
-                                    <tr>
-                                        <th width="40%">Nama</th>
-                                        <td>{{ $item->penitip->nama ?? $item->penitip->user->name ?? 'Tidak tersedia' }}</td>
-                                    </tr>
-                                    <tr>
-                                        <th>Email</th>
-                                        <td>{{ $item->penitip->user->email ?? 'Tidak tersedia' }}</td>
-                                    </tr>
-                                    <tr>
-                                        <th>No. KTP</th>
-                                        <td>{{ $item->penitip->no_ktp ?? 'Tidak tersedia' }}</td>
-                                    </tr>
-                                    <tr>
-                                        <th>Point Donasi</th>
-                                        <td>{{ $item->penitip->point_donasi ?? 0 }} poin</td>
-                                    </tr>
-                                    <tr>
-                                        <th>Badge</th>
-                                        <td>
-                                            @if($item->penitip->badge)
-                                                <span class="badge bg-warning">{{ $item->penitip->badge }}</span>
-                                            @else
-                                                <span class="text-muted">Belum ada badge</span>
-                                            @endif
-                                        </td>
-                                    </tr>
-                                    <tr>
-                                        <th>Tanggal Registrasi</th>
-                                        <td>{{ $item->penitip->tanggal_registrasi ? \Carbon\Carbon::parse($item->penitip->tanggal_registrasi)->format('d M Y') : 'Tidak tersedia' }}</td>
-                                    </tr>
-                                </table>
-                            </div>
-                        </div>
+                <div class="card-body text-center">
+                    @if($item->foto_barang)
+                        <img src="{{ asset('storage/' . $item->foto_barang) }}" 
+                             alt="{{ $item->nama_barang }}" 
+                             class="img-fluid rounded" style="max-height: 300px;">
                     @else
-                        <div class="text-center text-muted">
-                            <i class="fas fa-user-slash fa-3x mb-3"></i>
-                            <p>Informasi penitip tidak tersedia</p>
+                        <div class="bg-light d-flex align-items-center justify-content-center rounded" 
+                             style="height: 300px;">
+                            <div class="text-center">
+                                <i class="fas fa-image fa-3x text-muted mb-2"></i>
+                                <p class="text-muted">Tidak ada foto</p>
+                            </div>
                         </div>
                     @endif
                 </div>
             </div>
         </div>
-        
+
         <div class="col-md-8">
-            <div class="card mb-4">
+            <div class="card">
                 <div class="card-header">
                     <h5 class="card-title">Informasi Barang</h5>
                 </div>
@@ -125,37 +57,31 @@
                         <div class="col-md-6">
                             <table class="table table-borderless">
                                 <tr>
-                                    <th width="40%">ID Barang</th>
-                                    <td>#{{ $item->barang_id }}</td>
+                                    <td><strong>ID Barang:</strong></td>
+                                    <td>{{ $item->barang_id }}</td>
                                 </tr>
                                 <tr>
-                                    <th>Nama</th>
+                                    <td><strong>Nama Barang:</strong></td>
                                     <td>{{ $item->nama_barang }}</td>
                                 </tr>
                                 <tr>
-                                    <th>Kategori</th>
-                                    <td>{{ $item->kategori->nama_kategori ?? 'Tidak tersedia' }}</td>
+                                    <td><strong>Kategori:</strong></td>
+                                    <td>{{ $item->kategori->nama_kategori ?? '-' }}</td>
                                 </tr>
                                 <tr>
-                                    <th>Harga</th>
+                                    <td><strong>Harga:</strong></td>
                                     <td>Rp {{ number_format($item->harga, 0, ',', '.') }}</td>
                                 </tr>
                                 <tr>
-                                    <th>Kondisi</th>
+                                    <td><strong>Kondisi:</strong></td>
                                     <td>
-                                        @switch($item->kondisi)
-                                            @case('baru')
-                                                <span class="badge bg-success">Baru</span>
-                                                @break
-                                            @case('layak')
-                                                <span class="badge bg-primary">Layak</span>
-                                                @break
-                                            @case('sangat_layak')
-                                                <span class="badge bg-info">Sangat Layak</span>
-                                                @break
-                                            @default
-                                                <span class="badge bg-secondary">{{ ucfirst($item->kondisi) }}</span>
-                                        @endswitch
+                                        @if($item->kondisi == 'baru')
+                                            <span class="badge bg-primary">Baru</span>
+                                        @elseif($item->kondisi == 'sangat_layak')
+                                            <span class="badge bg-success">Sangat Layak</span>
+                                        @else
+                                            <span class="badge bg-warning">Layak</span>
+                                        @endif
                                     </td>
                                 </tr>
                             </table>
@@ -163,157 +89,251 @@
                         <div class="col-md-6">
                             <table class="table table-borderless">
                                 <tr>
-                                    <th width="40%">Status</th>
+                                    <td><strong>Status:</strong></td>
                                     <td>
                                         @if($item->status == 'belum_terjual')
-                                            <span class="badge bg-success">Tersedia</span>
+                                            <span class="badge bg-success">Belum Terjual</span>
                                         @elseif($item->status == 'terjual')
                                             <span class="badge bg-info">Terjual</span>
                                         @elseif($item->status == 'sold out')
-                                            <span class="badge bg-danger">Sold Out</span>
+                                            <span class="badge bg-secondary">Sold Out</span>
                                         @else
                                             <span class="badge bg-warning">{{ ucfirst($item->status) }}</span>
                                         @endif
                                     </td>
                                 </tr>
                                 <tr>
-                                    <th>Tanggal Penitipan</th>
-                                    <td>{{ $item->tanggal_penitipan ? \Carbon\Carbon::parse($item->tanggal_penitipan)->format('d M Y') : 'Tidak tersedia' }}</td>
+                                    <td><strong>Penitip:</strong></td>
+                                    <td>{{ $item->penitip->user->name ?? '-' }}</td>
                                 </tr>
                                 <tr>
-                                    <th>Tanggal Ditambahkan</th>
-                                    <td>{{ $item->created_at->format('d M Y H:i') }}</td>
+                                    <td><strong>Tanggal Penitipan:</strong></td>
+                                    <td>
+                                        {{ $item->tanggal_mulai_penitipan->format('d M Y') }}
+                                    </td>
                                 </tr>
                                 <tr>
-                                    <th>Terakhir Diupdate</th>
+                                    <td><strong>Batas Penitipan:</strong></td>
+                                    <td>
+                                        {{ $item->batas_penitipan->format('d M Y') }}
+                                    </td>
+                                </tr>
+                                <tr>
+                                    <td><strong>Terakhir Update:</strong></td>
                                     <td>{{ $item->updated_at->format('d M Y H:i') }}</td>
                                 </tr>
                                 <tr>
-                                    <th>Rating</th>
+                                    <td><strong>Status Durasi:</strong></td>
                                     <td>
-                                        @if($item->rating)
-                                            <div class="d-flex align-items-center">
-                                                <span class="me-2">{{ number_format($item->rating, 1) }}</span>
-                                                @for($i = 1; $i <= 5; $i++)
-                                                    @if($i <= $item->rating)
-                                                        <i class="fas fa-star text-warning"></i>
-                                                    @else
-                                                        <i class="far fa-star text-muted"></i>
-                                                    @endif
-                                                @endfor
-                                            </div>
-                                        @else
-                                            <span class="text-muted">Belum ada rating</span>
-                                        @endif
+                                        <span class="badge {{ $item->status_durasi_badge_class }}">
+                                            {{ $item->status_durasi_text }}
+                                        </span>
+                                        <br>
+                                        <small class="text-muted">{{ $item->formatted_sisa_waktu }}</small>
                                     </td>
                                 </tr>
                             </table>
                         </div>
                     </div>
-                    
-                    <div class="mt-3">
-                        <h6>Deskripsi:</h6>
-                        <p>{{ $item->deskripsi ?? 'Tidak ada deskripsi' }}</p>
+
+                    <div class="row mt-3">
+                        <div class="col-12">
+                            <h6><strong>Deskripsi:</strong></h6>
+                            <p class="text-muted">{{ $item->deskripsi }}</p>
+                        </div>
                     </div>
-                    
-                    @if($item->garansi)
-                    <div class="mt-3">
-                        <h6>Informasi Garansi:</h6>
-                        <table class="table table-bordered">
-                            <tr>
-                                <th>Serial Number</th>
-                                <td>{{ $item->garansi->serial_number ?? 'Tidak tersedia' }}</td>
-                            </tr>
-                            <tr>
-                                <th>Tanggal Mulai</th>
-                                <td>{{ $item->garansi->tanggal_mulai ? $item->garansi->tanggal_mulai->format('d M Y') : 'Tidak tersedia' }}</td>
-                            </tr>
-                            <tr>
-                                <th>Tanggal Berakhir</th>
-                                <td>{{ $item->garansi->tanggal_berakhir ? $item->garansi->tanggal_berakhir->format('d M Y') : 'Tidak tersedia' }}</td>
-                            </tr>
-                            <tr>
-                                <th>Ketentuan</th>
-                                <td>{{ $item->garansi->ketentuan ?? 'Tidak tersedia' }}</td>
-                            </tr>
-                        </table>
-                    </div>
-                    @endif
                 </div>
             </div>
-            
-            <div class="card">
+
+            <!-- Quick Actions -->
+            <div class="card mt-3">
                 <div class="card-header">
-                    <h5 class="card-title">Diskusi Produk</h5>
+                    <h5 class="card-title">Aksi Cepat</h5>
                 </div>
                 <div class="card-body">
-                    @if($item->diskusi && $item->diskusi->count() > 0)
-                        <div class="list-group">
-                            @foreach($item->diskusi as $diskusi)
-                                <div class="list-group-item">
-                                    <div class="d-flex w-100 justify-content-between">
-                                        <h6 class="mb-1">{{ $diskusi->user->name ?? 'User tidak tersedia' }}</h6>
-                                        <small>{{ $diskusi->created_at ? $diskusi->created_at->diffForHumans() : 'Waktu tidak tersedia' }}</small>
-                                    </div>
-                                    <p class="mb-1">{{ $diskusi->isi ?? 'Konten tidak tersedia' }}</p>
-                                    @if($diskusi->balasan)
-                                        <div class="mt-2 p-2 bg-light rounded">
-                                            <small class="text-muted">Balasan:</small>
-                                            <p class="mb-0">{{ $diskusi->balasan }}</p>
-                                        </div>
-                                    @endif
+                    <div class="row">
+                        <div class="col-md-6">
+                            <form action="{{ route('dashboard.warehouse.item.update-status', $item->barang_id) }}" method="POST" class="d-inline">
+                                @csrf
+                                @method('PUT')
+                                <div class="input-group">
+                                    <select name="status" class="form-select" required>
+                                        <option value="">Ubah Status...</option>
+                                        <option value="belum_terjual" {{ $item->status == 'belum_terjual' ? 'selected' : '' }}>Belum Terjual</option>
+                                        <option value="terjual" {{ $item->status == 'terjual' ? 'selected' : '' }}>Terjual</option>
+                                        <option value="sold out" {{ $item->status == 'sold out' ? 'selected' : '' }}>Sold Out</option>
+                                        <option value="untuk_donasi" {{ $item->status == 'untuk_donasi' ? 'selected' : '' }}>Untuk Donasi</option>
+                                    </select>
+                                    <button type="submit" class="btn btn-primary">Update</button>
                                 </div>
-                            @endforeach
+                            </form>
                         </div>
-                    @else
-                        <p class="text-center text-muted">Belum ada diskusi untuk produk ini.</p>
-                    @endif
-                </div>
-            </div>
-        </div>
-    </div>
-</div>
-
-<!-- Update Status Modal -->
-<div class="modal fade" id="updateStatusModal" tabindex="-1" aria-labelledby="updateStatusModalLabel" aria-hidden="true">
-    <div class="modal-dialog">
-        <div class="modal-content">
-            <div class="modal-header">
-                <h5 class="modal-title" id="updateStatusModalLabel">Update Status Barang</h5>
-                <button type="button" class="btn-close" data-bs-dismiss="modal" aria-label="Close"></button>
-            </div>
-            <form action="{{ route('dashboard.warehouse.item.update-status', $item->barang_id) }}" method="POST">
-                @csrf
-                @method('PUT')
-                <div class="modal-body">
-                    <div class="mb-3">
-                        <label for="status" class="form-label">Status</label>
-                        <select name="status" id="status" class="form-select">
-                            <option value="belum_terjual" {{ $item->status == 'belum_terjual' ? 'selected' : '' }}>Tersedia</option>
-                            <option value="terjual" {{ $item->status == 'terjual' ? 'selected' : '' }}>Terjual</option>
-                            <option value="sold out" {{ $item->status == 'sold out' ? 'selected' : '' }}>Sold Out</option>
-                        </select>
+                        <div class="col-md-6">
+                            <div class="btn-group w-100">
+                                <a href="{{ route('products.show', $item->barang_id) }}" 
+                                   class="btn btn-info" target="_blank">
+                                    <i class="fas fa-external-link-alt me-1"></i>Lihat di Katalog
+                                </a>
+                                <a href="{{ route('dashboard.warehouse.item.edit', $item->barang_id) }}" 
+                                   class="btn btn-warning">
+                                    <i class="fas fa-edit me-1"></i>Edit Detail
+                                </a>
+                            </div>
+                        </div>
                     </div>
                 </div>
-                <div class="modal-footer">
-                    <button type="button" class="btn btn-secondary" data-bs-dismiss="modal">Batal</button>
-                    <button type="submit" class="btn btn-primary">Simpan</button>
+            </div>
+
+            <!-- Extend Consignment -->
+            <div class="card mt-3">
+                <div class="card-header">
+                    <h5 class="card-title">Perpanjang Masa Penitipan</h5>
                 </div>
-            </form>
+                <div class="card-body">
+                    <form action="{{ route('dashboard.warehouse.item.extend', $item->barang_id) }}" method="POST">
+                        @csrf
+                        <div class="row">
+                            <div class="col-md-8">
+                                <div class="input-group">
+                                    <input type="number" name="durasi_tambahan" class="form-control" min="1" max="90" value="30" required>
+                                    <span class="input-group-text">hari</span>
+                                    <button type="submit" class="btn btn-success">Perpanjang</button>
+                                </div>
+                                <small class="text-muted">Perpanjang masa penitipan dari tanggal batas saat ini</small>
+                            </div>
+                        </div>
+                    </form>
+                </div>
+            </div>
         </div>
     </div>
 </div>
 
+<!-- Countdown Timer -->
+@if(!$item->is_expired)
+<div class="card mt-3">
+    <div class="card-header">
+        <h5 class="card-title">
+            <i class="fas fa-clock me-2"></i>Countdown Penitipan
+        </h5>
+    </div>
+    <div class="card-body text-center">
+        <div id="countdown-timer" class="countdown-display">
+            <div class="countdown-item">
+                <span id="days" class="countdown-number">0</span>
+                <span class="countdown-label">Hari</span>
+            </div>
+            <div class="countdown-item">
+                <span id="hours" class="countdown-number">0</span>
+                <span class="countdown-label">Jam</span>
+            </div>
+            <div class="countdown-item">
+                <span id="minutes" class="countdown-number">0</span>
+                <span class="countdown-label">Menit</span>
+            </div>
+            <div class="countdown-item">
+                <span id="seconds" class="countdown-number">0</span>
+                <span class="countdown-label">Detik</span>
+            </div>
+        </div>
+        <div class="mt-3">
+            <small class="text-muted">
+                Berakhir pada: {{ $item->batas_penitipan->format('d M Y H:i') }}
+            </small>
+        </div>
+    </div>
+</div>
+@else
+<div class="card mt-3 border-danger">
+    <div class="card-header bg-danger text-white">
+        <h5 class="card-title mb-0">
+            <i class="fas fa-exclamation-triangle me-2"></i>Penitipan Kadaluarsa
+        </h5>
+    </div>
+    <div class="card-body text-center">
+        <i class="fas fa-calendar-times fa-3x text-danger mb-3"></i>
+        <h6 class="text-danger">Masa penitipan telah berakhir</h6>
+        <p class="text-muted">{{ $item->formatted_sisa_waktu }}</p>
+        <div class="alert alert-warning">
+            <small>
+                <i class="fas fa-info-circle me-1"></i>
+                Barang ini perlu ditindaklanjuti segera
+            </small>
+        </div>
+    </div>
+</div>
+@endif
+
 <style>
-.avatar-circle {
-    width: 50px;
-    height: 50px;
-    border-radius: 50%;
-    background-color: #f8f9fa;
+.countdown-display {
     display: flex;
-    align-items: center;
     justify-content: center;
-    border: 2px solid #e9ecef;
+    gap: 20px;
+    flex-wrap: wrap;
 }
+
+.countdown-item {
+    display: flex;
+    flex-direction: column;
+    align-items: center;
+    min-width: 60px;
+}
+
+.countdown-number {
+    font-size: 2rem;
+    font-weight: bold;
+    color: #007bff;
+    line-height: 1;
+}
+
+.countdown-label {
+    font-size: 0.8rem;
+    color: #6c757d;
+    text-transform: uppercase;
+    letter-spacing: 0.5px;
+}
+
+.badge-danger { background-color: #dc3545 !important; }
+.badge-warning { background-color: #ffc107 !important; color: #000 !important; }
+.badge-info { background-color: #17a2b8 !important; }
+.badge-success { background-color: #28a745 !important; }
+.badge-secondary { background-color: #6c757d !important; }
 </style>
+
+@if(!$item->is_expired)
+<script>
+document.addEventListener('DOMContentLoaded', function() {
+    // Set the date we're counting down to
+    const countDownDate = new Date("{{ $item->batas_penitipan->format('Y-m-d H:i:s') }}").getTime();
+    
+    // Update the count down every 1 second
+    const x = setInterval(function() {
+        // Get today's date and time
+        const now = new Date().getTime();
+        
+        // Find the distance between now and the count down date
+        const distance = countDownDate - now;
+        
+        // Time calculations for days, hours, minutes and seconds
+        const days = Math.floor(distance / (1000 * 60 * 60 * 24));
+        const hours = Math.floor((distance % (1000 * 60 * 60 * 24)) / (1000 * 60 * 60));
+        const minutes = Math.floor((distance % (1000 * 60 * 60)) / (1000 * 60));
+        const seconds = Math.floor((distance % (1000 * 60)) / 1000);
+        
+        // Display the result
+        document.getElementById("days").innerHTML = days;
+        document.getElementById("hours").innerHTML = hours;
+        document.getElementById("minutes").innerHTML = minutes;
+        document.getElementById("seconds").innerHTML = seconds;
+        
+        // If the count down is finished, write some text
+        if (distance < 0) {
+            clearInterval(x);
+            document.getElementById("countdown-timer").innerHTML = 
+                '<div class="alert alert-danger"><i class="fas fa-exclamation-triangle me-2"></i>Masa penitipan telah berakhir!</div>';
+        }
+    }, 1000);
+});
+</script>
+@endif
 @endsection
