@@ -178,7 +178,12 @@ Route::middleware(['auth', 'role:pembeli'])->group(function () {
     Route::post('/dashboard/keranjang/add', [KeranjangBelanjaController::class, 'store'])->name('buyer.cart.add');
     Route::put('/dashboard/keranjang/update', [KeranjangBelanjaController::class, 'update'])->name('buyer.cart.update');
     Route::delete('/dashboard/keranjang/remove/{id}', [KeranjangBelanjaController::class, 'destroy'])->name('buyer.cart.remove');
-
+    
+    // Alternative cart routes for compatibility
+    Route::get('/dashboard/keranjang/alt', function () {
+        return view('errors.missing-view', ['view' => 'dashboard.buyer.cart.index']);
+    })->name('cart.index');
+    
     Route::post('/dashboard/keranjang/alt/add', [KeranjangBelanjaController::class, 'store'])->name('cart.add');
     Route::put('/dashboard/keranjang/alt/update', [KeranjangBelanjaController::class, 'update'])->name('cart.update');
     Route::delete('/dashboard/keranjang/alt/remove/{id}', [KeranjangBelanjaController::class, 'destroy'])->name('cart.remove');
@@ -319,6 +324,12 @@ Route::middleware(['auth', 'role:gudang,pegawai gudang'])->group(function () {
         Route::get('/shipments', [DashboardWarehouseController::class, 'shipments'])->name('shipments');
         Route::get('/verification', [DashboardWarehouseController::class, 'verification'])->name('verification');
         
+        // NEW ROUTES FOR SEARCH FUNCTIONALITY
+        Route::get('/export', [DashboardWarehouseController::class, 'exportResults'])->name('export');
+        Route::post('/bulk-update', [DashboardWarehouseController::class, 'bulkUpdate'])->name('bulk-update');
+        Route::post('/save-search', [DashboardWarehouseController::class, 'saveSearch'])->name('save-search');
+        Route::get('/saved-searches', [DashboardWarehouseController::class, 'getSavedSearches'])->name('saved-searches');
+        
         // Consignment management
         Route::get('/consignment/create', [DashboardWarehouseController::class, 'createConsignmentItem'])->name('consignment.create');
         Route::post('/consignment', [DashboardWarehouseController::class, 'storeConsignmentItem'])->name('consignment.store');
@@ -347,6 +358,10 @@ Route::middleware(['auth', 'role:gudang,pegawai gudang'])->group(function () {
         Route::get('/transaction/{id}/sales-note', [DashboardWarehouseController::class, 'generateSalesNote'])->name('sales-note');
         Route::post('/transaction/{id}/confirm', [DashboardWarehouseController::class, 'confirmItemReceived'])->name('confirm-received');
         Route::post('/transaction/{id}/status', [DashboardWarehouseController::class, 'updateTransactionStatus'])->name('update-transaction-status');
+
+        // Add this route for extending consignment
+        Route::put('/item/{id}/extend', [DashboardWarehouseController::class, 'extendConsignment'])
+            ->name('item.extend');
     });
     
     // Legacy Routes (for backward compatibility)
@@ -370,7 +385,7 @@ Route::middleware(['auth', 'role:cs'])->group(function () {
     // Discussions Routes
     Route::get('/dashboard/cs/diskusi', function () {
         return view('errors.missing-view', ['view' => 'dashboard.cs.discussions.index']);
-    })->name('cs.discussions');
+    })->name('dashboard.cs.discussions');
     
     // Consignor Management Routes
     Route::get('/dashboard/penitip', function () {
