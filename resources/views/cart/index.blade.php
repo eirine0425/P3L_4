@@ -1,284 +1,285 @@
 @extends('layouts.app')
 
-@section('title', 'Keranjang Belanja')
-
 @section('content')
-<div class="container py-4">
-    <div class="row">
-        <div class="col-12">
-            <h2 class="mb-4">
+<div class="container">
+    <div class="row justify-content-center">
+        <div class="col-md-8">
+            <h1>Keranjang Belanja</h1>
+
+            @if(session('success'))
+                <div class="alert alert-success">
+                    {{ session('success') }}
+                </div>
+            @endif
+
+            @if(session('error'))
+                <div class="alert alert-danger">
+                    {{ session('error') }}
+                </div>
+            @endif
+
+@if(count($cartItems) > 0)
+    <div class="card shadow-sm">
+        <div class="card-header bg-primary text-white">
+            <h5 class="mb-0">
                 <i class="fas fa-shopping-cart me-2"></i>Keranjang Belanja
-                @if($cartItems->count() > 0)
-                    <span class="badge bg-primary">{{ $cartItems->count() }} item</span>
-                @endif
-            </h2>
+            </h5>
         </div>
-    </div>
-
-    @if(session('success'))
-        <div class="alert alert-success alert-dismissible fade show" role="alert">
-            <i class="fas fa-check-circle me-2"></i>{{ session('success') }}
-            <button type="button" class="btn-close" data-bs-dismiss="alert" aria-label="Close"></button>
-        </div>
-    @endif
-
-    @if(session('error'))
-        <div class="alert alert-danger alert-dismissible fade show" role="alert">
-            <i class="fas fa-exclamation-triangle me-2"></i>{{ session('error') }}
-            <button type="button" class="btn-close" data-bs-dismiss="alert" aria-label="Close"></button>
-        </div>
-    @endif
-
-    @if($cartItems->count() > 0)
-        <div class="row">
-            <div class="col-lg-8">
-                <div class="card shadow-sm">
-                    <div class="card-header d-flex justify-content-between align-items-center">
-                        <h5 class="mb-0">Item dalam Keranjang</h5>
-                        <form action="{{ route('cart.clear') }}" method="POST" class="d-inline" 
-                              onsubmit="return confirm('Apakah Anda yakin ingin mengosongkan keranjang?')">
-                            @csrf
-                            @method('DELETE')
-                            <button type="submit" class="btn btn-outline-danger btn-sm">
-                                <i class="fas fa-trash me-1"></i>Kosongkan Keranjang
-                            </button>
-                        </form>
-                    </div>
-                    <div class="card-body p-0">
-                        @foreach($cartItems as $item)
-                            <div class="border-bottom p-3" id="cart-item-{{ $item->keranjang_id }}">
-                                <div class="row align-items-center">
-                                    <div class="col-md-2">
-                                        @if($item->barang && $item->barang->foto_barang)
-                                            <img src="{{ asset('storage/' . $item->barang->foto_barang) }}" 
-                                                 alt="{{ $item->barang->nama_barang }}" 
-                                                 class="img-fluid rounded" 
-                                                 style="height: 80px; width: 80px; object-fit: cover;">
-                                        @else
-                                            <div class="bg-light rounded d-flex align-items-center justify-content-center" 
-                                                 style="height: 80px; width: 80px;">
-                                                <i class="fas fa-image text-muted"></i>
+        <div class="card-body">
+            <form id="cart-form">
+                <div class="table-responsive">
+                    <table class="table table-hover">
+                        <thead class="table-light">
+                            <tr>
+                                <th width="50">
+                                    <input type="checkbox" id="select-all" class="form-check-input">
+                                </th>
+                                <th>Produk</th>
+                                <th width="150">Harga</th>
+                                <th width="100">Aksi</th>
+                            </tr>
+                        </thead>
+                        <tbody>
+                            @foreach($cartItems as $item)
+                                <tr>
+                                    <td>
+                                        <input type="checkbox" class="form-check-input item-checkbox" 
+                                               value="{{ $item->keranjang_id }}" 
+                                               data-price="{{ $item->barang->harga ?? 0 }}">
+                                    </td>
+                                    <td>
+                                        <div class="d-flex align-items-center">
+                                            <img src="{{ $item->barang && $item->barang->foto_barang ? asset('storage/' . $item->barang->foto_barang) : '/placeholder.svg?height=60&width=60' }}" 
+                                                 alt="{{ $item->barang->nama_barang ?? 'Produk' }}" 
+                                                 class="img-thumbnail me-3" 
+                                                 style="width: 60px; height: 60px; object-fit: cover;">
+                                            <div>
+                                                <h6 class="mb-1">{{ $item->barang->nama_barang ?? 'Nama tidak tersedia' }}</h6>
+                                                <small class="text-muted">
+                                                    <i class="fas fa-tag me-1"></i>
+                                                    {{ $item->barang->kategoriBarang->nama_kategori ?? 'Tanpa Kategori' }}
+                                                </small>
+                                                <br>
+                                                <small class="text-muted">
+                                                    Kondisi: {{ $item->barang->kondisi ?? 'Baik' }}
+                                                </small>
                                             </div>
-                                        @endif
-                                    </div>
-                                    <div class="col-md-6">
-                                        <h6 class="mb-1">
-                                            {{ $item->barang->nama_barang ?? 'Nama tidak tersedia' }}
-                                        </h6>
-                                        <p class="text-muted mb-1">
-                                            @if($item->barang && $item->barang->kategoriBarang)
-                                                {{ $item->barang->kategoriBarang->nama_kategori }}
-                                            @else
-                                                Tanpa Kategori
-                                            @endif
-                                        </p>
-                                        <small class="text-muted">
-                                            Kondisi: {{ ucfirst($item->barang->kondisi ?? 'Baik') }}
-                                        </small>
-                                        @if($item->barang && $item->barang->deskripsi)
-                                            <p class="text-muted small mb-0">
-                                                {{ Str::limit($item->barang->deskripsi, 100) }}
-                                            </p>
-                                        @endif
-                                    </div>
-                                    <div class="col-md-2 text-center">
+                                        </div>
+                                    </td>
+                                    <td>
                                         <span class="fw-bold text-primary">
                                             Rp {{ number_format($item->barang->harga ?? 0, 0, ',', '.') }}
                                         </span>
-                                    </div>
-                                    <div class="col-md-2 text-end">
-                                        <form action="{{ route('cart.remove', $item->keranjang_id) }}" method="POST" class="d-inline remove-item-form">
+                                    </td>
+                                    <td>
+                                        <form action="{{ route('cart.remove', $item->keranjang_id) }}" method="POST" class="d-inline">
                                             @csrf
                                             @method('DELETE')
-                                            <button type="submit" class="btn btn-outline-danger btn-sm" 
+                                            <button type="submit" class="btn btn-sm btn-outline-danger" 
                                                     onclick="return confirm('Hapus item ini dari keranjang?')">
                                                 <i class="fas fa-trash"></i>
                                             </button>
                                         </form>
-                                    </div>
-                                </div>
+                                    </td>
+                                </tr>
+                            @endforeach
+                        </tbody>
+                    </table>
+                </div>
+            </form>
+
+            <!-- Ringkasan Belanja -->
+            <div class="row mt-4">
+                <div class="col-md-8">
+                    <div class="d-flex justify-content-between align-items-center">
+                        <div>
+                            <span class="text-muted">Item dipilih: </span>
+                            <span class="fw-bold" id="selected-count">0</span>
+                        </div>
+                        <div>
+                            <button type="button" class="btn btn-sm btn-outline-danger" onclick="clearAllCart()">
+                                <i class="fas fa-trash me-1"></i>Kosongkan Keranjang
+                            </button>
+                        </div>
+                    </div>
+                </div>
+                <div class="col-md-4">
+                    <div class="card bg-light">
+                        <div class="card-body">
+                            <div class="d-flex justify-content-between mb-2">
+                                <span>Subtotal:</span>
+                                <span class="fw-bold" id="subtotal">Rp 0</span>
                             </div>
-                        @endforeach
-                    </div>
-                </div>
-            </div>
-            
-            <div class="col-lg-4">
-                <div class="card shadow-sm">
-                    <div class="card-header">
-                        <h5 class="mb-0">Ringkasan Belanja</h5>
-                    </div>
-                    <div class="card-body">
-                        <div class="d-flex justify-content-between mb-2">
-                            <span>Subtotal ({{ $cartItems->count() }} item):</span>
-                            <span class="fw-bold">Rp {{ number_format($subtotal, 0, ',', '.') }}</span>
-                        </div>
-                        <div class="d-flex justify-content-between mb-3">
-                            <span>Ongkos Kirim:</span>
-                            <span class="text-muted">Akan dihitung di checkout</span>
-                        </div>
-                        <hr>
-                        <div class="d-flex justify-content-between mb-3">
-                            <span class="fw-bold">Total:</span>
-                            <span class="fw-bold text-primary fs-5">Rp {{ number_format($subtotal, 0, ',', '.') }}</span>
-                        </div>
-                        <div class="d-grid gap-2">
-                            <a href="{{ route('checkout.index') }}" class="btn btn-primary btn-lg">
-                                <i class="fas fa-credit-card me-2"></i>Checkout
-                            </a>
-                            <a href="{{ route('products.index') }}" class="btn btn-outline-secondary">
-                                <i class="fas fa-arrow-left me-2"></i>Lanjut Belanja
-                            </a>
+                            <div class="d-flex justify-content-between mb-3">
+                                <span>Estimasi Ongkir:</span>
+                                <span class="text-muted">Dihitung di checkout</span>
+                            </div>
+                            <hr>
+                            <div class="d-flex justify-content-between mb-3">
+                                <span class="fw-bold">Total Sementara:</span>
+                                <span class="fw-bold text-primary" id="total">Rp 0</span>
+                            </div>
                         </div>
                     </div>
                 </div>
             </div>
-        </div>
-    @else
-        <div class="row">
-            <div class="col-12">
-                <div class="card shadow-sm">
-                    <div class="card-body text-center py-5">
-                        <i class="fas fa-shopping-cart fa-3x text-muted mb-3"></i>
-                        <h4 class="text-muted mb-3">Keranjang Belanja Kosong</h4>
-                        <p class="text-muted mb-4">Belum ada produk yang ditambahkan ke keranjang Anda.</p>
-                        <a href="{{ route('products.index') }}" class="btn btn-primary">
-                            <i class="fas fa-shopping-bag me-2"></i>Mulai Belanja
-                        </a>
-                    </div>
-                </div>
-            </div>
-        </div>
-        
-        @if(isset($recommendedProducts) && $recommendedProducts->count() > 0)
+
+            <!-- Action Buttons -->
             <div class="row mt-4">
                 <div class="col-12">
-                    <h4 class="mb-3">Produk Rekomendasi</h4>
-                    <div class="row">
-                        @foreach($recommendedProducts as $product)
-                            <div class="col-md-3 mb-3">
-                                <div class="card h-100 shadow-sm">
-                                    @if($product->foto_barang)
-                                        <img src="{{ asset('storage/' . $product->foto_barang) }}" 
-                                             class="card-img-top" alt="{{ $product->nama_barang }}" 
-                                             style="height: 200px; object-fit: cover;">
-                                    @else
-                                        <div class="card-img-top bg-light d-flex align-items-center justify-content-center" 
-                                             style="height: 200px;">
-                                            <i class="fas fa-image fa-3x text-muted"></i>
-                                        </div>
-                                    @endif
-                                    <div class="card-body d-flex flex-column">
-                                        <h6 class="card-title">{{ Str::limit($product->nama_barang, 50) }}</h6>
-                                        <p class="card-text text-primary fw-bold">
-                                            Rp {{ number_format($product->harga, 0, ',', '.') }}
-                                        </p>
-                                        <div class="mt-auto">
-                                            <a href="{{ route('products.show', $product->barang_id) }}" 
-                                               class="btn btn-outline-primary btn-sm w-100">
-                                                Lihat Detail
-                                            </a>
-                                        </div>
-                                    </div>
-                                </div>
+                    <div class="d-grid gap-2">
+                        <button type="button" id="checkout-btn" class="btn btn-success btn-lg" disabled>
+                            <i class="fas fa-credit-card me-2"></i>Lanjut ke Checkout
+                        </button>
+                        <div class="row">
+                            <div class="col-md-6">
+                                <a href="{{ route('cart.index') }}" class="btn btn-outline-primary w-100">
+                                    <i class="fas fa-edit me-2"></i>Refresh Keranjang
+                                </a>
                             </div>
-                        @endforeach
+                            <div class="col-md-6">
+                                <a href="{{ route('products.index') }}" class="btn btn-outline-secondary w-100">
+                                    <i class="fas fa-shopping-bag me-2"></i>Lanjut Belanja
+                                </a>
+                            </div>
+                        </div>
                     </div>
                 </div>
-            </div>
-        @endif
-    @endif
-</div>
-
-<!-- Debug Information (remove in production) -->
-@if(config('app.debug'))
-    <div class="container mt-4">
-        <div class="card">
-            <div class="card-header">
-                <h6 class="mb-0">Debug Information</h6>
-            </div>
-            <div class="card-body">
-                <p><strong>Cart Items Count:</strong> {{ $cartItems->count() }}</p>
-                <p><strong>Subtotal:</strong> {{ $subtotal }}</p>
-                <p><strong>User ID:</strong> {{ auth()->id() }}</p>
-                <p><strong>User Role:</strong> {{ auth()->user()->role->nama_role ?? 'No Role' }}</p>
-                
-                <div class="mt-3">
-                    <a href="{{ route('cart.debug') }}" class="btn btn-info btn-sm" target="_blank">
-                        View Debug Data
-                    </a>
-                </div>
-                
-                @if($cartItems->count() > 0)
-                    <details class="mt-3">
-                        <summary>Cart Items Data</summary>
-                        <pre>{{ json_encode($cartItems->toArray(), JSON_PRETTY_PRINT) }}</pre>
-                    </details>
-                @endif
             </div>
         </div>
     </div>
+@else
+    <div class="card shadow-sm">
+        <div class="card-body text-center py-5">
+            <i class="fas fa-shopping-cart fa-4x text-muted mb-4"></i>
+            <h4 class="text-muted mb-3">Keranjang Belanja Kosong</h4>
+            <p class="text-muted mb-4">Belum ada produk dalam keranjang belanja Anda</p>
+            
+            <a href="{{ route('products.index') }}" class="btn btn-primary btn-lg">
+                <i class="fas fa-shopping-bag me-2"></i>Mulai Belanja
+            </a>
+        </div>
+    </div>
 @endif
+        </div>
+    </div>
+</div>
 @endsection
 
-@section('scripts')
+@push('scripts')
 <script>
+console.log('Cart script loaded'); // Debug log
+
 $(document).ready(function() {
-    // Handle remove item with AJAX
-    $('.remove-item-form').on('submit', function(e) {
+    console.log('Document ready'); // Debug log
+    console.log('Checkout button found:', $('#checkout-btn').length); // Debug log
+    console.log('Item checkboxes found:', $('.item-checkbox').length); // Debug log
+
+    // Handle select all checkbox
+    $('#select-all').on('change', function() {
+        console.log('Select all clicked'); // Debug log
+        $('.item-checkbox').prop('checked', $(this).is(':checked'));
+        updateCheckoutButton();
+        updateSummary();
+    });
+
+    // Handle individual checkbox changes
+    $(document).on('change', '.item-checkbox', function() {
+        console.log('Item checkbox changed'); // Debug log
+        updateSelectAllState();
+        updateCheckoutButton();
+        updateSummary();
+    });
+
+    // Handle checkout button click
+    $('#checkout-btn').on('click', function(e) {
         e.preventDefault();
+        console.log('Checkout button clicked!'); // Debug log
         
-        if (!confirm('Hapus item ini dari keranjang?')) {
+        const selectedItems = [];
+        $('.item-checkbox:checked').each(function() {
+            selectedItems.push($(this).val());
+        });
+        
+        console.log('Selected items:', selectedItems); // Debug log
+        
+        if (selectedItems.length === 0) {
+            alert('Pilih minimal satu item untuk checkout');
             return;
         }
         
-        const form = $(this);
-        const itemRow = form.closest('[id^="cart-item-"]');
+        // Show loading state
+        $(this).prop('disabled', true).html('<i class="fas fa-spinner fa-spin me-2"></i>Memproses...');
         
-        $.ajax({
-            url: form.attr('action'),
-            method: 'POST',
-            data: form.serialize(),
-            success: function(response) {
-                // Remove item from DOM
-                itemRow.fadeOut(300, function() {
-                    $(this).remove();
-                    
-                    // Reload page to update totals
-                    location.reload();
-                });
-                
-                // Show success message
-                showAlert('success', 'Item berhasil dihapus dari keranjang');
-            },
-            error: function(xhr) {
-                let message = 'Terjadi kesalahan saat menghapus item';
-                if (xhr.responseJSON && xhr.responseJSON.message) {
-                    message = xhr.responseJSON.message;
-                }
-                showAlert('error', message);
-            }
-        });
+        // Method 1: Try direct redirect with query params
+        const queryParams = new URLSearchParams();
+        queryParams.append('selected_items', JSON.stringify(selectedItems));
+        
+        console.log('Redirecting to checkout...'); // Debug log
+        window.location.href = '/checkout?' + queryParams.toString();
     });
 
-    function showAlert(type, message) {
-        const alertClass = type === 'success' ? 'alert-success' : 'alert-danger';
-        const iconClass = type === 'success' ? 'fas fa-check-circle' : 'fas fa-exclamation-triangle';
-        
-        const alertHtml = `
-            <div class="alert ${alertClass} alert-dismissible fade show" role="alert">
-                <i class="${iconClass} me-2"></i>${message}
-                <button type="button" class="btn-close" data-bs-dismiss="alert" aria-label="Close"></button>
-            </div>
-        `;
-        
-        $('.alert').remove();
-        $('.container').first().prepend(alertHtml);
-        
-        setTimeout(function() {
-            $('.alert').fadeOut();
-        }, 5000);
-    }
+    // Test button click handler
+    $('#checkout-btn').on('click', function() {
+        console.log('Button clicked - any handler'); // Debug log
+    });
+
+    // Initialize on page load
+    updateCheckoutButton();
+    updateSummary();
 });
+
+function updateSelectAllState() {
+    const totalCheckboxes = $('.item-checkbox').length;
+    const checkedCheckboxes = $('.item-checkbox:checked').length;
+    
+    $('#select-all').prop('checked', totalCheckboxes === checkedCheckboxes && totalCheckboxes > 0);
+}
+
+function updateCheckoutButton() {
+    const checkedItems = $('.item-checkbox:checked').length;
+    const checkoutBtn = $('#checkout-btn');
+    
+    console.log('Updating checkout button, checked items:', checkedItems); // Debug log
+    
+    if (checkedItems > 0) {
+        checkoutBtn.prop('disabled', false);
+        checkoutBtn.html(`<i class="fas fa-credit-card me-2"></i>Lanjut ke Checkout (${checkedItems} item)`);
+    } else {
+        checkoutBtn.prop('disabled', true);
+        checkoutBtn.html('<i class="fas fa-credit-card me-2"></i>Lanjut ke Checkout');
+    }
+}
+
+function updateSummary() {
+    let totalPrice = 0;
+    let selectedCount = 0;
+    
+    $('.item-checkbox:checked').each(function() {
+        const price = parseFloat($(this).data('price')) || 0;
+        totalPrice += price;
+        selectedCount++;
+    });
+    
+    $('#selected-count').text(selectedCount);
+    $('#subtotal').text('Rp ' + formatNumber(totalPrice));
+    $('#total').text('Rp ' + formatNumber(totalPrice));
+}
+
+function formatNumber(num) {
+    return num.toString().replace(/\B(?=(\d{3})+(?!\d))/g, ".");
+}
+
+function clearAllCart() {
+    if (confirm('Apakah Anda yakin ingin mengosongkan seluruh keranjang?')) {
+        window.location.href = '{{ route("cart.clear") }}';
+    }
+}
+
+// Test function - call this in console
+function testCheckout() {
+    console.log('Testing checkout function');
+    $('#checkout-btn').click();
+}
 </script>
-@endsection
+@endpush
