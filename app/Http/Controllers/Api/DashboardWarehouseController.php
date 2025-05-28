@@ -23,6 +23,11 @@ class DashboardWarehouseController extends Controller
         $soldItems = Barang::where('status', 'terjual')->count();
         $soldOutItems = Barang::where('status', 'sold out')->count();
         
+        // Statistik durasi penitipan
+        $expiringSoonItems = Barang::expiringSoon()->count();
+        $expiredItems = Barang::expired()->count();
+        $needsAttentionItems = Barang::needsAttention()->count();
+        
         // Data untuk dropdown
         $categories = KategoriBarang::all();
         $statusOptions = [
@@ -143,6 +148,9 @@ class DashboardWarehouseController extends Controller
             'activeItems', 
             'soldItems', 
             'soldOutItems', 
+            'expiringSoonItems',
+            'expiredItems', 
+            'needsAttentionItems',
             'recentItems',
             'itemsByCategory',
             'itemsByStatus',
@@ -177,6 +185,11 @@ class DashboardWarehouseController extends Controller
                       $subQ->where('name', 'like', "%{$search}%");
                   });
             });
+        }
+
+        // Filter khusus untuk barang yang perlu perhatian
+        if ($request->has('filter') && $request->filter == 'needs_attention') {
+            $query->needsAttention();
         }
         
         // Pengurutan

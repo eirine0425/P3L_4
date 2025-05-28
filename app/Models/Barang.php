@@ -9,6 +9,8 @@ use App\Models\Penitip;
 use App\Models\Garansi;
 use App\Models\DiskusiProduk;
 use App\Models\DetailTransaksi;
+use App\Models\TransaksiPenitipan;
+use Carbon\Carbon;
 
 class Barang extends Model
 {
@@ -18,7 +20,7 @@ class Barang extends Model
     protected $table = 'barang';
     protected $primaryKey = 'barang_id';
 
-    // KEPT ORIGINAL: Fillable fields
+    // KEPT ORIGINAL: Fillable fields with added batas_penitipan
     protected $fillable = [
         'penitip_id',
         'kategori_id',
@@ -29,6 +31,7 @@ class Barang extends Model
         'rating',
         'deskripsi',
         'tanggal_penitipan',
+        'batas_penitipan',
         'garansi_id',
         'foto_barang',
     ];
@@ -39,9 +42,14 @@ class Barang extends Model
         return $this->belongsTo(Penitip::class, 'penitip_id');
     }
 
+    public function kategoriBarang()
+    {
+        return $this->belongsTo(KategoriBarang::class, 'kategori_id', 'kategori_id');
+    }
+
     public function kategori()
     {
-        return $this->belongsTo(KategoriBarang::class, 'kategori_id');
+        return $this->kategoriBarang();
     }
 
     public function garansi()
@@ -53,6 +61,23 @@ class Barang extends Model
     public function diskusi()
     {
         return $this->hasMany(DiskusiProduk::class, 'barang_id');
+    }
+
+
+    public function keranjangBelanja()
+    {
+        return $this->hasMany(KeranjangBelanja::class, 'barang_id', 'barang_id');
+    }
+
+    public function detailTransaksi()
+    {
+        return $this->hasMany(DetailTransaksi::class, 'barang_id', 'barang_id');
+    }
+
+    public function transaksiPenitipan()
+    {
+        return $this->hasOne(TransaksiPenitipan::class, 'barang_id', 'barang_id');
+
     }
 
     // FIXED: Accessor for rating - use the rating column directly from barang table
@@ -92,9 +117,23 @@ class Barang extends Model
             ->get();
     }
 
-    public function detailTransaksi()
+    /**
+     * Get consignment status information
+     */
+    public function getConsignmentStatusAttribute()
     {
-        return $this->hasMany(DetailTransaksi::class, 'barang_id', 'barang_id');
+        if (!$this->transaksiPenitipan) {
+            return null;
+        }
+        
+        return [
+            'tanggal_penitipan' => $this->transaksiPenitipan->tanggal_penitipan,
+            'batas_penitipan' => $this->transaksiPenitipan->batas_penitipan,
+            'durasi_penitipan' => $this->transaksiPenitipan->durasi_penitipan,
+            'sisa_hari' => $this->transaksiPenitipan->sisa_hari,
+            'is_expired' => $this->transaksiPenitipan->is_expired,
+            'status_durasi' => $this->transaksiPenitipan->status_durasi,
+        ];
     }
 
     // ADDED: Scope for available products
@@ -176,12 +215,152 @@ class Barang extends Model
         return '/placeholder.svg?height=200&width=200&text=' . urlencode($this->nama_barang);
     }
 
-    public function foto()
-{
-    return $this->hasMany(FotoBarang::class, 'barang_id');
-}
-
-    
-    
-}
+    /**
+     * Set the tanggal_penitipan attribute and automatically calculate batas_penitipan
+     */
+    public function setTanggalPenitipanAttribute($value)
+    {
+        $this->attributes['tanggal_penitipan'] = $value;
         
+        if ($value) {
+            $this->attributes['batas_penitipan'] = Carbon::parse($value)->addDays(30)->toDateString();
+        }
+    }
+
+    /**
+     * Get the actual consignment start date
+     */
+    public function getTanggalMulaiPenitipanAttribute()
+    {
+        return $this->tanggal_penitipan ? 
+            Carbon::parse($this->tanggal_penitipan) : 
+            Carbon::parse($this->created_at);
+    }
+
+    /**
+     * Calculate and get batas_penitipan if not set
+     */
+    public function getBatasPenitipanAttribute($value)
+    {
+        if ($value) {
+            return Carbon::parse($value);
+        }
+        
+        // Calculate if not set
+        $tanggalMulai = $this->tanggal_mulai_penitipan;
+        return $tanggalMulai->copy()->addDays(30);
+    }
+
+    /**
+     * Get remaining days until expiry
+     */
+    public function getSisaHariAttribute()
+    {
+        $today = Carbon::now();
+        $batasPeritipan = $this->batas_penitipan;
+        
+        return $today->diffInDays($batasPeritipan, false); // false = can be negative
+    }
+
+    /**
+     * Check if consignment is expired
+     */
+    public function getIsExpiredAttribute()
+    {
+        return $this->sisa_hari < 0;
+    }
+
+    /**
+     * Get consignment status based on remaining days
+     */
+    public function getStatusDurasiAttribute()
+    {
+        if ($this->sisa_hari < 0) {
+            return 'expired'; // Sudah lewat batas
+        } elseif ($this->sisa_hari <= 7) {
+            return 'warning'; // Kurang dari 7 hari
+        } elseif ($this->sisa_hari <= 14) {
+            return 'caution'; // Kurang dari 14 hari
+        } else {
+            return 'safe'; // Masih aman
+        }
+    }
+
+    /**
+     * Get status duration badge class
+     */
+    public function getStatusDurasiBadgeClassAttribute()
+    {
+        switch ($this->status_durasi) {
+            case 'expired':
+                return 'bg-danger';
+            case 'warning':
+                return 'bg-warning';
+            case 'caution':
+                return 'bg-info';
+            case 'safe':
+                return 'bg-success';
+            default:
+                return 'bg-secondary';
+        }
+    }
+
+    /**
+     * Get status duration text
+     */
+    public function getStatusDurasiTextAttribute()
+    {
+        switch ($this->status_durasi) {
+            case 'expired':
+                return 'Kadaluarsa';
+            case 'warning':
+                return 'Segera Berakhir';
+            case 'caution':
+                return 'Perhatian';
+            case 'safe':
+                return 'Aman';
+            default:
+                return 'Tidak Diketahui';
+        }
+    }
+
+    /**
+     * Get formatted remaining time
+     */
+    public function getFormattedSisaWaktuAttribute()
+    {
+        if ($this->sisa_hari < 0) {
+            $hariLewat = abs($this->sisa_hari);
+            return "Lewat {$hariLewat} hari";
+        } elseif ($this->sisa_hari == 0) {
+            return 'Berakhir hari ini';
+        } else {
+            return "{$this->sisa_hari} hari lagi";
+        }
+    }
+
+    /**
+     * Scope for items expiring soon (within 7 days)
+     */
+    public function scopeExpiringSoon($query)
+    {
+        return $query->whereRaw('DATEDIFF(batas_penitipan, CURDATE()) <= 7')
+                     ->whereRaw('DATEDIFF(batas_penitipan, CURDATE()) >= 0');
+    }
+
+    /**
+     * Scope for expired items
+     */
+    public function scopeExpired($query)
+    {
+        return $query->whereRaw('DATEDIFF(batas_penitipan, CURDATE()) < 0');
+    }
+
+    /**
+     * Scope for items that need attention (expiring soon or expired)
+     */
+    public function scopeNeedsAttention($query)
+    {
+        return $query->whereRaw('DATEDIFF(batas_penitipan, CURDATE()) <= 7');
+    }
+}
