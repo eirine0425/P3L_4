@@ -591,4 +591,52 @@ class DashboardWarehouseController extends Controller
 
         return redirect()->back()->with('success', 'Status transaksi berhasil diperbarui.');
     }
+    public function readyShipments(Request $request)
+{
+    $query = Transaksi::with(['pembeli.user', 'detailTransaksi', 'pengiriman'])
+        ->whereHas('pengiriman', function ($q) {
+            $q->whereIn('status_pengiriman', ['Menunggu Pengiriman', 'Dijadwalkan']);
+        });
+
+    if ($request->search) {
+        $query->where(function ($q) use ($request) {
+            $q->where('transaksi_id', 'like', '%' . $request->search . '%')
+              ->orWhereHas('pembeli.user', function ($q) use ($request) {
+                  $q->where('name', 'like', '%' . $request->search . '%');
+              });
+        });
+    }
+
+    if ($request->metode) {
+        $query->whereHas('pengiriman', function ($q) use ($request) {
+            $q->where('metode_pengiriman', $request->metode);
+        });
+    }
+
+    if ($request->status) {
+        $query->whereHas('pengiriman', function ($q) use ($request) {
+            $q->where('status_pengiriman', $request->status);
+        });
+    }
+
+    // Sorting
+    if ($request->sort == 'oldest') {
+        $query->orderBy('created_at', 'asc');
+    } elseif ($request->sort == 'customer_asc') {
+        $query->orderByRelation('pembeli.user.name', 'asc');
+    } elseif ($request->sort == 'customer_desc') {
+        $query->orderByRelation('pembeli.user.name', 'desc');
+    } else {
+        $query->orderBy('created_at', 'desc');
+    }
+
+    $transactions = $query->paginate(10)->withQueryString();
+
+    return view('warehouse.consignment.shipment-ready', [
+        'transactions' => $transactions,
+        'totalReady' => $transactions->total(),
+        'readyForPickup' => $transactions->filter(fn($t) => $t->pengiriman->metode_pengiriman == 'Pickup')->count(),
+        'readyForDelivery' => $transactions->filter(fn($t) => $t->pengiriman->metode_pengiriman == 'Delivery')->count(),
+    ]);
+}
 }
