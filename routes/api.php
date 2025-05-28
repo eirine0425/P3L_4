@@ -75,6 +75,10 @@ Route::middleware('auth:api')->group(function () {
     Route::get('/dashboard/organisasi', [WebViewController::class, 'dashboardOrganisasi'])->middleware('role:organisasi');
 });
 
+Route::middleware(['auth:sanctum'])->group(function () {
+    Route::post('/transaksi/extend', [PenitipTransaksiController::class, 'extendMyPenitipan']);
+});
+
 
 // Rute CRUD untuk Alamat
 Route::apiResource('alamat', AlamatController::class);
@@ -147,8 +151,6 @@ Route::apiResource('transaksi', TransaksiController::class);
 Route::apiResource('transaksi-merch', TransaksiMerchController::class);
 
 // Rute CRUD untuk TransaksiPenitipan
-Route::apiResource('transaksi-penitipan', TransaksiPenitipanController::class);
-Route::post('/transaksi-penitipan/{id}/extend', [TransaksiPenitipanController::class, 'extendPenitipan']);
 
 // Rute CRUD untuk User
 Route::apiResource('users', UserController::class);

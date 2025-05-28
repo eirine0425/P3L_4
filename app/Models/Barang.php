@@ -250,6 +250,10 @@ class Barang extends Model
         $tanggalMulai = $this->tanggal_mulai_penitipan;
         return $tanggalMulai->copy()->addDays(30);
     }
+    public function fotoTambahan()
+{
+    return $this->hasMany(FotoBarang::class, 'barang_id');
+}
 
     /**
      * Get remaining days until expiry

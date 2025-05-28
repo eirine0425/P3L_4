@@ -240,7 +240,7 @@ Route::middleware(['auth', 'role:penitip'])->group(function () {
     Route::get('/dashboard/transaksi/{id}', [DashboardConsignorController::class, 'showTransaction'])->name('consignor.transactions.show');
     
     // Extension Route - NEW
-    Route::post('/dashboard/transaksi/extend', [DashboardConsignorController::class, 'extendTransaction'])->name('consignor.transactions.extend');
+    Route::post('/items/{id}/extend', [DashboardConsignorController::class, 'extendItem'])->name('items.extend');
     
     // Fallback routes for missing views
     Route::get('/dashboard/transaksi/fallback', function () {
@@ -289,8 +289,13 @@ Route::middleware(['auth', 'role:gudang,pegawai gudang'])->group(function () {
         Route::get('/consignment/transaction/{id}', [DashboardWarehouseController::class, 'showConsignmentTransaction'])->name('consignment.transaction.show');
         
         // Shipment management
-        Route::get('/shipment/{id}', [DashboardWarehouseController::class, 'showShipment'])->name('shipment.show');
-        Route::put('/shipment/{id}/status', [DashboardWarehouseController::class, 'updateShipmentStatus'])->name('shipment.update-status');
+        Route::get('/dashboard/warehouse/shipments/ready', [DashboardWarehouseController::class, 'readyShipments'])
+    ->name('dashboard.warehouse.shipments.ready');
+        Route::get('/shipment/{id}', [DashboardWarehouseController::class, 'shipmentDetail'])->name('shipment.detail');
+        Route::get('/shipment/{id}/detail', [DashboardWarehouseController::class, 'shipmentDetail'])->name('shipment.detail');
+        Route::put('/shipment/{id}/update-status', [DashboardWarehouseController::class, 'updateShipmentStatus'])->name('shipment.update-status');
+        Route::get('/shipment/{id}/label', [DashboardWarehouseController::class, 'printShippingLabel'])->name('shipping.label');
+        Route::post('/shipment/{id}/mark-ready', [DashboardWarehouseController::class, 'markAsReady'])->name('shipment.mark-ready');
         
         // Transaction management
         Route::post('/transaction/{id}/shipping', [DashboardWarehouseController::class, 'createShippingSchedule'])->name('create-shipping');
@@ -432,7 +437,7 @@ Route::middleware(['auth', 'role:owner'])->group(function () {
     })->name('owner.donations.show');
 
     // Report Routes
-    Route::get('/dashboard/laporan/penjualan', function () {
+    Route::get('/dashboard//penjualan', function () {
         return view('errors.missing-view', ['view' => 'dashboard.owner.reports.sales']);
     })->name('owner.reports.sales');
 
