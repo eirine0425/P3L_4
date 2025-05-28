@@ -3,6 +3,7 @@
 use Illuminate\Support\Facades\Route;
 use Illuminate\Support\Facades\Auth;
 use Illuminate\Support\Facades\DB;
+use Illuminate\Http\Request;
 use App\Http\Controllers\Api\AuthController;
 use App\Http\Controllers\Api\UserController;
 use App\Http\Controllers\Api\BarangController;
@@ -27,6 +28,7 @@ use App\Http\Controllers\Api\DashboardAdminController;
 use App\Http\Controllers\Api\DashboardConsignorController;
 use App\Http\Controllers\Api\BuyerProfileController;
 use App\Http\Controllers\Api\DashboardProfileController;
+use Illuminate\Support\Facades\Log;
 
 /*
 |--------------------------------------------------------------------------
@@ -163,6 +165,9 @@ Route::middleware(['auth'])->group(function () {
 Route::middleware(['auth', 'role:pembeli'])->group(function () {
     // Dashboard
     Route::get('/dashboard/buyer', [DashboardBuyerController::class, 'index'])->name('dashboard.buyer');
+    Route::get('/buyer/dashboard', function () {
+        return view('buyer.dashboard');
+    })->name('buyer.dashboard');
     
     // Transaction Routes
     Route::get('/dashboard/buyer/transactions', [BuyerTransactionController::class, 'index'])->name('buyer.transactions');
@@ -173,15 +178,21 @@ Route::middleware(['auth', 'role:pembeli'])->group(function () {
     Route::post('/dashboard/keranjang/add', [KeranjangBelanjaController::class, 'store'])->name('buyer.cart.add');
     Route::put('/dashboard/keranjang/update', [KeranjangBelanjaController::class, 'update'])->name('buyer.cart.update');
     Route::delete('/dashboard/keranjang/remove/{id}', [KeranjangBelanjaController::class, 'destroy'])->name('buyer.cart.remove');
-    
-    // Alternative cart routes for compatibility
-    Route::get('/dashboard/keranjang/alt', function () {
-        return view('errors.missing-view', ['view' => 'dashboard.buyer.cart.index']);
-    })->name('cart.index');
-    
+
     Route::post('/dashboard/keranjang/alt/add', [KeranjangBelanjaController::class, 'store'])->name('cart.add');
     Route::put('/dashboard/keranjang/alt/update', [KeranjangBelanjaController::class, 'update'])->name('cart.update');
     Route::delete('/dashboard/keranjang/alt/remove/{id}', [KeranjangBelanjaController::class, 'destroy'])->name('cart.remove');
+    
+    // Cart selected items routes (consolidated)
+    Route::prefix('buyer')->name('buyer.')->group(function () {
+        Route::post('/cart/selected-items', [KeranjangBelanjaController::class, 'getSelectedItems'])->name('cart.selected-items');
+        Route::post('/cart/prepare-checkout', [KeranjangBelanjaController::class, 'prepareCheckout'])->name('cart.prepare-checkout');
+        
+        // Alamat Selector Routes
+        Route::get('/alamat/select', [WebViewController::class, 'alamatSelect'])->name('alamat.select');
+        Route::get('/alamat/details/{id}', [WebViewController::class, 'alamatGetDetails'])->name('alamat.details');
+        Route::get('/alamat/default', [WebViewController::class, 'getDefaultAlamat'])->name('alamat.default');
+    });
     
     // Alamat Routes
     Route::get('/dashboard/alamat', [WebViewController::class, 'alamatIndex'])->name('buyer.alamat.index');
@@ -210,12 +221,55 @@ Route::middleware(['auth', 'role:pembeli'])->group(function () {
         Route::get('/transaction/{id}', [BuyerProfileController::class, 'showTransactionDetail'])->name('transaction-detail');
     });
     
-    // Checkout Routes
-    Route::get('/checkout', function () {
-        return view('errors.missing-view', ['view' => 'dashboard.buyer.checkout.index']);
+    // ========================================
+    // CHECKOUT ROUTES - ENHANCED
+    // ========================================
+    
+    // Main checkout route
+    Route::get('/checkout', function (Request $request) {
+        $selectedItems = $request->input('selected_items', []);
+        Log::debug('Selected items in checkout route', ['selected_items' => $selectedItems]);
+
+        if (empty($selectedItems)) {
+            return redirect()->route('cart.index')->with('error', 'Pilih minimal satu item untuk checkout');
+        }
+
+        session(['checkout_selected_items' => $selectedItems]);
+
+        return view('checkout.index', compact('selectedItems'));
     })->name('checkout.index');
     
+    // Checkout show route with shipping calculation
+    Route::get('/checkout/show', [WebViewController::class, 'showCheckout'])->name('checkout.show');
+    
+    // Process checkout
     Route::post('/checkout/process', [TransaksiController::class, 'store'])->name('checkout.process');
+    
+    // Thank you page
+    Route::get('/checkout/thank-you/{transaction_id}', function($transactionId) {
+        $transaction = \App\Models\Transaksi::with(['details.barang.kategoriBarang', 'alamat'])
+            ->where('transaksi_id', $transactionId)
+            ->where('pembeli_id', function($query) {
+                $user = Auth::user();
+                $pembeli = \App\Models\Pembeli::where('user_id', $user->id)->first();
+                return $pembeli ? $pembeli->pembeli_id : $user->id;
+            })
+            ->firstOrFail();
+            
+        return view('checkout.thank-you', compact('transaction'));
+    })->name('checkout.thank-you');
+    
+    // API Routes for checkout
+    Route::prefix('api/checkout')->name('api.checkout.')->group(function () {
+        Route::post('/calculate-shipping', [WebViewController::class, 'calculateShipping'])->name('calculate-shipping');
+        Route::post('/validate-address', [WebViewController::class, 'validateAddress'])->name('validate-address');
+        Route::get('/payment-methods', [WebViewController::class, 'getPaymentMethods'])->name('payment-methods');
+    });
+    
+    // Example/Demo Routes
+    Route::get('/dashboard/alamat-selector-demo', function () {
+        return view('examples.alamat-selector-usage');
+    })->name('buyer.alamat.selector.demo');
 });
 
 // ========================================
@@ -263,6 +317,7 @@ Route::middleware(['auth', 'role:gudang,pegawai gudang'])->group(function () {
         Route::get('/inventory', [DashboardWarehouseController::class, 'inventory'])->name('inventory');
         Route::get('/transactions', [DashboardWarehouseController::class, 'transactionsList'])->name('transactions');
         Route::get('/shipments', [DashboardWarehouseController::class, 'shipments'])->name('shipments');
+        Route::get('/verification', [DashboardWarehouseController::class, 'verification'])->name('verification');
         
         // NEW ROUTES FOR SEARCH FUNCTIONALITY
         Route::get('/export', [DashboardWarehouseController::class, 'exportResults'])->name('export');
@@ -325,7 +380,7 @@ Route::middleware(['auth', 'role:cs'])->group(function () {
     // Discussions Routes
     Route::get('/dashboard/cs/diskusi', function () {
         return view('errors.missing-view', ['view' => 'dashboard.cs.discussions.index']);
-    })->name('dashboard.cs.discussions');
+    })->name('cs.discussions');
     
     // Consignor Management Routes
     Route::get('/dashboard/penitip', function () {
@@ -552,6 +607,23 @@ Route::middleware(['auth', 'role:kurir'])->group(function () {
 });
 
 // ========================================
+// API ROUTES FOR AJAX CALLS
+// ========================================
+
+Route::middleware(['auth'])->prefix('api')->name('api.')->group(function () {
+    // Address API routes
+    Route::get('/alamat/checkout', [AlamatController::class, 'getForCheckout'])->name('alamat.checkout');
+    Route::get('/alamat/default', [AlamatController::class, 'getDefault'])->name('alamat.default');
+    
+    // Cart API routes
+    Route::post('/cart/selected-items', [KeranjangBelanjaController::class, 'getSelectedItems'])->name('cart.selected-items');
+    Route::get('/cart/count', [KeranjangBelanjaController::class, 'getCartCount'])->name('cart.count');
+    
+    // Shipping calculation
+    Route::post('/shipping/calculate', [WebViewController::class, 'calculateShipping'])->name('shipping.calculate');
+});
+
+// ========================================
 // DEBUG ROUTES (DEVELOPMENT ONLY)
 // ========================================
 
@@ -716,6 +788,35 @@ if (config('app.debug')) {
                 'keranjang_sample' => DB::table('keranjang_belanja')->limit(5)->get(),
                 'barang_sample' => DB::table('barang')->limit(5)->get(),
                 'pembeli_sample' => DB::table('pembeli')->limit(5)->get()
+            ]);
+        });
+        
+        // Test checkout flow
+        Route::get('/debug-checkout', function() {
+            $user = Auth::guard('web')->user();
+            $pembeli = \App\Models\Pembeli::where('user_id', $user->id)->first();
+            
+            if (!$pembeli) {
+                return response()->json(['error' => 'Pembeli not found']);
+            }
+            
+            $cartItems = \App\Models\KeranjangBelanja::with(['barang.kategoriBarang'])
+                ->where('pembeli_id', $pembeli->pembeli_id)
+                ->get();
+            
+            $alamat = \App\Models\Alamat::where('pembeli_id', $pembeli->pembeli_id)
+                ->where('is_default', true)
+                ->first();
+            
+            return response()->json([
+                'user' => $user->toArray(),
+                'pembeli' => $pembeli->toArray(),
+                'cart_items' => $cartItems->toArray(),
+                'default_alamat' => $alamat ? $alamat->toArray() : null,
+                'cart_count' => $cartItems->count(),
+                'subtotal' => $cartItems->sum(function($item) {
+                    return $item->barang->harga;
+                })
             ]);
         });
     });

@@ -560,4 +560,139 @@ class KeranjangBelanjaController extends Controller
             'table_structure' => DB::select("DESCRIBE keranjang_belanja")
         ]);
     }
+
+    /**
+     * Get selected cart items for checkout
+     */
+    public function getSelectedItems(Request $request)
+    {
+        try {
+            $user = Auth::guard('web')->user();
+        
+            if (!$user) {
+                return response()->json([
+                    'status' => 'error',
+                    'message' => 'User tidak terautentikasi',
+                    'data' => []
+                ], 401);
+            }
+        
+            $pembeliId = $this->getPembeliId($user);
+            if (!$pembeliId) {
+                return response()->json([
+                    'status' => 'error',
+                    'message' => 'Profil pembeli tidak ditemukan',
+                    'data' => []
+                ], 404);
+            }
+        
+            $selectedIds = $request->input('selected_items', []);
+        
+            if (empty($selectedIds)) {
+                return response()->json([
+                    'status' => 'error',
+                    'message' => 'Tidak ada item yang dipilih',
+                    'data' => []
+                ], 400);
+            }
+        
+            // Get selected cart items
+            $cartItems = KeranjangBelanja::with(['barang', 'barang.kategoriBarang'])
+                ->where('pembeli_id', $pembeliId)
+                ->whereIn('keranjang_id', $selectedIds)
+                ->get();
+        
+            if ($cartItems->count() === 0) {
+                return response()->json([
+                    'status' => 'error',
+                    'message' => 'Item yang dipilih tidak ditemukan',
+                    'data' => []
+                ], 404);
+            }
+        
+            // Calculate subtotal
+            $subtotal = $cartItems->sum(function($item) {
+                return $item->barang->harga ?? 0;
+            });
+        
+            return response()->json([
+                'status' => 'success',
+                'message' => 'Item yang dipilih berhasil dimuat',
+                'data' => [
+                    'items' => $cartItems,
+                    'subtotal' => $subtotal,
+                    'count' => $cartItems->count()
+                ]
+            ], 200);
+        
+        } catch (\Exception $e) {
+            Log::error('Error getting selected cart items', [
+                'error' => $e->getMessage(),
+                'selected_items' => $request->input('selected_items', [])
+            ]);
+        
+            return response()->json([
+                'status' => 'error',
+                'message' => 'Terjadi kesalahan: ' . $e->getMessage(),
+                'data' => []
+            ], 500);
+        }
+    }
+
+    /**
+     * Get selected cart items for checkout (alternative route name)
+     */
+    public function getSelectedItemsForCheckout(Request $request)
+    {
+        return $this->getSelectedItems($request);
+    }
+
+    /**
+     * Prepare checkout with selected items
+     */
+    public function prepareCheckout(Request $request)
+    {
+        try {
+            if (!Auth::guard('web')->check()) {
+                return redirect()->route('login')->with('error', 'Silakan login terlebih dahulu');
+            }
+        
+            $user = Auth::guard('web')->user();
+            $pembeliId = $this->getPembeliId($user);
+        
+            if (!$pembeliId) {
+                return redirect()->back()->with('error', 'Profil pembeli tidak ditemukan');
+            }
+        
+            $selectedIds = $request->input('selected_items', []);
+        
+            if (empty($selectedIds)) {
+                return redirect()->back()->with('error', 'Pilih minimal satu item untuk checkout');
+            }
+        
+            // Get selected cart items
+            $cartItems = KeranjangBelanja::with(['barang', 'barang.kategoriBarang'])
+                ->where('pembeli_id', $pembeliId)
+                ->whereIn('keranjang_id', $selectedIds)
+                ->get();
+        
+            if ($cartItems->count() === 0) {
+                return redirect()->back()->with('error', 'Item yang dipilih tidak ditemukan');
+            }
+        
+            // Store selected items in session for checkout process
+            session(['checkout_items' => $selectedIds]);
+        
+            // Redirect to checkout page
+            return redirect()->route('checkout.index')->with('success', 'Berhasil memilih ' . $cartItems->count() . ' item untuk checkout');
+        
+        } catch (\Exception $e) {
+            Log::error('Error preparing checkout', [
+                'error' => $e->getMessage(),
+                'selected_items' => $request->input('selected_items', [])
+            ]);
+        
+            return redirect()->back()->with('error', 'Terjadi kesalahan: ' . $e->getMessage());
+        }
+    }
 }

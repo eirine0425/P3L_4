@@ -5,6 +5,7 @@ namespace App\Http\Controllers\Api;
 use App\Http\Controllers\Controller;
 use Illuminate\Http\Request;
 use Illuminate\Support\Facades\Auth;
+use Illuminate\Support\Facades\Log;
 use App\Models\Barang;
 use App\Models\KategoriBarang;
 use App\Models\KeranjangBelanja;
@@ -192,10 +193,10 @@ class WebViewController extends Controller
     public function removeFromCart(Request $request)
     {
         $request->validate([
-            'cart_id' => 'required|exists:keranjang_belanja,id'
+            'cart_id' => 'required|exists:keranjang_id'
         ]);
         
-        KeranjangBelanja::where('id', $request->cart_id)
+        KeranjangBelanja::where('keranjang_id', $request->cart_id)
             ->where('user_id', Auth::id())
             ->delete();
             
@@ -222,6 +223,80 @@ class WebViewController extends Controller
         $total = $subtotal + $tax + $shipping;
         
         return view('checkout.index', compact('cartItems', 'subtotal', 'tax', 'shipping', 'total'));
+    }
+
+    /**
+     * Show checkout page with selected items
+     */
+    public function showCheckout(Request $request)
+    {
+        try {
+            $user = Auth::user();
+            $pembeli = Pembeli::where('user_id', $user->id)->first();
+            
+            if (!$pembeli) {
+                return redirect()->route('dashboard.buyer')->with('error', 'Data pembeli tidak ditemukan');
+            }
+
+            // Get selected items from session or request
+            $selectedItems = session('checkout_selected_items', []);
+            
+            if (empty($selectedItems)) {
+                $selectedItems = $request->input('selected_items', []);
+            }
+
+            if (empty($selectedItems)) {
+                return redirect()->route('cart.index')->with('error', 'Pilih minimal satu item untuk checkout');
+            }
+
+            // Get cart items that are selected
+            $cartItems = KeranjangBelanja::with(['barang.kategori'])
+                ->where('pembeli_id', $pembeli->pembeli_id)
+                ->whereIn('keranjang_id', $selectedItems)
+                ->get();
+
+            if ($cartItems->isEmpty()) {
+                return redirect()->route('cart.index')->with('error', 'Item yang dipilih tidak ditemukan');
+            }
+
+            // Calculate totals
+            $subtotal = $cartItems->sum(function($item) {
+                return $item->barang->harga * $item->jumlah;
+            });
+
+            // Shipping calculation: Free if > 1,500,000, otherwise 100,000
+            $shippingCost = $subtotal > 1500000 ? 0 : 100000;
+            
+            // Admin fee
+            $adminFee = 2500;
+            
+            // Total
+            $total = $subtotal + $shippingCost + $adminFee;
+
+            // Get user addresses
+            $alamats = Alamat::where('pembeli_id', $pembeli->pembeli_id)
+                ->orderBy('status_default', 'desc')
+                ->orderBy('created_at', 'desc')
+                ->get();
+
+            // Get default address
+            $defaultAlamat = $alamats->where('status_default', 'Y')->first();
+
+            return view('checkout.show', compact(
+                'cartItems',
+                'subtotal',
+                'shippingCost',
+                'adminFee',
+                'total',
+                'alamats',
+                'defaultAlamat',
+                'selectedItems'
+            ));
+
+        } catch (\Exception $e) {
+            Log::error('Error in showCheckout: ' . $e->getMessage());
+            return redirect()->route('cart.index')->with('error', 'Terjadi kesalahan saat memuat halaman checkout');
+        }
     }
     
     // Process checkout
@@ -652,6 +727,71 @@ class WebViewController extends Controller
             }
 
             return response()->json(['alamat' => $defaultAlamat]);
+        } catch (\Exception $e) {
+            return response()->json(['error' => 'Terjadi kesalahan: ' . $e->getMessage()], 500);
+        }
+    }
+
+    public function alamatSelect(Request $request)
+    {
+        try {
+            $user = Auth::user();
+            $pembeli = Pembeli::where('user_id', $user->id)->first();
+            
+            if (!$pembeli) {
+                return response()->json(['error' => 'Data pembeli tidak ditemukan'], 404);
+            }
+
+            $alamats = Alamat::where('pembeli_id', $pembeli->id)
+                            ->orderBy('status_default', 'desc')
+                            ->orderBy('created_at', 'desc')
+                            ->get();
+
+            // If this is an AJAX request, return JSON
+            if ($request->ajax()) {
+                return response()->json([
+                    'success' => true,
+                    'alamats' => $alamats,
+                    'html' => view('components.alamat-selector', compact('alamats'))->render()
+                ]);
+            }
+
+            // Otherwise return the view
+            return view('components.alamat-selector', compact('alamats'));
+        } catch (\Exception $e) {
+            if ($request->ajax()) {
+                return response()->json(['error' => 'Terjadi kesalahan: ' . $e->getMessage()], 500);
+            }
+            
+            return redirect()->back()->with('error', 'Terjadi kesalahan: ' . $e->getMessage());
+        }
+    }
+
+    /**
+     * Get specific address details for selection
+     */
+    public function alamatGetDetails($id, Request $request)
+    {
+        try {
+            $user = Auth::user();
+            $pembeli = Pembeli::where('user_id', $user->id)->first();
+            
+            if (!$pembeli) {
+                return response()->json(['error' => 'Data pembeli tidak ditemukan'], 404);
+            }
+
+            $alamat = Alamat::where('alamat_id', $id)
+                           ->where('pembeli_id', $pembeli->id)
+                           ->first();
+
+            if (!$alamat) {
+                return response()->json(['error' => 'Alamat tidak ditemukan'], 404);
+            }
+
+            return response()->json([
+                'success' => true,
+                'alamat' => $alamat
+            ]);
         } catch (\Exception $e) {
             return response()->json(['error' => 'Terjadi kesalahan: ' . $e->getMessage()], 500);
         }
