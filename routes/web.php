@@ -1,7 +1,6 @@
 <?php
 
 use Illuminate\Support\Facades\Route;
-use App\Http\Controllers\DashboardConsignorController;
 use Illuminate\Support\Facades\Auth;
 use Illuminate\Support\Facades\DB;
 use App\Http\Controllers\Api\AuthController;
@@ -30,6 +29,7 @@ use App\Http\Controllers\Api\BuyerProfileController;
 use App\Http\Controllers\Api\DashboardProfileController;
 use App\Http\Controllers\Api\RatingController;
 use Illuminate\Support\Facades\Log;
+use Illuminate\Http\Request;
 
 /*
 |--------------------------------------------------------------------------
