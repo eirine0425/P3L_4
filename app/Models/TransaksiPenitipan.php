@@ -5,15 +5,12 @@ namespace App\Models;
 use Illuminate\Database\Eloquent\Factories\HasFactory;
 use Illuminate\Database\Eloquent\Model;
 
-use App\Models\Penitip;
-use App\Models\Barang;
-
 class TransaksiPenitipan extends Model
 {
     use HasFactory;
 
     protected $table = 'transaksi_penitipan';
-    protected $primaryKey = 'transaksi_penitipan_id';
+    protected $primaryKey = 'id'; // Make sure this matches your database
     public $timestamps = false;
 
     protected $fillable = [
@@ -24,6 +21,12 @@ class TransaksiPenitipan extends Model
         'metode_penitipan',
         'status_perpanjangan',
         'status_penitipan',
+    ];
+
+    protected $casts = [
+        'status_perpanjangan' => 'boolean',
+        'batas_penitipan' => 'date',
+        'tanggal_penitipan' => 'date',
     ];
 
     public function penitip()

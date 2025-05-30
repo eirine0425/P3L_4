@@ -149,6 +149,16 @@
                             </a>
                         </div>
                         <div class="col-md-4">
+
+                            <a href="{{ route('consignor.pickup') }}" class="btn btn-warning btn-lg w-100 text-decoration-none" style="min-height: 100px;">
+                                <div class="d-flex flex-column align-items-center justify-content-center h-100">
+                                    <i class="fas fa-box-open fa-3x mb-3"></i>
+                                    <h6 class="mb-1 fw-bold">Pengambilan Barang</h6>
+                                    <small class="opacity-75">Jadwalkan pengambilan barang yang sudah melewati masa penitipan</small>
+                                </div>
+                            </a>
+                        </div>
+
                             <a href="{{ route('consignor.ratings') }}" class="btn btn-warning btn-lg w-100 text-decoration-none" style="min-height: 100px;">
                                 <div class="d-flex flex-column align-items-center justify-content-center h-100">
                                     <i class="fas fa-star fa-3x mb-3"></i>
@@ -197,6 +207,7 @@
                                 </div>
                             @endif
                         </div>
+
                     </div>
                 </div>
             </div>
@@ -268,8 +279,13 @@
         <div class="col-md-6">
             <div class="card">
                 <div class="card-header d-flex justify-content-between align-items-center">
+
+                    <h5 class="card-title">Barang Perlu Diperhatikan</h5>
+                    <a href="{{ route('consignor.items') }}" class="btn btn-sm btn-outline-primary">Lihat Semua</a>
+
                     <h5 class="card-title">Barang Perlu Perhatian</h5>
                     <a href="{{ route('consignor.items', ['durasi' => 'perlu_perhatian']) }}" class="btn btn-sm btn-outline-warning">Lihat Semua</a>
+
                 </div>
                 <div class="card-body">
                     @if(count($itemsNeedAttention) > 0)
@@ -321,9 +337,15 @@
                         </div>
                     @else
                         <div class="text-center py-4">
+
+                            <i class="fas fa-box fa-3x text-muted mb-3"></i>
+                            <h6 class="text-muted">Tidak ada barang yang memerlukan perhatian</h6>
+                            <p class="text-muted small">Barang yang memerlukan perhatian akan muncul di sini.</p>
+
                             <i class="fas fa-check-circle fa-3x text-success mb-3"></i>
                             <h6 class="text-muted">Semua barang dalam kondisi baik</h6>
                             <p class="text-muted small">Tidak ada barang yang perlu perhatian khusus.</p>
+
                         </div>
                     @endif
                 </div>

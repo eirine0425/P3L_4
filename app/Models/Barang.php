@@ -10,6 +10,7 @@ use App\Models\Garansi;
 use App\Models\DiskusiProduk;
 use App\Models\DetailTransaksi;
 use App\Models\TransaksiPenitipan;
+use App\Models\PickupSchedule;
 use App\Models\KeranjangBelanja;
 use App\Models\Rating;
 use Carbon\Carbon;
@@ -22,7 +23,11 @@ class Barang extends Model
     protected $table = 'barang';
     protected $primaryKey = 'barang_id';
 
+
+    // UPDATED: Fillable fields with pickup-related fields
+
     // Merged fillable fields from both models
+
     protected $fillable = [
         'penitip_id',
         'kategori_id',
@@ -38,6 +43,17 @@ class Barang extends Model
         'batas_penitipan',
         'garansi_id',
         'foto_barang',
+
+        'tanggal_pengambilan',
+        'catatan_pengambilan',
+        'metode_pengambilan',
+        'pegawai_pickup_id',
+        'nomor_resi_pickup',
+        'biaya_pengambilan',
+        'status_pengambilan',
+        'pickup_schedule_id',
+        'pickup_requested_at',
+
         'gambar', // Alternative image field
         'penjual_id', // For backward compatibility
     ];
@@ -48,6 +64,7 @@ class Barang extends Model
         'batas_penitipan' => 'date',
         'harga' => 'decimal:2',
         'rating' => 'decimal:1',
+
     ];
 
     // RELATIONSHIPS
@@ -91,10 +108,23 @@ class Barang extends Model
         return $this->hasOne(TransaksiPenitipan::class, 'barang_id', 'barang_id');
     }
 
+
+    // ADDED: Pickup schedule relationship
+    public function pickupSchedule()
+    {
+        return $this->belongsTo(PickupSchedule::class, 'pickup_schedule_id');
+    }
+
+    public function fotoTambahan()
+    {
+        return $this->hasMany(FotoBarang::class, 'barang_id');
+
+
     // RATING RELATIONSHIPS AND METHODS
     public function ratings()
     {
         return $this->hasMany(Rating::class, 'barang_id', 'barang_id');
+
     }
 
     /**
@@ -237,6 +267,23 @@ class Barang extends Model
         return $query->where('status', 'terjual');
     }
 
+
+    // ADDED: Scope for items that need pickup
+    public function scopeNeedsPickup($query)
+    {
+        return $query->where('status', '!=', 'diambil_kembali')
+                     ->where('status', '!=', 'terjual')
+                     ->whereRaw('DATEDIFF(CURDATE(), batas_penitipan) > 0');
+    }
+
+    // ADDED: Scope for items with pickup scheduled
+    public function scopePickupScheduled($query)
+    {
+        return $query->whereNotNull('pickup_schedule_id');
+    }
+
+    // ADDED: Method to check if product is available
+
     public function scopeExpiringSoon($query)
     {
         return $query->whereRaw('DATEDIFF(batas_penitipan, CURDATE()) <= 7')
@@ -254,10 +301,28 @@ class Barang extends Model
     }
 
     // STATUS AND CONDITION METHODS
+
     public function isAvailable()
     {
         return $this->status === 'belum_terjual';
     }
+
+
+    // ADDED: Method to check if item needs pickup
+    public function needsPickup()
+    {
+        return $this->status !== 'diambil_kembali' && 
+               $this->status !== 'terjual' && 
+               $this->sisa_hari < 0;
+    }
+
+    // ADDED: Method to check if pickup is scheduled
+    public function hasPickupScheduled()
+    {
+        return !is_null($this->pickup_schedule_id);
+    }
+
+    // ADDED: Method to get status badge class
 
     public function getStatusBadgeClass()
     {
@@ -268,6 +333,8 @@ class Barang extends Model
                 return 'badge-info';
             case 'sold out':
                 return 'badge-danger';
+            case 'diambil_kembali':
+                return 'badge-secondary';
             default:
                 return 'badge-secondary';
         }
@@ -282,6 +349,8 @@ class Barang extends Model
                 return 'Terjual';
             case 'sold out':
                 return 'Sold Out';
+            case 'diambil_kembali':
+                return 'Diambil Kembali';
             default:
                 return ucfirst($this->status);
         }
@@ -346,10 +415,6 @@ class Barang extends Model
         $tanggalMulai = $this->tanggal_mulai_penitipan;
         return $tanggalMulai->copy()->addDays(30);
     }
-    public function fotoTambahan()
-{
-    return $this->hasMany(FotoBarang::class, 'barang_id');
-}
 
     public function getSisaHariAttribute()
     {
