@@ -7,6 +7,8 @@ use Illuminate\Http\Request;
 use App\Models\Barang;
 use App\Models\KategoriBarang;
 use App\Models\Penitip;
+use App\Models\Transaksi;
+use App\Models\Rating;
 use Illuminate\Support\Facades\Auth;
 use Illuminate\Support\Facades\DB;
 
@@ -324,31 +326,102 @@ class DashboardConsignorController extends Controller
             ->with('success', 'Barang berhasil dihapus.');
     }
 
- public function extendItem($id)
-{
-    $user = Auth::user();
-    $penitip = Penitip::where('user_id', $user->id)->first();
-
-    if (!$penitip) {
-        return redirect()->route('home')->with('error', 'Anda belum terdaftar sebagai penitip.');
+    // RATING FUNCTIONALITY
+    public function showRatings(Request $request)
+    {
+        $user = Auth::user();
+        $penitip = Penitip::where('user_id', $user->id)->first();
+        
+        if (!$penitip) {
+            return redirect()->route('home')->with('error', 'Anda belum terdaftar sebagai penitip.');
+        }
+        
+        // Get all ratings for this consignor's items
+        $ratings = Rating::whereHas('barang', function($query) use ($penitip) {
+            $query->where('penitip_id', $penitip->penitip_id);
+        })
+        ->with(['barang', 'pembeli', 'transaksi'])
+        ->orderBy('created_at', 'desc');
+        
+        // Filter by rating if provided
+        if ($request->has('rating_filter') && $request->rating_filter != '') {
+            $ratings->where('rating', $request->rating_filter);
+        }
+        
+        // Filter by item if provided
+        if ($request->has('barang_filter') && $request->barang_filter != '') {
+            $ratings->where('barang_id', $request->barang_filter);
+        }
+        
+        $ratings = $ratings->paginate(10);
+        
+        // Get rating statistics
+        $ratingStats = [
+            'average_rating' => $penitip->average_rating,
+            'total_ratings' => $penitip->total_ratings,
+            'rating_distribution' => $penitip->rating_distribution,
+            'star_display' => $penitip->star_display,
+            'rating_text' => $penitip->rating_text,
+        ];
+        
+        // Get items for filter dropdown
+        $myItems = Barang::where('penitip_id', $penitip->penitip_id)
+                        ->whereHas('ratings')
+                        ->get();
+        
+        return view('dashboard.consignor.ratings.index', compact('ratings', 'ratingStats', 'myItems', 'penitip'));
     }
 
-    $item = Barang::where('penitip_id', $penitip->penitip_id)
-        ->where('barang_id', $id)
+    public function showRatingDetail($ratingId)
+    {
+        $user = Auth::user();
+        $penitip = Penitip::where('user_id', $user->id)->first();
+        
+        if (!$penitip) {
+            return redirect()->route('home')->with('error', 'Anda belum terdaftar sebagai penitip.');
+        }
+        
+        $rating = Rating::whereHas('barang', function($query) use ($penitip) {
+            $query->where('penitip_id', $penitip->penitip_id);
+        })
+        ->with(['barang', 'pembeli', 'transaksi'])
+        ->where('rating_id', $ratingId)
         ->first();
-
-    if (!$item) {
-        abort(404);
+        
+        if (!$rating) {
+            return redirect()->route('consignor.ratings')->with('error', 'Rating tidak ditemukan.');
+        }
+        
+        return view('dashboard.consignor.ratings.show', compact('rating', 'penitip'));
     }
 
-    // Tambahkan 30 hari ke tanggal batas penitipan yang lama
-    $item->batas_penitipan = \Carbon\Carbon::parse($item->batas_penitipan)->addDays(30);
-    $item->save();
+    // ITEM EXTENSION FUNCTIONALITY
+    public function extendItem($id)
+    {
+        $user = Auth::user();
+        $penitip = Penitip::where('user_id', $user->id)->first();
 
-    return redirect()->route('consignor.items')->with('success', 'Masa penitipan berhasil diperpanjang.');
-}
+        if (!$penitip) {
+            return redirect()->route('home')->with('error', 'Anda belum terdaftar sebagai penitip.');
+        }
 
-public function updateTransactionStatus(Request $request, $id)
+        $item = Barang::where('penitip_id', $penitip->penitip_id)
+            ->where('barang_id', $id)
+            ->first();
+
+        if (!$item) {
+            abort(404);
+        }
+
+        // Tambahkan 30 hari ke tanggal batas penitipan yang lama
+        $item->batas_penitipan = \Carbon\Carbon::parse($item->batas_penitipan)->addDays(30);
+        $item->save();
+
+        return redirect()->route('consignor.items')->with('success', 'Masa penitipan berhasil diperpanjang.');
+    }
+
+    // TRANSACTION MANAGEMENT
+    public function updateTransactionStatus(Request $request, $id)
     {
         // Example implementation (replace with your actual logic)
         $transaction = Transaksi::findOrFail($id);
@@ -581,6 +654,4 @@ public function updateTransactionStatus(Request $request, $id)
 
         return redirect()->back()->with('success', 'Transaksi berhasil ditandai siap untuk pengiriman.');
     }
-
-
 }

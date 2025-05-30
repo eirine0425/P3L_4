@@ -1,6 +1,6 @@
 @extends('layouts.app')
 
-@section('title', $product->nama_barang ?? 'Detail Produk')
+@section('title', $barang->nama_barang ?? 'Detail Produk')
 
 @section('content')
 <div class="row">
@@ -9,109 +9,155 @@
             <ol class="breadcrumb">
                 <li class="breadcrumb-item"><a href="{{ url('/') }}">Beranda</a></li>
                 <li class="breadcrumb-item"><a href="{{ url('/products') }}">Produk</a></li>
-                <li class="breadcrumb-item active" aria-current="page">{{ $product->nama_barang ?? 'Detail Produk' }}</li>
+                <li class="breadcrumb-item active" aria-current="page">{{ $barang->nama_barang ?? 'Detail Produk' }}</li>
             </ol>
         </nav>
     </div>
     
     <div class="col-md-6 mb-4">
         <div class="card border-0">
+            <!-- Enhanced Product Image Carousel -->
             <div id="productCarousel" class="carousel slide" data-bs-ride="carousel">
-                <div class="carousel-indicators">
-                    <button type="button" data-bs-target="#productCarousel" data-bs-slide-to="0" class="active" aria-current="true" aria-label="Slide 1"></button>
-                </div>
+                @php
+                    $images = [];
+                    
+                    // Add main image if exists
+                    if ($barang->foto_barang) {
+                        $images[] = [
+                            'url' => asset('storage/' . $barang->foto_barang),
+                            'alt' => $barang->nama_barang . ' - Main Image'
+                        ];
+                    }
+                    
+                    // Add additional images from foto_barang table if exists
+                    if (isset($barang->fotoBarang) && $barang->fotoBarang->count() > 0) {
+                        foreach ($barang->fotoBarang as $foto) {
+                            $images[] = [
+                                'url' => asset('storage/' . $foto->path),
+                                'alt' => $barang->nama_barang . ' - Additional Image'
+                            ];
+                        }
+                    }
+                    
+                    // If no images, use placeholder
+                    if (empty($images)) {
+                        $images[] = [
+                            'url' => '/placeholder.svg?height=600&width=600&text=' . urlencode($barang->nama_barang ?? 'Produk'),
+                            'alt' => $barang->nama_barang ?? 'Product Image',
+                            'is_placeholder' => true
+                        ];
+                    }
+                @endphp
+                
+                @if(count($images) > 1)
+                    <div class="carousel-indicators">
+                        @foreach($images as $index => $image)
+                            <button type="button" data-bs-target="#productCarousel" data-bs-slide-to="{{ $index }}" 
+                                    class="{{ $index === 0 ? 'active' : '' }}" aria-current="{{ $index === 0 ? 'true' : 'false' }}" 
+                                    aria-label="Slide {{ $index + 1 }}"></button>
+                        @endforeach
+                    </div>
+                @endif
+                
                 <div class="carousel-inner rounded-3">
-                    <div class="carousel-item active">
-
-                        <img src="{{ asset('assets/') }}" class="d-block w-100" alt="Product Image 1">
-                    </div>
-                    <div class="carousel-item">
-                        <img src="{{ asset('assets/') }}" class="d-block w-100" alt="Product Image 2">
-                    </div>
-                    <div class="carousel-item">
-                        <img src="{{ asset('assets/') }}" class="d-block w-100" alt="Product Image 3">
-
-                        <img src="{{ $product->photo_url ?? '/placeholder.svg?height=600&width=600&text=' . urlencode($product->nama_barang ?? 'Produk') }}" 
-                             class="d-block w-100" alt="{{ $product->nama_barang ?? 'Product Image' }}" style="height: 400px; object-fit: cover;">
-
-                    </div>
+                    @foreach($images as $index => $image)
+                        <div class="carousel-item {{ $index === 0 ? 'active' : '' }}">
+                            <img src="{{ $image['url'] }}" 
+                                 class="d-block w-100" 
+                                 alt="{{ $image['alt'] }}" 
+                                 style="height: 400px; object-fit: cover;">
+                        </div>
+                    @endforeach
                 </div>
+                
+                @if(count($images) > 1)
+                    <button class="carousel-control-prev" type="button" data-bs-target="#productCarousel" data-bs-slide="prev">
+                        <span class="carousel-control-prev-icon" aria-hidden="true"></span>
+                        <span class="visually-hidden">Previous</span>
+                    </button>
+                    <button class="carousel-control-next" type="button" data-bs-target="#productCarousel" data-bs-slide="next">
+                        <span class="carousel-control-next-icon" aria-hidden="true"></span>
+                        <span class="visually-hidden">Next</span>
+                    </button>
+                @endif
             </div>
             
-            <div class="row mt-3">
-
-                <div class="col-4">
-                    <img src="{{ asset('assets/') }}" class="img-thumbnail" alt="Thumbnail 1" data-bs-target="#productCarousel" data-bs-slide-to="0">
+            <!-- Thumbnail Gallery -->
+            @if(count($images) > 1)
+                <div class="row mt-3">
+                    @foreach($images as $index => $image)
+                        <div class="col-{{ count($images) > 4 ? '2' : (12 / count($images)) }}">
+                            <img src="{{ $image['url'] }}" 
+                                 class="img-thumbnail w-100 cursor-pointer" 
+                                 alt="Thumbnail {{ $index + 1 }}" 
+                                 data-bs-target="#productCarousel" 
+                                 data-bs-slide-to="{{ $index }}"
+                                 style="height: 80px; object-fit: cover;">
+                        </div>
+                    @endforeach
                 </div>
-                <div class="col-4">
-                    <img src="{{ asset('assets/') }}" class="img-thumbnail" alt="Thumbnail 2" data-bs-target="#productCarousel" data-bs-slide-to="1">
+            @else
+                <div class="row mt-3">
+                    <div class="col-12">
+                        <img src="{{ $images[0]['url'] }}" 
+                             class="img-thumbnail w-100" 
+                             alt="Product Thumbnail" 
+                             style="height: 100px; object-fit: cover;">
+                    </div>
                 </div>
-                <div class="col-4">
-                    <img src="{{ asset('assets/') }}" class="img-thumbnail" alt="Thumbnail 3" data-bs-target="#productCarousel" data-bs-slide-to="2">
-
-                <div class="col-12">
-                    <img src="{{ $product->photo_url ?? '/placeholder.svg?height=600&width=600&text=' . urlencode($product->nama_barang ?? 'Produk') }}" 
-                         class="img-thumbnail w-100" alt="Product Thumbnail" style="height: 100px; object-fit: cover;">
-
-                </div>
-            </div>
+            @endif
         </div>
     </div>
     
     <div class="col-md-6">
         <div class="card shadow-sm">
             <div class="card-body">
-                <h2 class="card-title mb-3">{{ $product->nama_barang ?? 'Nama Produk Tidak Tersedia' }}</h2>
+                <h2 class="card-title mb-3">{{ $barang->nama_barang ?? 'Nama Produk Tidak Tersedia' }}</h2>
                 
-                <div class="d-flex align-items-center mb-3">
-                    <div class="me-3">
+                <!-- Enhanced Rating Display -->
+                <div class="mb-3">
+                    <div class="d-flex align-items-center">
                         @php
-                            $rating = $product->rating ?? 0;
+                            $rating = $barang->rating ?? 0;
                             $fullStars = floor($rating);
                             $hasHalfStar = ($rating - $fullStars) >= 0.5;
-                            $emptyStars = 5 - $fullStars - ($hasHalfStar ? 1 : 0);
+                            $starDisplay = str_repeat('★', $fullStars);
+                            if ($hasHalfStar) {
+                                $starDisplay .= '☆';
+                                $fullStars++;
+                            }
+                            $starDisplay .= str_repeat('☆', 5 - $fullStars);
                         @endphp
-                        
-                        @for($i = 0; $i < $fullStars; $i++)
-                            <i class="fas fa-star text-warning"></i>
-                        @endfor
-                        
-                        @if($hasHalfStar)
-                            <i class="fas fa-star-half-alt text-warning"></i>
-                        @endif
-                        
-                        @for($i = 0; $i < $emptyStars; $i++)
-                            <i class="far fa-star text-warning"></i>
-                        @endfor
-                        
-                        <span class="ms-1">({{ $product->jumlah_ulasan ?? 0 }} ulasan)</span>
+                        <span class="text-warning fs-5 me-2">{{ $starDisplay }}</span>
+                        <span class="me-2">({{ number_format($barang->rating ?? 0, 1) }})</span>
+                        <span class="text-muted">{{ $barang->jumlah_ulasan ?? 0 }} ulasan</span>
                     </div>
-                    <span class="badge {{ $product->getStatusBadgeClass() ?? 'bg-secondary' }}">
-                        {{ $product->getStatusDisplayText() ?? 'Status Tidak Diketahui' }}
+                    <span class="badge {{ $barang->getStatusBadgeClass() ?? 'bg-secondary' }}">
+                        {{ $barang->getStatusDisplayText() ?? 'Status Tidak Diketahui' }}
                     </span>
                 </div>
                 
-                <h3 class="text-primary mb-3">{{ $product->formatted_price ?? 'Harga Tidak Tersedia' }}</h3>
+                <h3 class="text-primary mb-3">{{ $barang->formatted_price ?? 'Harga Tidak Tersedia' }}</h3>
                 
                 <div class="mb-3">
                     <h5><i class="fas fa-info-circle me-2"></i>Informasi Produk</h5>
                     <table class="table table-borderless">
                         <tr>
                             <td width="150">Kondisi</td>
-                            <td>: <span class="badge {{ $product->getConditionBadgeClass() ?? 'bg-secondary' }}">{{ ucfirst($product->kondisi ?? 'Tidak Diketahui') }}</span></td>
+                            <td>: <span class="badge {{ $barang->getConditionBadgeClass() ?? 'bg-secondary' }}">{{ ucfirst($barang->kondisi ?? 'Tidak Diketahui') }}</span></td>
                         </tr>
                         <tr>
                             <td>Kategori</td>
-                            <td>: {{ $product->kategori->nama_kategori ?? 'Tidak Berkategori' }}</td>
+                            <td>: {{ $barang->kategori->nama_kategori ?? 'Tidak Berkategori' }}</td>
                         </tr>
                         <tr>
                             <td>Tanggal Masuk</td>
-                            <td>: {{ $product->tanggal_penitipan ? \Carbon\Carbon::parse($product->tanggal_penitipan)->format('d M Y') : 'Tidak Diketahui' }}</td>
+                            <td>: {{ $barang->tanggal_penitipan ? \Carbon\Carbon::parse($barang->tanggal_penitipan)->format('d M Y') : 'Tidak Diketahui' }}</td>
                         </tr>
                         <tr>
                             <td>Garansi</td>
                             <td>: 
-                                @if($product->garansi)
+                                @if($barang->garansi)
                                     <span class="badge bg-success">Bergaransi</span>
                                 @else
                                     <span class="badge bg-warning">Tidak Bergaransi</span>
@@ -121,23 +167,38 @@
                     </table>
                 </div>
                 
-                @if($product->penitip)
+                <!-- Enhanced Consignor Info -->
+                @if($barang->penitip)
                 <div class="mb-4">
                     <h5><i class="fas fa-user-tag me-2"></i>Informasi Penitip</h5>
                     <div class="d-flex align-items-center">
-                        <img src="/placeholder.svg?height=50&width=50&text={{ urlencode(substr($product->penitip->nama_penitip ?? 'P', 0, 1)) }}" 
-                             class="rounded-circle me-3" alt="Seller">
+                        <img src="{{ $barang->penitip->photo_url ?? '/placeholder.svg?height=50&width=50&text=' . urlencode(substr($barang->penitip->nama ?? 'P', 0, 1)) }}" 
+                             class="rounded-circle me-3" alt="Seller" style="width: 50px; height: 50px;">
                         <div>
-                            <h6 class="mb-1">{{ $product->penitip->nama_penitip ?? 'Nama Penitip Tidak Tersedia' }}</h6>
-                            <div>
-                                <i class="fas fa-star text-warning"></i>
-                                <i class="fas fa-star text-warning"></i>
-                                <i class="fas fa-star text-warning"></i>
-                                <i class="fas fa-star text-warning"></i>
-                                <i class="fas fa-star text-warning"></i>
-                                <span class="ms-1">(Rating Penitip)</span>
-                            </div>
+                            <h6 class="mb-1">{{ $barang->penitip->nama ?? 'Nama Penitip Tidak Tersedia' }}</h6>
+                            <small class="text-muted">
+                                @if($barang->penitip->telepon)
+                                    <i class="fas fa-phone me-1"></i>{{ $barang->penitip->telepon }}
+                                @endif
+                            </small>
+                            <br>
+                            <small class="text-muted">
+                                @if($barang->penitip->alamat)
+                                    <i class="fas fa-map-marker-alt me-1"></i>{{ Str::limit($barang->penitip->alamat, 50) }}
+                                @endif
+                            </small>
                         </div>
+                    </div>
+                </div>
+                @else
+                <div class="mb-4">
+                    <h5><i class="fas fa-user-tag me-2"></i>Informasi Penitip</h5>
+                    <div class="alert alert-warning">
+                        <i class="fas fa-exclamation-triangle me-2"></i>
+                        Informasi penitip tidak tersedia untuk produk ini.
+                        @if(config('app.debug'))
+                            <br><small>Debug: penitip_id = {{ $barang->penitip_id ?? 'null' }}</small>
+                        @endif
                     </div>
                 </div>
                 @endif
@@ -151,9 +212,9 @@
                     User Role: {{ auth()->user()->role->nama_role ?? 'No Role' }}<br>
                     User ID: {{ auth()->user()->id }}<br>
                     @endauth
-                    Product ID: {{ $product->barang_id ?? 'No Product ID' }}<br>
-                    Product Status: {{ $product->status ?? 'No Status' }}<br>
-                    Product Available: {{ $product->isAvailable() ? 'Yes' : 'No' }}
+                    Product ID: {{ $barang->barang_id ?? 'No Product ID' }}<br>
+                    Product Status: {{ $barang->status ?? 'No Status' }}<br>
+                    Product Available: {{ $barang->isAvailable() ? 'Yes' : 'No' }}
                 </div>
                 @endif
 
@@ -165,12 +226,12 @@
                         @endphp
                         
                         @if($userRole === 'pembeli')
-                            @if($product->isAvailable())
+                            @if($barang->isAvailable())
                                 <!-- Pembeli - Show Cart Actions -->
                                 <div class="d-grid gap-2">
                                     <form action="{{ route('cart.add') }}" method="POST" id="add-to-cart-form">
                                         @csrf
-                                        <input type="hidden" name="barang_id" value="{{ $product->barang_id }}">
+                                        <input type="hidden" name="barang_id" value="{{ $barang->barang_id }}">
                                         
                                         <button type="submit" class="btn btn-primary btn-lg w-100" id="add-to-cart-btn">
                                             <i class="fas fa-cart-plus me-2"></i>Tambah ke Keranjang
@@ -213,7 +274,7 @@
                         <button class="nav-link active" id="description-tab" data-bs-toggle="tab" data-bs-target="#description" type="button" role="tab" aria-controls="description" aria-selected="true">Deskripsi</button>
                     </li>
                     <li class="nav-item" role="presentation">
-                        <button class="nav-link" id="reviews-tab" data-bs-toggle="tab" data-bs-target="#reviews" type="button" role="tab" aria-controls="reviews" aria-selected="false">Ulasan ({{ $product->jumlah_ulasan ?? 0 }})</button>
+                        <button class="nav-link" id="reviews-tab" data-bs-toggle="tab" data-bs-target="#reviews" type="button" role="tab" aria-controls="reviews" aria-selected="false">Rating & Ulasan ({{ $barang->jumlah_ulasan ?? 0 }})</button>
                     </li>
                     <li class="nav-item" role="presentation">
                         <button class="nav-link" id="discussion-tab" data-bs-toggle="tab" data-bs-target="#discussion" type="button" role="tab" aria-controls="discussion" aria-selected="false">Diskusi</button>
@@ -223,8 +284,8 @@
                     <div class="tab-pane fade show active" id="description" role="tabpanel" aria-labelledby="description-tab">
                         <h4>Deskripsi Produk</h4>
                         <div class="description-content">
-                            @if($product->deskripsi)
-                                {!! nl2br(e($product->deskripsi)) !!}
+                            @if($barang->deskripsi)
+                                {!! nl2br(e($barang->deskripsi)) !!}
                             @else
                                 <p class="text-muted">Deskripsi produk belum tersedia.</p>
                             @endif
@@ -236,25 +297,25 @@
                                 <tbody>
                                     <tr>
                                         <th width="200">Nama Produk</th>
-                                        <td>{{ $product->nama_barang ?? 'Tidak tersedia' }}</td>
+                                        <td>{{ $barang->nama_barang ?? 'Tidak tersedia' }}</td>
                                     </tr>
                                     <tr>
                                         <th>Kondisi</th>
-                                        <td>{{ ucfirst($product->kondisi ?? 'Tidak diketahui') }}</td>
+                                        <td>{{ ucfirst($barang->kondisi ?? 'Tidak diketahui') }}</td>
                                     </tr>
                                     <tr>
                                         <th>Kategori</th>
-                                        <td>{{ $product->kategori->nama_kategori ?? 'Tidak berkategori' }}</td>
+                                        <td>{{ $barang->kategori->nama_kategori ?? 'Tidak berkategori' }}</td>
                                     </tr>
                                     <tr>
                                         <th>Status</th>
-                                        <td>{{ $product->getStatusDisplayText() ?? 'Tidak diketahui' }}</td>
+                                        <td>{{ $barang->getStatusDisplayText() ?? 'Tidak diketahui' }}</td>
                                     </tr>
                                     <tr>
                                         <th>Tanggal Penitipan</th>
-                                        <td>{{ $product->tanggal_penitipan ? \Carbon\Carbon::parse($product->tanggal_penitipan)->format('d M Y') : 'Tidak diketahui' }}</td>
+                                        <td>{{ $barang->tanggal_penitipan ? \Carbon\Carbon::parse($barang->tanggal_penitipan)->format('d M Y') : 'Tidak diketahui' }}</td>
                                     </tr>
-                                    @if($product->garansi)
+                                    @if($barang->garansi)
                                     <tr>
                                         <th>Garansi</th>
                                         <td>Tersedia</td>
@@ -265,52 +326,45 @@
                         </div>
                     </div>
                     
+                    <!-- Enhanced Rating & Reviews Tab -->
                     <div class="tab-pane fade" id="reviews" role="tabpanel" aria-labelledby="reviews-tab">
-                        <div class="d-flex justify-content-between align-items-center mb-4">
-                            <h4>Ulasan Produk</h4>
-                            <div>
-                                <span class="fs-4 fw-bold">{{ number_format($product->rating ?? 0, 1) }}</span>
-                                @php
-                                    $rating = $product->rating ?? 0;
-                                    $fullStars = floor($rating);
-                                    $hasHalfStar = ($rating - $fullStars) >= 0.5;
-                                    $emptyStars = 5 - $fullStars - ($hasHalfStar ? 1 : 0);
-                                @endphp
-                                
-                                @for($i = 0; $i < $fullStars; $i++)
-                                    <i class="fas fa-star text-warning"></i>
-                                @endfor
-                                
-                                @if($hasHalfStar)
-                                    <i class="fas fa-star-half-alt text-warning"></i>
-                                @endif
-                                
-                                @for($i = 0; $i < $emptyStars; $i++)
-                                    <i class="far fa-star text-warning"></i>
-                                @endfor
-                                
-                                <span class="ms-1">({{ $product->jumlah_ulasan ?? 0 }} ulasan)</span>
+                        @if(($barang->jumlah_ulasan ?? 0) > 0)
+                            <!-- Rating Summary -->
+                            <div class="row mb-4">
+                                <div class="col-md-4 text-center">
+                                    <h2 class="display-4">{{ number_format($barang->rating ?? 0, 1) }}</h2>
+                                    <div class="text-warning fs-4">{{ $starDisplay }}</div>
+                                    <p class="text-muted">{{ $barang->jumlah_ulasan ?? 0 }} ulasan</p>
+                                </div>
+                                <div class="col-md-8">
+                                    <p class="text-muted">Detail distribusi rating akan ditampilkan di sini.</p>
+                                </div>
                             </div>
-                        </div>
-                        
-                        @if(($product->jumlah_ulasan ?? 0) > 0)
-                            <div class="alert alert-info">
-                                <i class="fas fa-info-circle me-2"></i>Fitur ulasan akan segera tersedia.
+                            
+                            <!-- Individual Ratings -->
+                            <div id="ratings-container">
+                                <!-- Ratings will be loaded here via AJAX -->
+                            </div>
+                            
+                            <div class="text-center">
+                                <button id="load-ratings" class="btn btn-outline-primary" data-barang-id="{{ $barang->barang_id }}">
+                                    Lihat Semua Rating
+                                </button>
                             </div>
                         @else
                             <div class="text-center py-5">
                                 <i class="fas fa-star-o fa-3x text-muted mb-3"></i>
-                                <h5 class="text-muted">Belum ada ulasan</h5>
-                                <p class="text-muted">Jadilah yang pertama memberikan ulasan untuk produk ini.</p>
+                                <h5 class="text-muted">Belum ada rating</h5>
+                                <p class="text-muted">Jadilah yang pertama memberikan rating untuk produk ini.</p>
                             </div>
                         @endif
                         
                         @auth
-                            @if(auth()->user()->role->nama_role == 'Pembeli')
+                            @if(auth()->user()->role->nama_role == 'pembeli')
                             <div class="mt-4">
-                                <h5>Berikan Ulasan</h5>
+                                <h5>Berikan Rating</h5>
                                 <div class="alert alert-info">
-                                    <i class="fas fa-info-circle me-2"></i>Fitur memberikan ulasan akan segera tersedia.
+                                    <i class="fas fa-info-circle me-2"></i>Anda dapat memberikan rating setelah membeli dan menerima produk ini.
                                 </div>
                             </div>
                             @endif
@@ -321,8 +375,8 @@
                         <h4>Diskusi Produk</h4>
                         
                         <div class="discussion-list mb-4">
-                            @if($product->diskusi && $product->diskusi->count() > 0)
-                                @foreach($product->diskusi->take(5) as $diskusi)
+                            @if($barang->diskusi && $barang->diskusi->count() > 0)
+                                @foreach($barang->diskusi->take(5) as $diskusi)
                                 <div class="card mb-3">
                                     <div class="card-body">
                                         <div class="d-flex align-items-start mb-3">
@@ -350,7 +404,7 @@
                         <div class="card">
                             <div class="card-body">
                                 <h5>Ajukan Pertanyaan</h5>
-                                <form action="{{ route('product.discussion.store', $product->barang_id) }}" method="POST">
+                                <form action="{{ route('product.discussion.store', $barang->barang_id) }}" method="POST">
                                     @csrf
                                     <div class="mb-3">
                                         <textarea class="form-control" id="question" name="question" rows="3" placeholder="Tulis pertanyaan Anda tentang produk ini..." required></textarea>
@@ -372,7 +426,7 @@
 </div>
 
 <!-- Related Products -->
-@if($relatedProducts && $relatedProducts->count() > 0)
+@if(isset($relatedProducts) && $relatedProducts && $relatedProducts->count() > 0)
 <div class="row mt-4">
     <div class="col-12">
         <h3 class="mb-4"><i class="fas fa-tags me-2"></i>Produk Terkait</h3>
@@ -393,25 +447,19 @@
                         <p class="card-text">{{ Str::limit($relatedProduct->deskripsi ?? 'Deskripsi tidak tersedia', 80) }}</p>
                         <div class="d-flex justify-content-between align-items-center">
                             <span class="fw-bold text-primary">{{ $relatedProduct->formatted_price }}</span>
-                            <div>
-                                @php
-                                    $rating = $relatedProduct->rating ?? 0;
-                                    $fullStars = floor($rating);
-                                    $hasHalfStar = ($rating - $fullStars) >= 0.5;
-                                    $emptyStars = 5 - $fullStars - ($hasHalfStar ? 1 : 0);
-                                @endphp
-                                
-                                @for($i = 0; $i < $fullStars; $i++)
-                                    <i class="fas fa-star text-warning"></i>
-                                @endfor
-                                
-                                @if($hasHalfStar)
-                                    <i class="fas fa-star-half-alt text-warning"></i>
-                                @endif
-                                
-                                @for($i = 0; $i < $emptyStars; $i++)
-                                    <i class="far fa-star text-warning"></i>
-                                @endfor
+                            @php
+                                $relatedRating = $relatedProduct->rating ?? 0;
+                                $relatedFullStars = floor($relatedRating);
+                                $relatedHasHalfStar = ($relatedRating - $relatedFullStars) >= 0.5;
+                                $relatedStarDisplay = str_repeat('★', $relatedFullStars);
+                                if ($relatedHasHalfStar) {
+                                    $relatedStarDisplay .= '☆';
+                                    $relatedFullStars++;
+                                }
+                                $relatedStarDisplay .= str_repeat('☆', 5 - $relatedFullStars);
+                            @endphp
+                            <div class="text-warning">
+                                {{ $relatedStarDisplay }}
                             </div>
                         </div>
                     </div>
@@ -431,10 +479,84 @@
 
 @push('scripts')
 <script>
+    // Rating loading functionality
+    document.addEventListener('DOMContentLoaded', function() {
+        const loadRatingsBtn = document.getElementById('load-ratings');
+        const ratingsContainer = document.getElementById('ratings-container');
+        
+        if (loadRatingsBtn) {
+            loadRatingsBtn.addEventListener('click', function() {
+                const barangId = this.getAttribute('data-barang-id');
+                loadRatings(barangId);
+            });
+        }
+        
+        function loadRatings(barangId) {
+            fetch(`/api/ratings/item/${barangId}`)
+                .then(response => response.json())
+                .then(data => {
+                    if (data.success) {
+                        displayRatings(data.data.ratings.data || data.data);
+                        loadRatingsBtn.style.display = 'none';
+                    }
+                })
+                .catch(error => {
+                    console.error('Error loading ratings:', error);
+                    ratingsContainer.innerHTML = '<p class="text-danger">Gagal memuat rating. Silakan coba lagi.</p>';
+                });
+        }
+        
+        function displayRatings(ratings) {
+            let html = '';
+            
+            if (ratings && ratings.length > 0) {
+                ratings.forEach(rating => {
+                    const stars = '★'.repeat(rating.rating) + '☆'.repeat(5 - rating.rating);
+                    const reviewDate = new Date(rating.created_at).toLocaleDateString('id-ID');
+                    
+                    html += `
+                        <div class="border-bottom pb-3 mb-3">
+                            <div class="d-flex justify-content-between align-items-start">
+                                <div>
+                                    <strong>${rating.pembeli?.nama || 'Pembeli'}</strong>
+                                    <div class="text-warning">${stars}</div>
+                                    ${rating.review ? `<p class="mt-2 mb-1">${rating.review}</p>` : ''}
+                                    <small class="text-muted">${reviewDate}</small>
+                                </div>
+                            </div>
+                        </div>
+                    `;
+                });
+            } else {
+                html = '<p class="text-muted">Belum ada rating untuk produk ini.</p>';
+            }
+            
+            ratingsContainer.innerHTML = html;
+        }
+        
+        // Thumbnail click functionality
+        const thumbnails = document.querySelectorAll('[data-bs-slide-to]');
+        thumbnails.forEach(thumbnail => {
+            thumbnail.addEventListener('click', function() {
+                // Remove active class from all thumbnails
+                thumbnails.forEach(t => t.classList.remove('border-primary'));
+                // Add active class to clicked thumbnail
+                this.classList.add('border-primary');
+            });
+        });
+        
+        // Set first thumbnail as active
+        if (thumbnails.length > 0) {
+            thumbnails[0].classList.add('border-primary');
+        }
+    });
+
     // Buy now function
     function buyNow() {
         // Add to cart first, then redirect to checkout
         const form = document.getElementById('add-to-cart-form');
+        if (!form) return;
+        
         const formData = new FormData(form);
         
         fetch(form.action, {
@@ -460,54 +582,57 @@
     }
 
     // Handle form submission with AJAX for better UX
-    document.getElementById('add-to-cart-form').addEventListener('submit', function(e) {
-        e.preventDefault();
-        
-        const btn = document.getElementById('add-to-cart-btn');
-        const originalText = btn.innerHTML;
-        
-        // Show loading state
-        btn.innerHTML = '<i class="fas fa-spinner fa-spin me-2"></i>Menambahkan...';
-        btn.disabled = true;
-        
-        const formData = new FormData(this);
-        
-        fetch(this.action, {
-            method: 'POST',
-            body: formData,
-            headers: {
-                'X-Requested-With': 'XMLHttpRequest'
-            }
-        })
-        .then(response => response.json())
-        .then(data => {
-            if (data.status === 'success') {
-                // Show success message
-                btn.innerHTML = '<i class="fas fa-check me-2"></i>Berhasil Ditambahkan!';
-                btn.classList.remove('btn-primary');
-                btn.classList.add('btn-success');
-                
-                // Reset button after 2 seconds
-                setTimeout(() => {
-                    btn.innerHTML = originalText;
-                    btn.classList.remove('btn-success');
-                    btn.classList.add('btn-primary');
-                    btn.disabled = false;
-                }, 2000);
-                
-                // Show success alert
-                showAlert('success', data.message);
-            } else {
-                throw new Error(data.message || 'Terjadi kesalahan');
-            }
-        })
-        .catch(error => {
-            console.error('Error:', error);
-            btn.innerHTML = originalText;
-            btn.disabled = false;
-            showAlert('error', error.message || 'Terjadi kesalahan saat menambahkan ke keranjang');
+    const addToCartForm = document.getElementById('add-to-cart-form');
+    if (addToCartForm) {
+        addToCartForm.addEventListener('submit', function(e) {
+            e.preventDefault();
+            
+            const btn = document.getElementById('add-to-cart-btn');
+            const originalText = btn.innerHTML;
+            
+            // Show loading state
+            btn.innerHTML = '<i class="fas fa-spinner fa-spin me-2"></i>Menambahkan...';
+            btn.disabled = true;
+            
+            const formData = new FormData(this);
+            
+            fetch(this.action, {
+                method: 'POST',
+                body: formData,
+                headers: {
+                    'X-Requested-With': 'XMLHttpRequest'
+                }
+            })
+            .then(response => response.json())
+            .then(data => {
+                if (data.status === 'success') {
+                    // Show success message
+                    btn.innerHTML = '<i class="fas fa-check me-2"></i>Berhasil Ditambahkan!';
+                    btn.classList.remove('btn-primary');
+                    btn.classList.add('btn-success');
+                    
+                    // Reset button after 2 seconds
+                    setTimeout(() => {
+                        btn.innerHTML = originalText;
+                        btn.classList.remove('btn-success');
+                        btn.classList.add('btn-primary');
+                        btn.disabled = false;
+                    }, 2000);
+                    
+                    // Show success alert
+                    showAlert('success', data.message);
+                } else {
+                    throw new Error(data.message || 'Terjadi kesalahan');
+                }
+            })
+            .catch(error => {
+                console.error('Error:', error);
+                btn.innerHTML = originalText;
+                btn.disabled = false;
+                showAlert('error', error.message || 'Terjadi kesalahan saat menambahkan ke keranjang');
+            });
         });
-    });
+    }
 
     function showAlert(type, message) {
         const alertClass = type === 'success' ? 'alert-success' : 'alert-danger';
@@ -519,7 +644,11 @@
         `;
         
         // Remove existing alerts
-        document.querySelectorAll('.alert').forEach(alert => alert.remove());
+        document.querySelectorAll('.alert').forEach(alert => {
+            if (alert.classList.contains('alert-success') || alert.classList.contains('alert-danger')) {
+                alert.remove();
+            }
+        });
         
         // Add new alert at the top of the page
         const container = document.querySelector('.container') || document.querySelector('.row').parentElement;
@@ -527,7 +656,7 @@
         
         // Auto dismiss after 5 seconds
         setTimeout(() => {
-            const alert = document.querySelector('.alert');
+            const alert = document.querySelector(`.${alertClass}`);
             if (alert) {
                 alert.remove();
             }
