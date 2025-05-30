@@ -10,33 +10,47 @@ use App\Models\Garansi;
 use App\Models\DiskusiProduk;
 use App\Models\DetailTransaksi;
 use App\Models\TransaksiPenitipan;
+use App\Models\KeranjangBelanja;
+use App\Models\Rating;
 use Carbon\Carbon;
 
 class Barang extends Model
 {
     use HasFactory;
 
-    // KEPT ORIGINAL: Table name and primary key
+    // Table configuration
     protected $table = 'barang';
     protected $primaryKey = 'barang_id';
 
-    // KEPT ORIGINAL: Fillable fields with added batas_penitipan
+    // Merged fillable fields from both models
     protected $fillable = [
         'penitip_id',
         'kategori_id',
         'status',
         'kondisi',
         'nama_barang',
-        'harga',
-        'rating',
         'deskripsi',
+        'deskripsi_barang', // Alternative description field
+        'harga',
+        'stok',
+        'rating',
         'tanggal_penitipan',
         'batas_penitipan',
         'garansi_id',
         'foto_barang',
+        'gambar', // Alternative image field
+        'penjual_id', // For backward compatibility
     ];
 
-    // KEPT ORIGINAL: Relationships
+    // Cast attributes
+    protected $casts = [
+        'tanggal_penitipan' => 'date',
+        'batas_penitipan' => 'date',
+        'harga' => 'decimal:2',
+        'rating' => 'decimal:1',
+    ];
+
+    // RELATIONSHIPS
     public function penitip()
     {
         return $this->belongsTo(Penitip::class, 'penitip_id');
@@ -57,12 +71,10 @@ class Barang extends Model
         return $this->belongsTo(Garansi::class, 'garansi_id');
     }
 
-    // FIXED: Relationship to discussions (removed rating filter since column doesn't exist)
     public function diskusi()
     {
         return $this->hasMany(DiskusiProduk::class, 'barang_id');
     }
-
 
     public function keranjangBelanja()
     {
@@ -77,38 +89,118 @@ class Barang extends Model
     public function transaksiPenitipan()
     {
         return $this->hasOne(TransaksiPenitipan::class, 'barang_id', 'barang_id');
-
     }
 
-    // FIXED: Accessor for rating - use the rating column directly from barang table
+    // RATING RELATIONSHIPS AND METHODS
+    public function ratings()
+    {
+        return $this->hasMany(Rating::class, 'barang_id', 'barang_id');
+    }
+
+    /**
+     * Get calculated average rating from ratings table
+     */
     public function getRatingAttribute($value)
     {
-        // Return the rating from barang table directly
-        // If null, return 0 as default
+        // If we have ratings in the ratings table, calculate average
+        $averageRating = $this->ratings()->avg('rating');
+        if ($averageRating) {
+            return round($averageRating, 1);
+        }
+        
+        // Fallback to stored rating value or 0
         return $value ?? 0;
     }
 
-    // FIXED: Accessor for jumlah_ulasan - count all discussions
+    /**
+     * Get total number of ratings
+     */
+    public function getTotalRatingsAttribute()
+    {
+        return $this->ratings()->count();
+    }
+
+    /**
+     * Get rating distribution (count for each star level)
+     */
+    public function getRatingDistributionAttribute()
+    {
+        $distribution = [];
+        for ($i = 1; $i <= 5; $i++) {
+            $distribution[$i] = $this->ratings()->where('rating', $i)->count();
+        }
+        return $distribution;
+    }
+
+    /**
+     * Get star display for average rating
+     */
+    public function getStarDisplayAttribute()
+    {
+        $rating = $this->rating;
+        $fullStars = floor($rating);
+        $hasHalfStar = ($rating - $fullStars) >= 0.5;
+        
+        $stars = str_repeat('★', $fullStars);
+        if ($hasHalfStar) {
+            $stars .= '☆';
+            $fullStars++;
+        }
+        $stars .= str_repeat('☆', 5 - $fullStars);
+        
+        return $stars;
+    }
+
+    /**
+     * Check if user can rate this item
+     */
+    public function canBeRatedBy($pembeliId)
+    {
+        // Check if buyer has purchased this item and transaction is completed
+        $hasPurchased = DetailTransaksi::whereHas('transaksi', function($query) use ($pembeliId) {
+            $query->where('pembeli_id', $pembeliId)
+                  ->where('status_transaksi', 'Selesai');
+        })->where('barang_id', $this->barang_id)->exists();
+        
+        if (!$hasPurchased) {
+            return false;
+        }
+        
+        // Check if already rated
+        $alreadyRated = Rating::where('pembeli_id', $pembeliId)
+                         ->where('barang_id', $this->barang_id)
+                         ->exists();
+        
+        return !$alreadyRated;
+    }
+
+    /**
+     * Get user's rating for this item
+     */
+    public function getUserRating($pembeliId)
+    {
+        return Rating::where('pembeli_id', $pembeliId)
+                 ->where('barang_id', $this->barang_id)
+                 ->first();
+    }
+
+    // DISCUSSION METHODS
     public function getJumlahUlasanAttribute()
     {
-        // Count all discussions for this product
         return $this->diskusi()->count();
     }
 
-    // ADDED: Method to get formatted rating (for display)
     public function getFormattedRatingAttribute()
     {
         $rating = $this->rating;
         return number_format($rating, 1);
     }
 
-    // ADDED: Method to check if product has discussions
     public function hasDiscussions()
     {
         return $this->diskusi()->exists();
     }
 
-    // ADDED: Method to get recent discussions
     public function getRecentDiscussions($limit = 5)
     {
         return $this->diskusi()
@@ -117,9 +209,7 @@ class Barang extends Model
             ->get();
     }
 
-    /**
-     * Get consignment status information
-     */
+    // CONSIGNMENT STATUS METHODS
     public function getConsignmentStatusAttribute()
     {
         if (!$this->transaksiPenitipan) {
@@ -136,25 +226,39 @@ class Barang extends Model
         ];
     }
 
-    // ADDED: Scope for available products
+    // SCOPES
     public function scopeAvailable($query)
     {
         return $query->where('status', 'belum_terjual');
     }
 
-    // ADDED: Scope for sold products
     public function scopeSold($query)
     {
         return $query->where('status', 'terjual');
     }
 
-    // ADDED: Method to check if product is available
+    public function scopeExpiringSoon($query)
+    {
+        return $query->whereRaw('DATEDIFF(batas_penitipan, CURDATE()) <= 7')
+                     ->whereRaw('DATEDIFF(batas_penitipan, CURDATE()) >= 0');
+    }
+
+    public function scopeExpired($query)
+    {
+        return $query->whereRaw('DATEDIFF(batas_penitipan, CURDATE()) < 0');
+    }
+
+    public function scopeNeedsAttention($query)
+    {
+        return $query->whereRaw('DATEDIFF(batas_penitipan, CURDATE()) <= 7');
+    }
+
+    // STATUS AND CONDITION METHODS
     public function isAvailable()
     {
         return $this->status === 'belum_terjual';
     }
 
-    // ADDED: Method to get status badge class
     public function getStatusBadgeClass()
     {
         switch ($this->status) {
@@ -169,7 +273,6 @@ class Barang extends Model
         }
     }
 
-    // ADDED: Method to get status display text
     public function getStatusDisplayText()
     {
         switch ($this->status) {
@@ -184,7 +287,6 @@ class Barang extends Model
         }
     }
 
-    // ADDED: Method to get condition badge class
     public function getConditionBadgeClass()
     {
         switch (strtolower($this->kondisi)) {
@@ -199,25 +301,25 @@ class Barang extends Model
         }
     }
 
-    // ADDED: Method to format price
+    // FORMATTING METHODS
     public function getFormattedPriceAttribute()
     {
         return 'Rp ' . number_format($this->harga, 0, ',', '.');
     }
 
-    // ADDED: Method to get photo URL
     public function getPhotoUrlAttribute()
     {
-        if ($this->foto_barang && file_exists(storage_path('app/public/' . $this->foto_barang))) {
-            return asset('storage/' . $this->foto_barang);
+        // Check both possible image fields
+        $imageField = $this->foto_barang ?? $this->gambar;
+        
+        if ($imageField && file_exists(storage_path('app/public/' . $imageField))) {
+            return asset('storage/' . $imageField);
         }
         
         return '/placeholder.svg?height=200&width=200&text=' . urlencode($this->nama_barang);
     }
 
-    /**
-     * Set the tanggal_penitipan attribute and automatically calculate batas_penitipan
-     */
+    // DATE HANDLING METHODS
     public function setTanggalPenitipanAttribute($value)
     {
         $this->attributes['tanggal_penitipan'] = $value;
@@ -227,9 +329,6 @@ class Barang extends Model
         }
     }
 
-    /**
-     * Get the actual consignment start date
-     */
     public function getTanggalMulaiPenitipanAttribute()
     {
         return $this->tanggal_penitipan ? 
@@ -237,9 +336,6 @@ class Barang extends Model
             Carbon::parse($this->created_at);
     }
 
-    /**
-     * Calculate and get batas_penitipan if not set
-     */
     public function getBatasPenitipanAttribute($value)
     {
         if ($value) {
@@ -255,9 +351,6 @@ class Barang extends Model
     return $this->hasMany(FotoBarang::class, 'barang_id');
 }
 
-    /**
-     * Get remaining days until expiry
-     */
     public function getSisaHariAttribute()
     {
         $today = Carbon::now();
@@ -266,17 +359,11 @@ class Barang extends Model
         return $today->diffInDays($batasPeritipan, false); // false = can be negative
     }
 
-    /**
-     * Check if consignment is expired
-     */
     public function getIsExpiredAttribute()
     {
         return $this->sisa_hari < 0;
     }
 
-    /**
-     * Get consignment status based on remaining days
-     */
     public function getStatusDurasiAttribute()
     {
         if ($this->sisa_hari < 0) {
@@ -290,9 +377,6 @@ class Barang extends Model
         }
     }
 
-    /**
-     * Get status duration badge class
-     */
     public function getStatusDurasiBadgeClassAttribute()
     {
         switch ($this->status_durasi) {
@@ -309,9 +393,6 @@ class Barang extends Model
         }
     }
 
-    /**
-     * Get status duration text
-     */
     public function getStatusDurasiTextAttribute()
     {
         switch ($this->status_durasi) {
@@ -328,9 +409,6 @@ class Barang extends Model
         }
     }
 
-    /**
-     * Get formatted remaining time
-     */
     public function getFormattedSisaWaktuAttribute()
     {
         if ($this->sisa_hari < 0) {
@@ -343,28 +421,36 @@ class Barang extends Model
         }
     }
 
+    // COMPATIBILITY METHODS
     /**
-     * Scope for items expiring soon (within 7 days)
+     * Get description - handles both field names
      */
-    public function scopeExpiringSoon($query)
+    public function getDescriptionAttribute()
     {
-        return $query->whereRaw('DATEDIFF(batas_penitipan, CURDATE()) <= 7')
-                     ->whereRaw('DATEDIFF(batas_penitipan, CURDATE()) >= 0');
+        return $this->deskripsi ?? $this->deskripsi_barang ?? '';
     }
 
     /**
-     * Scope for expired items
+     * Get image - handles both field names
      */
-    public function scopeExpired($query)
+    public function getImageAttribute()
     {
-        return $query->whereRaw('DATEDIFF(batas_penitipan, CURDATE()) < 0');
+        return $this->foto_barang ?? $this->gambar ?? '';
     }
 
     /**
-     * Scope for items that need attention (expiring soon or expired)
+     * Check if item has stock (for backward compatibility)
      */
-    public function scopeNeedsAttention($query)
+    public function hasStock()
     {
-        return $query->whereRaw('DATEDIFF(batas_penitipan, CURDATE()) <= 7');
+        return $this->stok > 0 || $this->isAvailable();
+    }
+
+    /**
+     * Get seller/consignor info
+     */
+    public function getSellerAttribute()
+    {
+        return $this->penitip ?? null;
     }
 }

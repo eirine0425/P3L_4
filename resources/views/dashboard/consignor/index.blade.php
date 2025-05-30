@@ -148,6 +148,55 @@
                                 </div>
                             </a>
                         </div>
+                        <div class="col-md-4">
+                            <a href="{{ route('consignor.ratings') }}" class="btn btn-warning btn-lg w-100 text-decoration-none" style="min-height: 100px;">
+                                <div class="d-flex flex-column align-items-center justify-content-center h-100">
+                                    <i class="fas fa-star fa-3x mb-3"></i>
+                                    <h6 class="mb-1 fw-bold">Rating yang Diterima</h6>
+                                    <small class="opacity-75">Lihat rating dari pembeli</small>
+                                </div>
+                            </a>
+                        </div>
+                    </div>
+                </div>
+            </div>
+        </div>
+        
+        <!-- Charts Section -->
+        <div class="col-4">
+            <div class="row">
+                <div class="col-12 mb-3">
+                    <div class="card">
+                        <div class="card-header">
+                            <h6 class="card-title mb-0">Status Barang</h6>
+                        </div>
+                        <div class="card-body">
+                            @if(count($itemsByStatus) > 0)
+                                <canvas id="statusChart" style="max-height: 200px;"></canvas>
+                            @else
+                                <div class="text-center py-3">
+                                    <i class="fas fa-chart-pie fa-2x text-muted mb-2"></i>
+                                    <p class="text-muted small mb-0">Belum ada data</p>
+                                </div>
+                            @endif
+                        </div>
+                    </div>
+                </div>
+                <div class="col-12">
+                    <div class="card">
+                        <div class="card-header">
+                            <h6 class="card-title mb-0">Durasi Penitipan</h6>
+                        </div>
+                        <div class="card-body">
+                            @if(count($itemsByDuration) > 0)
+                                <canvas id="durationChart" style="max-height: 200px;"></canvas>
+                            @else
+                                <div class="text-center py-3">
+                                    <i class="fas fa-clock fa-2x text-muted mb-2"></i>
+                                    <p class="text-muted small mb-0">Belum ada data</p>
+                                </div>
+                            @endif
+                        </div>
                     </div>
                 </div>
             </div>
@@ -192,9 +241,13 @@
                                                 @endif
                                             </td>
                                             <td>
-                                                <span class="badge {{ $item->status_durasi_badge_class }}">
-                                                    {{ $item->formatted_sisa_waktu }}
-                                                </span>
+                                                @if(method_exists($item, 'getStatusDurasiBadgeClassAttribute'))
+                                                    <span class="badge {{ $item->status_durasi_badge_class }}">
+                                                        {{ $item->formatted_sisa_waktu ?? 'N/A' }}
+                                                    </span>
+                                                @else
+                                                    <span class="badge bg-secondary">N/A</span>
+                                                @endif
                                             </td>
                                         </tr>
                                     @endforeach
@@ -213,6 +266,11 @@
         </div>
         
         <div class="col-md-6">
+            <div class="card">
+                <div class="card-header d-flex justify-content-between align-items-center">
+                    <h5 class="card-title">Barang Perlu Perhatian</h5>
+                    <a href="{{ route('consignor.items', ['durasi' => 'perlu_perhatian']) }}" class="btn btn-sm btn-outline-warning">Lihat Semua</a>
+                </div>
                 <div class="card-body">
                     @if(count($itemsNeedAttention) > 0)
                         <div class="table-responsive">
@@ -233,14 +291,22 @@
                                                 <small class="text-muted">{{ $item->kategori->nama_kategori ?? '-' }}</small>
                                             </td>
                                             <td>
-                                                <span class="badge {{ $item->status_durasi_badge_class }}">
-                                                    {{ $item->status_durasi_text }}
-                                                </span>
+                                                @if(method_exists($item, 'getStatusDurasiBadgeClassAttribute'))
+                                                    <span class="badge {{ $item->status_durasi_badge_class }}">
+                                                        {{ $item->status_durasi_text ?? 'N/A' }}
+                                                    </span>
+                                                @else
+                                                    <span class="badge bg-warning">Perlu Perhatian</span>
+                                                @endif
                                             </td>
                                             <td>
-                                                <strong class="{{ $item->is_expired ? 'text-danger' : 'text-warning' }}">
-                                                    {{ $item->formatted_sisa_waktu }}
-                                                </strong>
+                                                @if(method_exists($item, 'getIsExpiredAttribute'))
+                                                    <strong class="{{ $item->is_expired ? 'text-danger' : 'text-warning' }}">
+                                                        {{ $item->formatted_sisa_waktu ?? 'N/A' }}
+                                                    </strong>
+                                                @else
+                                                    <strong class="text-warning">N/A</strong>
+                                                @endif
                                             </td>
                                             <td>
                                                 <a href="{{ route('consignor.items.show', $item->barang_id) }}" 
@@ -254,6 +320,11 @@
                             </table>
                         </div>
                     @else
+                        <div class="text-center py-4">
+                            <i class="fas fa-check-circle fa-3x text-success mb-3"></i>
+                            <h6 class="text-muted">Semua barang dalam kondisi baik</h6>
+                            <p class="text-muted small">Tidak ada barang yang perlu perhatian khusus.</p>
+                        </div>
                     @endif
                 </div>
             </div>
@@ -293,9 +364,16 @@
         },
         options: {
             responsive: true,
+            maintainAspectRatio: false,
             plugins: {
                 legend: {
-                    position: 'bottom'
+                    position: 'bottom',
+                    labels: {
+                        boxWidth: 12,
+                        font: {
+                            size: 10
+                        }
+                    }
                 }
             }
         }
@@ -338,9 +416,16 @@
         },
         options: {
             responsive: true,
+            maintainAspectRatio: false,
             plugins: {
                 legend: {
-                    position: 'bottom'
+                    position: 'bottom',
+                    labels: {
+                        boxWidth: 12,
+                        font: {
+                            size: 10
+                        }
+                    }
                 }
             }
         }
