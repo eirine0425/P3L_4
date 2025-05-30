@@ -118,6 +118,7 @@ class Barang extends Model
     public function fotoTambahan()
     {
         return $this->hasMany(FotoBarang::class, 'barang_id');
+    }
 
 
     // RATING RELATIONSHIPS AND METHODS
