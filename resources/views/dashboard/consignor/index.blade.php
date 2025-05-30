@@ -102,6 +102,15 @@
                                 </div>
                             </a>
                         </div>
+                        <div class="col-md-4">
+                            <a href="{{ route('consignor.ratings') }}" class="btn btn-warning btn-lg w-100 text-decoration-none" style="min-height: 100px;">
+                                <div class="d-flex flex-column align-items-center justify-content-center h-100">
+                                    <i class="fas fa-star fa-3x mb-3"></i>
+                                    <h6 class="mb-1 fw-bold">Rating yang Diterima</h6>
+                                    <small class="opacity-75">Lihat rating dari pembeli</small>
+                                </div>
+                            </a>
+                        </div>
                     </div>
                 </div>
             </div>

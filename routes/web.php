@@ -27,6 +27,7 @@ use App\Http\Controllers\Api\DashboardAdminController;
 use App\Http\Controllers\Api\DashboardConsignorController;
 use App\Http\Controllers\Api\BuyerProfileController;
 use App\Http\Controllers\Api\DashboardProfileController;
+use App\Http\Controllers\Api\RatingController;
 
 /*
 |--------------------------------------------------------------------------
@@ -34,8 +35,8 @@ use App\Http\Controllers\Api\DashboardProfileController;
 |--------------------------------------------------------------------------
 |
 | Here is where you can register web routes for your application. These
-| routes are loaded by the RouteServiceProvider and all of them will
-| be assigned to the "web" middleware group. Make something great!
+| routes are loaded by the RouteServiceProvider within a group which
+| contains the "web" middleware group. Now create something great!
 |
 */
 
@@ -216,6 +217,15 @@ Route::middleware(['auth', 'role:pembeli'])->group(function () {
     })->name('checkout.index');
     
     Route::post('/checkout/process', [TransaksiController::class, 'store'])->name('checkout.process');
+    
+    // Buyer Rating Routes
+    Route::get('/dashboard/buyer/profile/ratings', [BuyerProfileController::class, 'showRatings'])->name('buyer.profile.ratings');
+    Route::post('/dashboard/buyer/rating/submit', [BuyerProfileController::class, 'submitRating'])->name('buyer.rating.submit');
+    Route::put('/dashboard/buyer/rating/{rating}/update', [BuyerProfileController::class, 'updateRating'])->name('buyer.rating.update');
+    Route::delete('/dashboard/buyer/rating/{rating}/delete', [BuyerProfileController::class, 'deleteRating'])->name('buyer.rating.delete');
+    
+    // View consignor ratings
+    Route::get('/dashboard/consignor/{penitip_id}/ratings', [RatingController::class, 'showConsignorRatings'])->name('consignor.ratings');
 });
 
 // ========================================
@@ -250,6 +260,12 @@ Route::middleware(['auth', 'role:penitip'])->group(function () {
     Route::get('/dashboard/transaksi/fallback/{id}', function ($id) {
         return view('errors.missing-view', ['view' => 'dashboard.consignor.transactions.show', 'id' => $id]);
     })->name('consignor.transactions.show.fallback');
+    
+    // Ratings Routes for Consignors
+    Route::get('/dashboard/rating-diterima', [DashboardConsignorController::class, 'showRatings'])->name('consignor.ratings');
+    Route::get('/dashboard/rating-diterima/{id}', [DashboardConsignorController::class, 'showRatingDetail'])->name('consignor.ratings.show');
+    Route::get('/dashboard/ratings', [RatingController::class, 'myItemsRatings'])->name('consignor.my-ratings');
+    Route::get('/dashboard/ratings/summary', [RatingController::class, 'myRatingsSummary'])->name('consignor.ratings-summary');
 });
 
 // ========================================
@@ -357,6 +373,11 @@ Route::middleware(['auth', 'role:cs'])->group(function () {
     Route::get('/dashboard/verifikasi-pembayaran/{id}', function ($id) {
         return view('errors.missing-view', ['view' => 'dashboard.cs.payment_verifications.show', 'id' => $id]);
     })->name('cs.payment.verifications.show');
+    
+    // Rating Management Routes
+    Route::get('/dashboard/ratings', [RatingController::class, 'index'])->name('cs.ratings.index');
+    Route::get('/dashboard/ratings/{id}', [RatingController::class, 'show'])->name('cs.ratings.show');
+    Route::delete('/dashboard/ratings/{id}', [RatingController::class, 'destroy'])->name('cs.ratings.destroy');
 });
 
 // ========================================
@@ -411,6 +432,12 @@ Route::middleware(['auth', 'role:admin'])->prefix('dashboard/admin')->name('dash
     
     Route::put('/employee-verifications/{id}/approve', [PegawaiController::class, 'approve'])->name('employee.approve');
     Route::put('/employee-verifications/{id}/reject', [PegawaiController::class, 'reject'])->name('employee.reject');
+    
+    // Rating Management Routes
+    Route::get('/ratings', [RatingController::class, 'adminIndex'])->name('ratings.index');
+    Route::get('/ratings/{id}', [RatingController::class, 'adminShow'])->name('ratings.show');
+    Route::delete('/ratings/{id}', [RatingController::class, 'adminDestroy'])->name('ratings.destroy');
+    Route::get('/ratings/reports', [RatingController::class, 'ratingReports'])->name('ratings.reports');
 });
 
 // Alternative admin route for compatibility
@@ -451,6 +478,10 @@ Route::middleware(['auth', 'role:owner'])->group(function () {
     Route::get('/dashboard/laporan/kategori', function () {
         return view('errors.missing-view', ['view' => 'dashboard.owner.reports.category']);
     })->name('owner.reports.category');
+    
+    // Rating Reports
+    Route::get('/dashboard/laporan/ratings', [RatingController::class, 'ownerRatingReports'])->name('owner.reports.ratings');
+    Route::get('/dashboard/laporan/ratings/export', [RatingController::class, 'exportRatingReports'])->name('owner.reports.ratings.export');
 });
 
 // ========================================
@@ -720,6 +751,16 @@ if (config('app.debug')) {
                 'keranjang_sample' => DB::table('keranjang_belanja')->limit(5)->get(),
                 'barang_sample' => DB::table('barang')->limit(5)->get(),
                 'pembeli_sample' => DB::table('pembeli')->limit(5)->get()
+            ]);
+        });
+        
+        // Debug ratings
+        Route::get('/debug-ratings', function() {
+            return response()->json([
+                'ratings_structure' => DB::select("DESCRIBE ratings"),
+                'ratings_sample' => DB::table('ratings')->limit(5)->get(),
+                'barang_with_ratings' => \App\Models\Barang::withCount('ratings')->orderBy('ratings_count', 'desc')->limit(5)->get(),
+                'penitip_with_ratings' => \App\Models\Penitip::withCount(['barang', 'barang.ratings'])->orderBy('barang_count', 'desc')->limit(5)->get()
             ]);
         });
     });

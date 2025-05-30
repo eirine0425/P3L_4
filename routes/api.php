@@ -26,6 +26,8 @@ use App\Http\Controllers\Api\TransaksiMerchController;
 use App\Http\Controllers\Api\TransaksiPenitipanController;
 use App\Http\Controllers\Api\AlamatController;
 use App\Http\Controllers\Api\PenitipTransaksiController;
+use App\Http\Controllers\Api\RatingController;
+use App\Http\Controllers\Api\BuyerProfileController;
 
 /*
 |--------------------------------------------------------------------------
@@ -75,6 +77,21 @@ Route::middleware('auth:api')->group(function () {
     Route::get('/dashboard/organisasi', [WebViewController::class, 'dashboardOrganisasi'])->middleware('role:organisasi');
 });
 
+// Rating Routes
+Route::middleware(['auth:api'])->group(function () {
+    Route::apiResource('ratings', RatingController::class);
+    Route::get('/ratings/item/{barang_id}', [RatingController::class, 'getItemRatings']);
+    Route::get('/ratings/consignor/{penitip_id}', [RatingController::class, 'getConsignorRatings']);
+    Route::get('/my-ratings', [RatingController::class, 'getMyRatings']);
+    Route::get('/ratable-items', [RatingController::class, 'getRatableItems']);
+    
+    // Buyer Profile Rating Routes
+    Route::get('/buyer/ratings', [BuyerProfileController::class, 'showRatings']);
+    Route::post('/buyer/ratings', [BuyerProfileController::class, 'submitRating']);
+    Route::put('/buyer/ratings/{id}', [BuyerProfileController::class, 'updateRating']);
+    Route::delete('/buyer/ratings/{id}', [BuyerProfileController::class, 'deleteRating']);
+    Route::get('/buyer/rating-stats', [BuyerProfileController::class, 'getRatingStats']);
+});
 
 // Rute CRUD untuk Alamat
 Route::apiResource('alamat', AlamatController::class);
@@ -109,9 +126,6 @@ Route::middleware(['auth:api'])->group(function () {
 
 Route::get('/pengiriman/transaksi-siap', [PengirimanController::class, 'transaksiSiapKirim']);
 
-
-
-
 // Rute CRUD untuk Komisi
 Route::apiResource('komisi', KomisiController::class);
 
@@ -132,7 +146,6 @@ Route::apiResource('pengiriman', PengirimanController::class);
 
 // Rute CRUD untuk Penitip
 Route::apiResource('penitip', PenitipController::class);
-
 
 // Rute CRUD untuk RequestDonasi
 Route::apiResource('request-donasi', RequestDonasiController::class);

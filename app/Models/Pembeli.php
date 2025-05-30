@@ -33,4 +33,25 @@ class Pembeli extends Model
     {
         return $this->belongsTo(KeranjangBelanja::class, 'keranjang_id');
     }
+
+    public function transaksis()
+    {
+        return $this->hasMany(Transaksi::class, 'pembeli_id', 'pembeli_id');
+    }
+
+    /**
+     * Relationship with ratings
+     */
+    public function ratings()
+    {
+        return $this->hasMany(Rating::class, 'pembeli_id', 'pembeli_id');
+    }
+
+    /**
+     * Get total ratings given by this buyer
+     */
+    public function getTotalRatingsGivenAttribute()
+    {
+        return $this->ratings()->count();
+    }
 }
