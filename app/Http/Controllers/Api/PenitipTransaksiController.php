@@ -30,7 +30,7 @@ class PenitipTransaksiController extends Controller
     /**
      * Memperpanjang masa penitipan sebanyak 30 hari, hanya sekali per transaksi.
      */
-    public function extendMyPenitipan(ExtendTransaksiPenitipanRequest $request)
+     public function extendMyPenitipan(ExtendTransaksiPenitipanRequest $request)
     {
         $penitipId = auth()->user()->penitip_id ?? null;
 
@@ -47,10 +47,10 @@ class PenitipTransaksiController extends Controller
             return response()->json(['message' => 'Transaksi penitipan tidak ditemukan atau bukan milik Anda'], 404);
         }
 
-        // Cek apakah sudah diperpanjang sebelumnya
-        if ($barang->sudah_diperpanjang) {
-        return back()->with('error', 'Masa penitipan hanya bisa diperpanjang satu kali.');
-    }
+        // Cek apakah sudah diperpanjang sebelumnya - INI YANG DIPERBAIKI
+        if ($transaksi->status_perpanjangan) {
+            return response()->json(['message' => 'Masa penitipan hanya bisa diperpanjang satu kali.'], 400);
+        }
 
         // Panggil use case untuk melakukan perpanjangan
         $result = $this->transaksiPenitipanUseCase->extendPenitipan($transaksiPenitipanId);

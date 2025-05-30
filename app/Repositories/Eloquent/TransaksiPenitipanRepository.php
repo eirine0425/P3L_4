@@ -7,47 +7,54 @@ use App\Repositories\Interfaces\TransaksiPenitipanRepositoryInterface;
 
 class TransaksiPenitipanRepository implements TransaksiPenitipanRepositoryInterface
 {
-    public function getAll(int $perPage = 10, string $search = "", int $page = 1): array
+    protected $model;
+
+    public function __construct(TransaksiPenitipan $model)
     {
-        return TransaksiPenitipan::with(['penitip', 'barang'])
-            ->where(function ($query) use ($search) {
-                if (!empty($search)) {
-                    $query->where('metode_penitipan', 'like', "%{$search}%")
-                        ->orWhere('status_penitipan', 'like', "%{$search}%");
-                }
-            })
-            ->paginate($perPage, ['*'], 'page', $page)
-            ->toArray();
+        $this->model = $model;
     }
 
-    public function find(int $id): ?TransaksiPenitipan
+    public function find($id)
     {
-        return TransaksiPenitipan::find($id);
+        return $this->model->find($id);
     }
 
-    public function create(array $data): TransaksiPenitipan
+    public function create(array $data)
     {
-        return TransaksiPenitipan::create($data);
+        return $this->model->create($data);
     }
 
-    public function update(int $id, array $data): TransaksiPenitipan
+    public function update($id, array $data)
     {
-        $transaksiPenitipan = TransaksiPenitipan::findOrFail($id);
-        $transaksiPenitipan->update($data);
-        return $transaksiPenitipan;
+        $transaksi = $this->find($id);
+        if ($transaksi) {
+            $transaksi->update($data);
+            return $transaksi->fresh(); // Return updated model
+        }
+        return null;
     }
 
-    public function delete(int $id): bool
+    public function delete($id)
     {
-        return TransaksiPenitipan::destroy($id) > 0;
+        $transaksi = $this->find($id);
+        if ($transaksi) {
+            return $transaksi->delete();
+        }
+        return false;
     }
 
-    public function getByPenitipId(int $penitipId): array
+    public function getAll($perPage = 15, $page = 1, $search = null)
     {
-        return TransaksiPenitipan::with(['penitip', 'barang'])
-            ->where('penitip_id', $penitipId)
-            ->orderBy('created_at', 'desc')
-            ->get()
-            ->toArray();
+        $query = $this->model->with(['penitip', 'barang']);
+        
+        if ($search) {
+            $query->whereHas('penitip', function($q) use ($search) {
+                $q->where('nama', 'like', "%{$search}%");
+            })->orWhereHas('barang', function($q) use ($search) {
+                $q->where('nama_barang', 'like', "%{$search}%");
+            });
+        }
+        
+        return $query->paginate($perPage, ['*'], 'page', $page)->toArray();
     }
 }

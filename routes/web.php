@@ -28,6 +28,9 @@ use App\Http\Controllers\Api\DashboardAdminController;
 use App\Http\Controllers\Api\DashboardConsignorController;
 use App\Http\Controllers\Api\BuyerProfileController;
 use App\Http\Controllers\Api\DashboardProfileController;
+use App\Http\Controllers\Api\PenitipBarangController;
+use App\Http\Controllers\Api\PenitipTransaksiController;
+use App\Http\Controllers\Api\ConsignorPickupController;
 use Illuminate\Support\Facades\Log;
 
 /*
@@ -304,6 +307,11 @@ Route::middleware(['auth', 'role:penitip'])->group(function () {
     Route::get('/dashboard/transaksi/fallback/{id}', function ($id) {
         return view('errors.missing-view', ['view' => 'dashboard.consignor.transactions.show', 'id' => $id]);
     })->name('consignor.transactions.show.fallback');
+    
+    // Consignor Pickup Routes
+    Route::get('/dashboard/consignor/pickup', [App\Http\Controllers\Api\ConsignorPickupController::class, 'index'])->name('consignor.pickup');
+    Route::post('/dashboard/consignor/schedule-pickup', [App\Http\Controllers\Api\ConsignorPickupController::class, 'schedulePickup'])->name('consignor.schedule-pickup');
+    Route::get('/dashboard/consignor/pickup/{id}', [App\Http\Controllers\Api\ConsignorPickupController::class, 'showPickupDetail'])->name('consignor.pickup.detail');
 });
 
 // ========================================
@@ -343,18 +351,17 @@ Route::middleware(['auth', 'role:gudang,pegawai gudang'])->group(function () {
         Route::get('/item/{id}', [DashboardWarehouseController::class, 'showItem'])->name('item.show.alt');
         Route::put('/item/{id}/status', [DashboardWarehouseController::class, 'updateItemStatus'])->name('item.update-status.alt');
         
-        // Consignment Transactions with search functionality
-        Route::get('/consignment/transactions', [DashboardWarehouseController::class, 'consignmentTransactions'])->name('consignment.transactions');
-        Route::get('/consignment/transaction/{id}', [DashboardWarehouseController::class, 'showConsignmentTransaction'])->name('consignment.transaction.show');
-        
-        // Shipment management
-        Route::get('/dashboard/warehouse/shipments/ready', [DashboardWarehouseController::class, 'readyShipments'])
-    ->name('dashboard.warehouse.shipments.ready');
-        Route::get('/shipment/{id}', [DashboardWarehouseController::class, 'shipmentDetail'])->name('shipment.detail');
-        Route::get('/shipment/{id}/detail', [DashboardWarehouseController::class, 'shipmentDetail'])->name('shipment.detail');
-        Route::put('/shipment/{id}/update-status', [DashboardWarehouseController::class, 'updateShipmentStatus'])->name('shipment.update-status');
-        Route::get('/shipment/{id}/label', [DashboardWarehouseController::class, 'printShippingLabel'])->name('shipping.label');
-        Route::post('/shipment/{id}/mark-ready', [DashboardWarehouseController::class, 'markAsReady'])->name('shipment.mark-ready');
+// Consignment Transactions with search functionality
+Route::get('/consignment/transactions', [DashboardWarehouseController::class, 'consignmentTransactions'])->name('consignment.transactions');
+Route::get('/consignment/transaction/{id}', [DashboardWarehouseController::class, 'showConsignmentTransaction'])->name('consignment.transaction.show');
+
+// Shipments Management (Features 1 & 2)
+Route::get('/shipments', [DashboardWarehouseController::class, 'shipments'])->name('shipments'); // Feature 1
+Route::get('/shipments/{id}', [DashboardWarehouseController::class, 'showShipment'])->name('shipments.show');
+Route::get('/shipments/{id}/create', [DashboardWarehouseController::class, 'createShipment'])->name('shipments.create'); // Feature 2
+Route::post('/shipments', [DashboardWarehouseController::class, 'storeShipment'])->name('shipments.store'); // Feature 2
+Route::put('/shipments/{id}/status', [DashboardWarehouseController::class, 'updateShipmentStatus'])->name('shipments.update-status');
+Route::put('/shipments/{id}/courier', [DashboardWarehouseController::class, 'assignCourier'])->name('shipments.assign-courier'); // Feature 2
         
         // Transaction management
         Route::post('/transaction/{id}/shipping', [DashboardWarehouseController::class, 'createShippingSchedule'])->name('create-shipping');
@@ -362,6 +369,12 @@ Route::middleware(['auth', 'role:gudang,pegawai gudang'])->group(function () {
         Route::get('/transaction/{id}/sales-note', [DashboardWarehouseController::class, 'generateSalesNote'])->name('sales-note');
         Route::post('/transaction/{id}/confirm', [DashboardWarehouseController::class, 'confirmItemReceived'])->name('confirm-received');
         Route::post('/transaction/{id}/status', [DashboardWarehouseController::class, 'updateTransactionStatus'])->name('update-transaction-status');
+
+        Route::get('/pickup', [DashboardWarehouseController::class, 'itemPickup'])->name('item-pickup');
+    Route::get('/pickup/{id}/detail', [DashboardWarehouseController::class, 'showPickupDetail'])->name('pickup.detail');
+    Route::post('/pickup/{id}/confirm', [DashboardWarehouseController::class, 'confirmItemPickup'])->name('pickup.confirm');
+    Route::post('/pickup/bulk-confirm', [DashboardWarehouseController::class, 'bulkConfirmPickup'])->name('pickup.bulk-confirm');
+    Route::get('/pickup/report', [DashboardWarehouseController::class, 'generatePickupReport'])->name('pickup.report');
 
         // Add this route for extending consignment
         Route::put('/item/{id}/extend', [DashboardWarehouseController::class, 'extendConsignment'])
@@ -417,6 +430,9 @@ Route::middleware(['auth', 'role:cs'])->group(function () {
     Route::get('/dashboard/verifikasi-pembayaran/{id}', function ($id) {
         return view('errors.missing-view', ['view' => 'dashboard.cs.payment_verifications.show', 'id' => $id]);
     })->name('cs.payment.verifications.show');
+    
+    // Alternative admin route for compatibility
+    Route::get('/dashboard/admin', [DashboardAdminController::class, 'index'])->name('dashboard.admin');
 });
 
 // ========================================
@@ -472,9 +488,6 @@ Route::middleware(['auth', 'role:admin'])->prefix('dashboard/admin')->name('dash
     Route::put('/employee-verifications/{id}/approve', [PegawaiController::class, 'approve'])->name('employee.approve');
     Route::put('/employee-verifications/{id}/reject', [PegawaiController::class, 'reject'])->name('employee.reject');
 });
-
-// Alternative admin route for compatibility
-Route::get('/dashboard/admin', [DashboardAdminController::class, 'index'])->name('dashboard.admin');
 
 // ========================================
 // OWNER ROUTES
