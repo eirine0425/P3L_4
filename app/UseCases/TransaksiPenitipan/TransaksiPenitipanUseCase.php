@@ -8,6 +8,7 @@ use App\DTOs\TransaksiPenitipan\UpdateTransaksiPenitipanRequest;
 use App\DTOs\TransaksiPenitipan\GetTransaksiPenitipanPaginationRequest;
 use App\Repositories\TransaksiPenitipanRepository;
 use Carbon\Carbon;
+use App\Models\TransaksiPenitipan;
 class TransaksiPenitipanUseCase
 {
     public function __construct(
@@ -77,26 +78,21 @@ class TransaksiPenitipanUseCase
 
     public function extendPenitipan($id)
     {
-        $transaksi = $this->repository->find($id);
+        $transaksi = TransaksiPenitipan::find($id);
 
-        if (!$transaksi) {
-            return null;
-        }
-
-        // Check if extension is already used
-        if ($transaksi->status_perpanjangan == true) {
-            return false; // Extension already used
-        }
-
-        // Add 30 days to batas_penitipan
-        $batasPenitipan = Carbon::parse($transaksi->batas_penitipan);
-        $batasPenitipan->addDays(30);
-
-        $data = [
-            'batas_penitipan' => $batasPenitipan->format('Y-m-d'),
-            'status_perpanjangan' => true
-        ];
-
-        return $this->repository->update($id, $data);
+    if (!$transaksi || $transaksi->status_perpanjangan) {
+        return null;
     }
+
+    $transaksi->batas_penitipan = Carbon::parse($transaksi->batas_penitipan)->addDays(30);
+    $transaksi->status_perpanjangan = true;
+    $transaksi->save();
+
+    return $transaksi;
+    }
+    public function getByPenitipId($penitipId)
+{
+    return TransaksiPenitipan::where('penitip_id', $penitipId)->get();
+}
+
 }

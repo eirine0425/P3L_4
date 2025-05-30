@@ -1,6 +1,7 @@
 <?php
 
 use Illuminate\Support\Facades\Route;
+use App\Http\Controllers\DashboardConsignorController;
 use Illuminate\Support\Facades\Auth;
 use Illuminate\Support\Facades\DB;
 use App\Http\Controllers\Api\AuthController;
@@ -28,6 +29,7 @@ use App\Http\Controllers\Api\DashboardConsignorController;
 use App\Http\Controllers\Api\BuyerProfileController;
 use App\Http\Controllers\Api\DashboardProfileController;
 use App\Http\Controllers\Api\RatingController;
+use Illuminate\Support\Facades\Log;
 
 /*
 |--------------------------------------------------------------------------
@@ -211,13 +213,56 @@ Route::middleware(['auth', 'role:pembeli'])->group(function () {
         Route::get('/transaction/{id}', [BuyerProfileController::class, 'showTransactionDetail'])->name('transaction-detail');
     });
     
-    // Checkout Routes
-    Route::get('/checkout', function () {
-        return view('errors.missing-view', ['view' => 'dashboard.buyer.checkout.index']);
+    // ========================================
+    // CHECKOUT ROUTES - ENHANCED
+    // ========================================
+    
+    // Main checkout route
+    Route::get('/checkout', function (Request $request) {
+        $selectedItems = $request->input('selected_items', []);
+        Log::debug('Selected items in checkout route', ['selected_items' => $selectedItems]);
+
+        if (empty($selectedItems)) {
+            return redirect()->route('cart.index')->with('error', 'Pilih minimal satu item untuk checkout');
+        }
+
+        session(['checkout_selected_items' => $selectedItems]);
+
+        return view('checkout.index', compact('selectedItems'));
     })->name('checkout.index');
     
+    // Checkout show route with shipping calculation
+    Route::get('/checkout/show', [WebViewController::class, 'showCheckout'])->name('checkout.show');
+    
+    // Process checkout
     Route::post('/checkout/process', [TransaksiController::class, 'store'])->name('checkout.process');
     
+    // Thank you page
+    Route::get('/checkout/thank-you/{transaction_id}', function($transactionId) {
+        $transaction = \App\Models\Transaksi::with(['details.barang.kategoriBarang', 'alamat'])
+            ->where('transaksi_id', $transactionId)
+            ->where('pembeli_id', function($query) {
+                $user = Auth::user();
+                $pembeli = \App\Models\Pembeli::where('user_id', $user->id)->first();
+                return $pembeli ? $pembeli->pembeli_id : $user->id;
+            })
+            ->firstOrFail();
+            
+        return view('checkout.thank-you', compact('transaction'));
+    })->name('checkout.thank-you');
+    
+    // API Routes for checkout
+    Route::prefix('api/checkout')->name('api.checkout.')->group(function () {
+        Route::post('/calculate-shipping', [WebViewController::class, 'calculateShipping'])->name('calculate-shipping');
+        Route::post('/validate-address', [WebViewController::class, 'validateAddress'])->name('validate-address');
+        Route::get('/payment-methods', [WebViewController::class, 'getPaymentMethods'])->name('payment-methods');
+    });
+    
+    // Example/Demo Routes
+    Route::get('/dashboard/alamat-selector-demo', function () {
+        return view('examples.alamat-selector-usage');
+    })->name('buyer.alamat.selector.demo');
+
     // Buyer Rating Routes
     Route::get('/dashboard/buyer/profile/ratings', [BuyerProfileController::class, 'showRatings'])->name('buyer.profile.ratings');
     Route::post('/dashboard/buyer/rating/submit', [BuyerProfileController::class, 'submitRating'])->name('buyer.rating.submit');
@@ -761,6 +806,35 @@ if (config('app.debug')) {
                 'ratings_sample' => DB::table('ratings')->limit(5)->get(),
                 'barang_with_ratings' => \App\Models\Barang::withCount('ratings')->orderBy('ratings_count', 'desc')->limit(5)->get(),
                 'penitip_with_ratings' => \App\Models\Penitip::withCount(['barang', 'barang.ratings'])->orderBy('barang_count', 'desc')->limit(5)->get()
+            ]);
+        });
+
+        // Test checkout flow
+        Route::get('/debug-checkout', function() {
+            $user = Auth::guard('web')->user();
+            $pembeli = \App\Models\Pembeli::where('user_id', $user->id)->first();
+            
+            if (!$pembeli) {
+                return response()->json(['error' => 'Pembeli not found']);
+            }
+            
+            $cartItems = \App\Models\KeranjangBelanja::with(['barang.kategoriBarang'])
+                ->where('pembeli_id', $pembeli->pembeli_id)
+                ->get();
+            
+            $alamat = \App\Models\Alamat::where('pembeli_id', $pembeli->pembeli_id)
+                ->where('is_default', true)
+                ->first();
+            
+            return response()->json([
+                'user' => $user->toArray(),
+                'pembeli' => $pembeli->toArray(),
+                'cart_items' => $cartItems->toArray(),
+                'default_alamat' => $alamat ? $alamat->toArray() : null,
+                'cart_count' => $cartItems->count(),
+                'subtotal' => $cartItems->sum(function($item) {
+                    return $item->barang->harga;
+                })
             ]);
         });
     });

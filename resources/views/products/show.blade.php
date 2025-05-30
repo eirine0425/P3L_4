@@ -16,24 +16,96 @@
     
     <div class="col-md-6 mb-4">
         <div class="card border-0">
+            <!-- Enhanced Product Image Carousel -->
             <div id="productCarousel" class="carousel slide" data-bs-ride="carousel">
-                <div class="carousel-indicators">
-                    <button type="button" data-bs-target="#productCarousel" data-bs-slide-to="0" class="active" aria-current="true" aria-label="Slide 1"></button>
-                </div>
-                <div class="carousel-inner rounded-3">
-                    <div class="carousel-item active">
-                        <img src="{{ $barang->photo_url ?? '/placeholder.svg?height=600&width=600&text=' . urlencode($barang->nama_barang ?? 'Produk') }}" 
-                             class="d-block w-100" alt="{{ $barang->nama_barang ?? 'Product Image' }}" style="height: 400px; object-fit: cover;">
+                @php
+                    $images = [];
+                    
+                    // Add main image if exists
+                    if ($barang->foto_barang) {
+                        $images[] = [
+                            'url' => asset('storage/' . $barang->foto_barang),
+                            'alt' => $barang->nama_barang . ' - Main Image'
+                        ];
+                    }
+                    
+                    // Add additional images from foto_barang table if exists
+                    if (isset($barang->fotoBarang) && $barang->fotoBarang->count() > 0) {
+                        foreach ($barang->fotoBarang as $foto) {
+                            $images[] = [
+                                'url' => asset('storage/' . $foto->path),
+                                'alt' => $barang->nama_barang . ' - Additional Image'
+                            ];
+                        }
+                    }
+                    
+                    // If no images, use placeholder
+                    if (empty($images)) {
+                        $images[] = [
+                            'url' => '/placeholder.svg?height=600&width=600&text=' . urlencode($barang->nama_barang ?? 'Produk'),
+                            'alt' => $barang->nama_barang ?? 'Product Image',
+                            'is_placeholder' => true
+                        ];
+                    }
+                @endphp
+                
+                @if(count($images) > 1)
+                    <div class="carousel-indicators">
+                        @foreach($images as $index => $image)
+                            <button type="button" data-bs-target="#productCarousel" data-bs-slide-to="{{ $index }}" 
+                                    class="{{ $index === 0 ? 'active' : '' }}" aria-current="{{ $index === 0 ? 'true' : 'false' }}" 
+                                    aria-label="Slide {{ $index + 1 }}"></button>
+                        @endforeach
                     </div>
+                @endif
+                
+                <div class="carousel-inner rounded-3">
+                    @foreach($images as $index => $image)
+                        <div class="carousel-item {{ $index === 0 ? 'active' : '' }}">
+                            <img src="{{ $image['url'] }}" 
+                                 class="d-block w-100" 
+                                 alt="{{ $image['alt'] }}" 
+                                 style="height: 400px; object-fit: cover;">
+                        </div>
+                    @endforeach
                 </div>
+                
+                @if(count($images) > 1)
+                    <button class="carousel-control-prev" type="button" data-bs-target="#productCarousel" data-bs-slide="prev">
+                        <span class="carousel-control-prev-icon" aria-hidden="true"></span>
+                        <span class="visually-hidden">Previous</span>
+                    </button>
+                    <button class="carousel-control-next" type="button" data-bs-target="#productCarousel" data-bs-slide="next">
+                        <span class="carousel-control-next-icon" aria-hidden="true"></span>
+                        <span class="visually-hidden">Next</span>
+                    </button>
+                @endif
             </div>
             
-            <div class="row mt-3">
-                <div class="col-12">
-                    <img src="{{ $barang->photo_url ?? '/placeholder.svg?height=600&width=600&text=' . urlencode($barang->nama_barang ?? 'Produk') }}" 
-                         class="img-thumbnail w-100" alt="Product Thumbnail" style="height: 100px; object-fit: cover;">
+            <!-- Thumbnail Gallery -->
+            @if(count($images) > 1)
+                <div class="row mt-3">
+                    @foreach($images as $index => $image)
+                        <div class="col-{{ count($images) > 4 ? '2' : (12 / count($images)) }}">
+                            <img src="{{ $image['url'] }}" 
+                                 class="img-thumbnail w-100 cursor-pointer" 
+                                 alt="Thumbnail {{ $index + 1 }}" 
+                                 data-bs-target="#productCarousel" 
+                                 data-bs-slide-to="{{ $index }}"
+                                 style="height: 80px; object-fit: cover;">
+                        </div>
+                    @endforeach
                 </div>
-            </div>
+            @else
+                <div class="row mt-3">
+                    <div class="col-12">
+                        <img src="{{ $images[0]['url'] }}" 
+                             class="img-thumbnail w-100" 
+                             alt="Product Thumbnail" 
+                             style="height: 100px; object-fit: cover;">
+                    </div>
+                </div>
+            @endif
         </div>
     </div>
     
@@ -405,6 +477,7 @@
                 })
                 .catch(error => {
                     console.error('Error loading ratings:', error);
+                    ratingsContainer.innerHTML = '<p class="text-danger">Gagal memuat rating. Silakan coba lagi.</p>';
                 });
         }
         
@@ -435,12 +508,30 @@
             
             ratingsContainer.innerHTML = html;
         }
+        
+        // Thumbnail click functionality
+        const thumbnails = document.querySelectorAll('[data-bs-slide-to]');
+        thumbnails.forEach(thumbnail => {
+            thumbnail.addEventListener('click', function() {
+                // Remove active class from all thumbnails
+                thumbnails.forEach(t => t.classList.remove('border-primary'));
+                // Add active class to clicked thumbnail
+                this.classList.add('border-primary');
+            });
+        });
+        
+        // Set first thumbnail as active
+        if (thumbnails.length > 0) {
+            thumbnails[0].classList.add('border-primary');
+        }
     });
 
     // Buy now function
     function buyNow() {
         // Add to cart first, then redirect to checkout
         const form = document.getElementById('add-to-cart-form');
+        if (!form) return;
+        
         const formData = new FormData(form);
         
         fetch(form.action, {
@@ -528,7 +619,11 @@
         `;
         
         // Remove existing alerts
-        document.querySelectorAll('.alert').forEach(alert => alert.remove());
+        document.querySelectorAll('.alert').forEach(alert => {
+            if (alert.classList.contains('alert-success') || alert.classList.contains('alert-danger')) {
+                alert.remove();
+            }
+        });
         
         // Add new alert at the top of the page
         const container = document.querySelector('.container') || document.querySelector('.row').parentElement;
@@ -536,7 +631,7 @@
         
         // Auto dismiss after 5 seconds
         setTimeout(() => {
-            const alert = document.querySelector('.alert');
+            const alert = document.querySelector(`.${alertClass}`);
             if (alert) {
                 alert.remove();
             }

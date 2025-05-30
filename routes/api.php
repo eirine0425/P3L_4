@@ -40,33 +40,54 @@ use App\Http\Controllers\Api\BuyerProfileController;
 |
 */
 
-// Rute Autentikasi
+// ========================================
+// AUTHENTICATION ROUTES
+// ========================================
+
 Route::post('/register', [AuthController::class, 'register']);
 Route::post('/login', [AuthController::class, 'login']);
 Route::post('/logout', [AuthController::class, 'logout'])->middleware('auth:api');
 Route::get('/me', [AuthController::class, 'me'])->middleware('auth:api');
 
+// ========================================
+// SANCTUM AUTHENTICATED ROUTES
+// ========================================
+
 Route::middleware(['auth:sanctum'])->group(function () {
     Route::post('/logout', [AuthController::class, 'logout']);
 
-    // Routes for Penitip to manage their own transaksi
+    // Penitip Transaction Management
     Route::get('/penitip/my-transaksi', [PenitipTransaksiController::class, 'myTransaksi']);
     Route::post('/penitip/extend-penitipan', [PenitipTransaksiController::class, 'extendMyPenitipan']);
+    Route::post('/transaksi/extend', [PenitipTransaksiController::class, 'extendMyPenitipan']);
 });
 
-// Rute Web View
+// ========================================
+// WEB VIEW ROUTES (PUBLIC)
+// ========================================
+
 Route::get('/beranda', [WebViewController::class, 'beranda']);
 Route::get('/produk', [WebViewController::class, 'daftarProduk']);
 Route::get('/produk/{id}', [WebViewController::class, 'tampilProduk']);
 Route::get('/garansi/cek', [WebViewController::class, 'cekGaransi']);
 Route::get('/tentang-kami', [WebViewController::class, 'tentangKami']);
-Route::get('/keranjang', [WebViewController::class, 'keranjang'])->middleware('auth:api');
-Route::post('/keranjang/tambah', [WebViewController::class, 'tambahKeKeranjang'])->middleware('auth:api');
-Route::post('/keranjang/hapus', [WebViewController::class, 'hapusDariKeranjang'])->middleware('auth:api');
-Route::get('/checkout', [WebViewController::class, 'checkout'])->middleware('auth:api');
-Route::post('/checkout/proses', [WebViewController::class, 'prosesCheckout'])->middleware('auth:api');
 
-// Dashboard Routes
+// ========================================
+// CART & CHECKOUT ROUTES (AUTHENTICATED)
+// ========================================
+
+Route::middleware('auth:api')->group(function () {
+    Route::get('/keranjang', [WebViewController::class, 'keranjang']);
+    Route::post('/keranjang/tambah', [WebViewController::class, 'tambahKeKeranjang']);
+    Route::post('/keranjang/hapus', [WebViewController::class, 'hapusDariKeranjang']);
+    Route::get('/checkout', [WebViewController::class, 'checkout']);
+    Route::post('/checkout/proses', [WebViewController::class, 'prosesCheckout']);
+});
+
+// ========================================
+// DASHBOARD ROUTES (ROLE-BASED)
+// ========================================
+
 Route::middleware('auth:api')->group(function () {
     Route::get('/dashboard/pemilik', [WebViewController::class, 'dashboardPemilik'])->middleware('role:owner');
     Route::get('/dashboard/admin', [WebViewController::class, 'dashboardAdmin'])->middleware('role:admin');
@@ -77,91 +98,140 @@ Route::middleware('auth:api')->group(function () {
     Route::get('/dashboard/organisasi', [WebViewController::class, 'dashboardOrganisasi'])->middleware('role:organisasi');
 });
 
-// Rating Routes
+// ========================================
+// RATING SYSTEM ROUTES
+// ========================================
+
 Route::middleware(['auth:api'])->group(function () {
+    // Core Rating CRUD
     Route::apiResource('ratings', RatingController::class);
+    
+    // Rating Query Routes
     Route::get('/ratings/item/{barang_id}', [RatingController::class, 'getItemRatings']);
     Route::get('/ratings/consignor/{penitip_id}', [RatingController::class, 'getConsignorRatings']);
     Route::get('/my-ratings', [RatingController::class, 'getMyRatings']);
     Route::get('/ratable-items', [RatingController::class, 'getRatableItems']);
     
     // Buyer Profile Rating Routes
-    Route::get('/buyer/ratings', [BuyerProfileController::class, 'showRatings']);
-    Route::post('/buyer/ratings', [BuyerProfileController::class, 'submitRating']);
-    Route::put('/buyer/ratings/{id}', [BuyerProfileController::class, 'updateRating']);
-    Route::delete('/buyer/ratings/{id}', [BuyerProfileController::class, 'deleteRating']);
-    Route::get('/buyer/rating-stats', [BuyerProfileController::class, 'getRatingStats']);
+    Route::prefix('buyer')->name('api.buyer.')->group(function () {
+        Route::get('/ratings', [BuyerProfileController::class, 'showRatings']);
+        Route::post('/ratings', [BuyerProfileController::class, 'submitRating']);
+        Route::put('/ratings/{id}', [BuyerProfileController::class, 'updateRating']);
+        Route::delete('/ratings/{id}', [BuyerProfileController::class, 'deleteRating']);
+        Route::get('/rating-stats', [BuyerProfileController::class, 'getRatingStats']);
+    });
+    
+    // Consignor Rating Routes
+    Route::prefix('consignor')->name('api.consignor.')->group(function () {
+        Route::get('/ratings', [RatingController::class, 'getConsignorReceivedRatings']);
+        Route::get('/rating-summary', [RatingController::class, 'getConsignorRatingSummary']);
+        Route::get('/rating-analytics', [RatingController::class, 'getConsignorRatingAnalytics']);
+    });
 });
 
-// Rute CRUD untuk Alamat
+// ========================================
+// CORE RESOURCE ROUTES
+// ========================================
+
+// Alamat Management
 Route::apiResource('alamat', AlamatController::class);
 
-// Rute CRUD untuk Barang
+// Barang Management
 Route::apiResource('barang', BarangController::class);
 
-// Rute CRUD untuk DetailTransaksi
+// Detail Transaksi Management
 Route::apiResource('detail-transaksi', DetailTransaksiController::class);
 
-// Rute CRUD untuk DiskusiProduk
+// Diskusi Produk Management
 Route::apiResource('diskusi-produk', DiskusiProdukController::class);
 
-// Rute CRUD untuk Donasi
+// Donasi Management
 Route::apiResource('donasi', DonasiController::class);
 
-// Rute CRUD untuk Garansi
+// Garansi Management
 Route::apiResource('garansi', GaransiController::class);
 
-// Rute CRUD untuk KategoriBarang
+// Kategori Barang Management
 Route::apiResource('kategori-barang', KategoriBarangController::class);
 
-// Keranjang Belanja Routes
+// ========================================
+// SHOPPING CART ROUTES
+// ========================================
+
 Route::middleware(['auth:api'])->group(function () {
-    Route::get('/keranjang-belanja', [KeranjangBelanjaController::class, 'index']);
-    Route::post('/keranjang-belanja', [KeranjangBelanjaController::class, 'store']);
-    Route::get('/keranjang-belanja/{id}', [KeranjangBelanjaController::class, 'show']);
-    Route::put('/keranjang-belanja/{id}', [KeranjangBelanjaController::class, 'update']);
-    Route::delete('/keranjang-belanja/{id}', [KeranjangBelanjaController::class, 'destroy']);
-    Route::post('/keranjang-belanja/clear', [KeranjangBelanjaController::class, 'clearCart']);
+    Route::prefix('keranjang-belanja')->name('api.cart.')->group(function () {
+        Route::get('/', [KeranjangBelanjaController::class, 'index']);
+        Route::post('/', [KeranjangBelanjaController::class, 'store']);
+        Route::get('/{id}', [KeranjangBelanjaController::class, 'show']);
+        Route::put('/{id}', [KeranjangBelanjaController::class, 'update']);
+        Route::delete('/{id}', [KeranjangBelanjaController::class, 'destroy']);
+        Route::post('/clear', [KeranjangBelanjaController::class, 'clearCart']);
+    });
 });
 
+// ========================================
+// SHIPPING & LOGISTICS ROUTES
+// ========================================
+
 Route::get('/pengiriman/transaksi-siap', [PengirimanController::class, 'transaksiSiapKirim']);
-
-// Rute CRUD untuk Komisi
-Route::apiResource('komisi', KomisiController::class);
-
-// Rute CRUD untuk Merch
-Route::apiResource('merch', MerchController::class);
-
-// Rute CRUD untuk Organisasi
-Route::apiResource('organisasi', OrganisasiController::class);
-
-// Rute CRUD untuk Pegawai
-Route::apiResource('pegawai', PegawaiController::class);
-
-// Rute CRUD untuk Pembeli
-Route::apiResource('pembeli', PembeliController::class);
-
-// Rute CRUD untuk Pengiriman
 Route::apiResource('pengiriman', PengirimanController::class);
 
-// Rute CRUD untuk Penitip
+// ========================================
+// BUSINESS LOGIC ROUTES
+// ========================================
+
+// Komisi Management
+Route::apiResource('komisi', KomisiController::class);
+
+// Merchandise Management
+Route::apiResource('merch', MerchController::class);
+
+// Organization Management
+Route::apiResource('organisasi', OrganisasiController::class);
+
+// Employee Management
+Route::apiResource('pegawai', PegawaiController::class);
+
+// Buyer Management
+Route::apiResource('pembeli', PembeliController::class);
+
+// Consignor Management
 Route::apiResource('penitip', PenitipController::class);
 
-// Rute CRUD untuk RequestDonasi
+// Donation Request Management
 Route::apiResource('request-donasi', RequestDonasiController::class);
 
-// Rute CRUD untuk Role
+// Role Management
 Route::apiResource('role', RoleController::class);
 
-// Rute CRUD untuk Transaksi
+// ========================================
+// TRANSACTION ROUTES
+// ========================================
+
+// Main Transactions
 Route::apiResource('transaksi', TransaksiController::class);
 
-// Rute CRUD untuk TransaksiMerch
+// Merchandise Transactions
 Route::apiResource('transaksi-merch', TransaksiMerchController::class);
 
-// Rute CRUD untuk TransaksiPenitipan
+// Consignment Transactions
 Route::apiResource('transaksi-penitipan', TransaksiPenitipanController::class);
 Route::post('/transaksi-penitipan/{id}/extend', [TransaksiPenitipanController::class, 'extendPenitipan']);
 
-// Rute CRUD untuk User
+// ========================================
+// USER MANAGEMENT ROUTES
+// ========================================
+
 Route::apiResource('users', UserController::class);
+
+// ========================================
+// FALLBACK ROUTE
+// ========================================
+
+Route::fallback(function () {
+    return response()->json([
+        'status' => 'error',
+        'message' => 'API endpoint not found',
+        'code' => 404
+    ], 404);
+});

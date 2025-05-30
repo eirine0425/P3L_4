@@ -495,32 +495,7 @@
             </div>
         </div>
         
-        <!-- Charts -->
-        <div class="col-md-4">
-            <div class="card">
-                <div class="card-header">
-                    <h5 class="card-title">Status Barang</h5>
-                </div>
-                <div class="card-body">
-                    <canvas id="statusChart"></canvas>
-                </div>
-            </div>
-        </div>
-    </div>
-    
-    <!-- Category Distribution -->
-    <div class="row mt-4">
-        <div class="col-12">
-            <div class="card">
-                <div class="card-header">
-                    <h5 class="card-title">Distribusi Kategori Barang</h5>
-                </div>
-                <div class="card-body">
-                    <canvas id="categoryChart" height="100"></canvas>
-                </div>
-            </div>
-        </div>
-    </div>
+        
     @endif
 </div>
 @endsection
