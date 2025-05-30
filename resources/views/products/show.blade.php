@@ -117,9 +117,20 @@
                 <!-- Enhanced Rating Display -->
                 <div class="mb-3">
                     <div class="d-flex align-items-center">
-                        <span class="text-warning fs-5 me-2">{{ $barang->star_display ?? '☆☆☆☆☆' }}</span>
+                        @php
+                            $rating = $barang->rating ?? 0;
+                            $fullStars = floor($rating);
+                            $hasHalfStar = ($rating - $fullStars) >= 0.5;
+                            $starDisplay = str_repeat('★', $fullStars);
+                            if ($hasHalfStar) {
+                                $starDisplay .= '☆';
+                                $fullStars++;
+                            }
+                            $starDisplay .= str_repeat('☆', 5 - $fullStars);
+                        @endphp
+                        <span class="text-warning fs-5 me-2">{{ $starDisplay }}</span>
                         <span class="me-2">({{ number_format($barang->rating ?? 0, 1) }})</span>
-                        <span class="text-muted">{{ $barang->total_ratings ?? 0 }} rating{{ ($barang->total_ratings ?? 0) != 1 ? 's' : '' }}</span>
+                        <span class="text-muted">{{ $barang->jumlah_ulasan ?? 0 }} ulasan</span>
                     </div>
                     <span class="badge {{ $barang->getStatusBadgeClass() ?? 'bg-secondary' }}">
                         {{ $barang->getStatusDisplayText() ?? 'Status Tidak Diketahui' }}
@@ -156,22 +167,38 @@
                     </table>
                 </div>
                 
-                <!-- Enhanced Consignor Info with Rating -->
+                <!-- Enhanced Consignor Info -->
                 @if($barang->penitip)
                 <div class="mb-4">
                     <h5><i class="fas fa-user-tag me-2"></i>Informasi Penitip</h5>
                     <div class="d-flex align-items-center">
                         <img src="{{ $barang->penitip->photo_url ?? '/placeholder.svg?height=50&width=50&text=' . urlencode(substr($barang->penitip->nama ?? 'P', 0, 1)) }}" 
-                             class="rounded-circle me-3" alt="Seller">
+                             class="rounded-circle me-3" alt="Seller" style="width: 50px; height: 50px;">
                         <div>
                             <h6 class="mb-1">{{ $barang->penitip->nama ?? 'Nama Penitip Tidak Tersedia' }}</h6>
-                            <div class="d-flex align-items-center">
-                                <span class="text-warning me-2">{{ $barang->penitip->star_display ?? '☆☆☆☆☆' }}</span>
-                                <span class="me-2">({{ number_format($barang->penitip->average_rating ?? 0, 1) }})</span>
-                                <span class="text-muted">{{ $barang->penitip->total_ratings ?? 0 }} rating{{ ($barang->penitip->total_ratings ?? 0) != 1 ? 's' : '' }}</span>
-                                <span class="badge {{ $barang->penitip->rating_badge_class ?? 'bg-secondary' }} ms-2">{{ $barang->penitip->rating_text ?? 'No Ratings' }}</span>
-                            </div>
+                            <small class="text-muted">
+                                @if($barang->penitip->telepon)
+                                    <i class="fas fa-phone me-1"></i>{{ $barang->penitip->telepon }}
+                                @endif
+                            </small>
+                            <br>
+                            <small class="text-muted">
+                                @if($barang->penitip->alamat)
+                                    <i class="fas fa-map-marker-alt me-1"></i>{{ Str::limit($barang->penitip->alamat, 50) }}
+                                @endif
+                            </small>
                         </div>
+                    </div>
+                </div>
+                @else
+                <div class="mb-4">
+                    <h5><i class="fas fa-user-tag me-2"></i>Informasi Penitip</h5>
+                    <div class="alert alert-warning">
+                        <i class="fas fa-exclamation-triangle me-2"></i>
+                        Informasi penitip tidak tersedia untuk produk ini.
+                        @if(config('app.debug'))
+                            <br><small>Debug: penitip_id = {{ $barang->penitip_id ?? 'null' }}</small>
+                        @endif
                     </div>
                 </div>
                 @endif
@@ -247,7 +274,7 @@
                         <button class="nav-link active" id="description-tab" data-bs-toggle="tab" data-bs-target="#description" type="button" role="tab" aria-controls="description" aria-selected="true">Deskripsi</button>
                     </li>
                     <li class="nav-item" role="presentation">
-                        <button class="nav-link" id="reviews-tab" data-bs-toggle="tab" data-bs-target="#reviews" type="button" role="tab" aria-controls="reviews" aria-selected="false">Rating & Ulasan ({{ $barang->total_ratings ?? 0 }})</button>
+                        <button class="nav-link" id="reviews-tab" data-bs-toggle="tab" data-bs-target="#reviews" type="button" role="tab" aria-controls="reviews" aria-selected="false">Rating & Ulasan ({{ $barang->jumlah_ulasan ?? 0 }})</button>
                     </li>
                     <li class="nav-item" role="presentation">
                         <button class="nav-link" id="discussion-tab" data-bs-toggle="tab" data-bs-target="#discussion" type="button" role="tab" aria-controls="discussion" aria-selected="false">Diskusi</button>
@@ -301,29 +328,16 @@
                     
                     <!-- Enhanced Rating & Reviews Tab -->
                     <div class="tab-pane fade" id="reviews" role="tabpanel" aria-labelledby="reviews-tab">
-                        @if(($barang->total_ratings ?? 0) > 0)
+                        @if(($barang->jumlah_ulasan ?? 0) > 0)
                             <!-- Rating Summary -->
                             <div class="row mb-4">
                                 <div class="col-md-4 text-center">
                                     <h2 class="display-4">{{ number_format($barang->rating ?? 0, 1) }}</h2>
-                                    <div class="text-warning fs-4">{{ $barang->star_display ?? '☆☆☆☆☆' }}</div>
-                                    <p class="text-muted">{{ $barang->total_ratings ?? 0 }} rating{{ ($barang->total_ratings ?? 0) != 1 ? 's' : '' }}</p>
+                                    <div class="text-warning fs-4">{{ $starDisplay }}</div>
+                                    <p class="text-muted">{{ $barang->jumlah_ulasan ?? 0 }} ulasan</p>
                                 </div>
                                 <div class="col-md-8">
-                                    <!-- Rating Distribution -->
-                                    @if($barang->rating_distribution ?? false)
-                                        @foreach(array_reverse($barang->rating_distribution, true) as $star => $count)
-                                            <div class="d-flex align-items-center mb-2">
-                                                <span class="me-2">{{ $star }} ★</span>
-                                                <div class="progress flex-grow-1 me-2" style="height: 20px;">
-                                                    <div class="progress-bar bg-warning" 
-                                                         style="width: {{ $barang->total_ratings > 0 ? ($count / $barang->total_ratings) * 100 : 0 }}%">
-                                                    </div>
-                                                </div>
-                                                <span class="text-muted">{{ $count }}</span>
-                                            </div>
-                                        @endforeach
-                                    @endif
+                                    <p class="text-muted">Detail distribusi rating akan ditampilkan di sini.</p>
                                 </div>
                             </div>
                             
@@ -433,8 +447,19 @@
                         <p class="card-text">{{ Str::limit($relatedProduct->deskripsi ?? 'Deskripsi tidak tersedia', 80) }}</p>
                         <div class="d-flex justify-content-between align-items-center">
                             <span class="fw-bold text-primary">{{ $relatedProduct->formatted_price }}</span>
+                            @php
+                                $relatedRating = $relatedProduct->rating ?? 0;
+                                $relatedFullStars = floor($relatedRating);
+                                $relatedHasHalfStar = ($relatedRating - $relatedFullStars) >= 0.5;
+                                $relatedStarDisplay = str_repeat('★', $relatedFullStars);
+                                if ($relatedHasHalfStar) {
+                                    $relatedStarDisplay .= '☆';
+                                    $relatedFullStars++;
+                                }
+                                $relatedStarDisplay .= str_repeat('☆', 5 - $relatedFullStars);
+                            @endphp
                             <div class="text-warning">
-                                {{ $relatedProduct->star_display ?? '☆☆☆☆☆' }}
+                                {{ $relatedStarDisplay }}
                             </div>
                         </div>
                     </div>
