@@ -61,6 +61,7 @@
         <!-- KPI Summary -->
         <div class="row mb-4">
             <div class="col-12">
+                <h4>Ringkasan KPI</h4>
                 <h4>Ringkasan Kinerja</h4>
             </div>
             <div class="col-3">
@@ -95,6 +96,12 @@
                 <div class="chart-container">
                     <h5>Tren Pendapatan Bulanan</h5>
                     <canvas id="printRevenueChart" width="600" height="300"></canvas>
+                </div>
+            </div>
+            <div class="col-4">
+                <div class="chart-container">
+                    <h5>Kategori Terlaris</h5>
+                    <canvas id="printCategoryChart" width="300" height="300"></canvas>
                 </div>
             </div>
         </div>
@@ -412,4 +419,5 @@
         }
     </script>
 </body>
+</html>
 </html>

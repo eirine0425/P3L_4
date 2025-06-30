@@ -24,7 +24,7 @@ if [ ! -f .env ]; then
 fi
 
 # Setup database
-echo "🗄️ Setting up database..."
+echo "🗄 Setting up database..."
 php artisan migrate:fresh --seed
 
 # Install Sanctum
@@ -71,4 +71,3 @@ echo ""
 echo "🔗 Test endpoints:"
 echo "   GET  http://localhost:8000/api/mobile/test"
 echo "   POST http://localhost:8000/api/mobile/login"
-echo ""

@@ -32,7 +32,6 @@
                                 <option value="all" {{ request('status') == 'all' ? 'selected' : '' }}>Semua Status</option>
                                 <option value="Menunggu Persetujuan" {{ request('status') == 'Menunggu Persetujuan' ? 'selected' : '' }}>Menunggu Persetujuan</option>
                                 <option value="Disetujui" {{ request('status') == 'Disetujui' ? 'selected' : '' }}>Disetujui</option>
-                                <option value="Ditolak" {{ request('status') == 'Ditolak' ? 'selected' : '' }}>Ditolak</option>
                             </select>
                         </div>
                         <div class="col-md-3">
@@ -90,8 +89,6 @@
                                                 <span class="badge bg-warning">Menunggu Persetujuan</span>
                                             @elseif($request->status == 'Disetujui')
                                                 <span class="badge bg-success">Disetujui</span>
-                                            @else
-                                                <span class="badge bg-danger">Ditolak</span>
                                             @endif
                                         </td>
                                         <td>

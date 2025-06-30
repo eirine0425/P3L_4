@@ -15,7 +15,7 @@ class CreateTransaksiRequest extends FormRequest
             'point_digunakan' => 'nullable|integer|min:0',
             'point_diperoleh' => 'nullable|integer|min:0',
             'bukti_pembayaran' => 'nullable|string|max:255',
-            'metode_pengiriman' => 'nullable|string|max:100',
+            'metode_pengiriman' => 'nullable|string|in:diantar,diambil',
             'tanggal_pesan' => 'nullable|date',
             'total_harga' => 'required|numeric|min:0',
             'status_transaksi' => 'required|string|max:50',

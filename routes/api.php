@@ -20,7 +20,6 @@ use App\Http\Controllers\Api\DiskusiProdukController;
 use App\Http\Controllers\Api\KomisiController;
 use App\Http\Controllers\Api\MerchController;
 use App\Http\Controllers\Api\PengirimanController;
-use App\Http\Controllers\Api\RequestDonasiController;
 use App\Http\Controllers\Api\RoleController;
 use App\Http\Controllers\Api\TransaksiMerchController;
 use App\Http\Controllers\Api\TransaksiPenitipanController;
@@ -28,6 +27,19 @@ use App\Http\Controllers\Api\AlamatController;
 use App\Http\Controllers\Api\PenitipTransaksiController;
 use App\Http\Controllers\Api\RatingController;
 use App\Http\Controllers\Api\BuyerProfileController;
+use App\Http\Controllers\Api\DashboardBuyerController;
+use App\Http\Controllers\Api\BuyerTransactionController;
+use App\Http\Controllers\Api\DashboardConsignorController;
+use App\Http\Controllers\Api\DashboardAdminController;
+use App\Http\Controllers\Api\DashboardWarehouseController;
+use App\Http\Controllers\Api\DashboardCSController;
+use App\Http\Controllers\Api\DashboardHunterController;
+use App\Http\Controllers\Api\DashboardOrganisasiController;
+use App\Http\Controllers\Api\ConsignorPickupController;
+use App\Http\Controllers\Api\MobileController;
+use App\Http\Controllers\Api\MobileMenuController;
+use App\Http\Controllers\Api\DashboardOwnerController;
+use App\Http\Controllers\Dashboard\Owner\RequestDonasiController;
 
 /*
 |--------------------------------------------------------------------------
@@ -50,6 +62,31 @@ Route::post('/logout', [AuthController::class, 'logout'])->middleware('auth:api'
 Route::get('/me', [AuthController::class, 'me'])->middleware('auth:api');
 
 // ========================================
+// OWNER DASHBOARD ROUTES
+// ========================================
+
+Route::get('/dashboard/owner/donasi-report', [DashboardOwnerController::class, 'donasiReport']);
+Route::get('/dashboard/owner/donasi-hunter-report', [DashboardOwnerController::class, 'donasiHunterReport']);
+Route::get('/dashboard/owner/donasi-hunter-export', [DashboardOwnerController::class, 'exportDonasiHunterReport']);
+
+// Owner Dashboard API Routes
+Route::middleware(['auth:api', 'role:owner'])->prefix('dashboard/owner')->group(function () {
+    Route::get('/', [DashboardOwnerController::class, 'index']);
+    Route::get('/donasi-report', [DashboardOwnerController::class, 'donasiReport']);
+    Route::get('/donasi-export', [DashboardOwnerController::class, 'exportDonasiReport']);
+    Route::get('/request-donasi', [DashboardOwnerController::class, 'requestDonasiReport']);
+    Route::get('/request-donasi-export', [DashboardOwnerController::class, 'exportRequestDonasiReport']);
+    
+    // Transaksi Penitipan Reports
+    Route::get('/transaksi-penitipan-report', [DashboardOwnerController::class, 'transaksiPenitipanReport']);
+    Route::get('/transaksi-penitipan-export', [DashboardOwnerController::class, 'exportTransaksiPenitipanReport']);
+
+    // Donation Hunter Reports
+    Route::get('/donasi-hunter-report', [DashboardOwnerController::class, 'donasiHunterReport']);
+    Route::get('/donasi-hunter-export', [DashboardOwnerController::class, 'exportDonasiHunterReport']);
+});
+
+// ========================================
 // SANCTUM AUTHENTICATED ROUTES
 // ========================================
 
@@ -60,6 +97,125 @@ Route::middleware(['auth:sanctum'])->group(function () {
     Route::get('/penitip/my-transaksi', [PenitipTransaksiController::class, 'myTransaksi']);
     Route::post('/penitip/extend-penitipan', [PenitipTransaksiController::class, 'extendMyPenitipan']);
     Route::post('/transaksi/extend', [PenitipTransaksiController::class, 'extendMyPenitipan']);
+});
+
+// ========================================
+// MOBILE API ROUTES
+// ========================================
+
+Route::prefix('mobile')->group(function () {
+    Route::post('/login', [AuthController::class, 'mobileLogin']);
+    Route::post('/register', [AuthController::class, 'mobileRegister']);
+    Route::get('/app-info', function() {
+        return response()->json([
+            'success' => true,
+            'data' => [
+                'name' => 'Reusemart Mobile',
+                'version' => '1.0.0',
+                'status' => 'active'
+            ]
+        ]);
+    });
+    
+    // Protected Mobile Routes
+    Route::middleware('auth:sanctum')->group(function () {
+        Route::post('/logout', [AuthController::class, 'mobileLogout']);
+        Route::get('/user', [AuthController::class, 'mobileUser']);
+        Route::get('/dashboard', [AuthController::class, 'mobileDashboard']);
+        Route::get('/refresh-token', [AuthController::class, 'refreshToken']);
+        Route::post('/refresh-token', [AuthController::class, 'refreshToken']);
+        
+        // Products
+        Route::get('/products', [BarangController::class, 'mobileIndex']);
+        Route::get('/products/{id}', [BarangController::class, 'mobileShow']);
+        Route::get('/products/search/{keyword}', [BarangController::class, 'mobileSearch']);
+        Route::get('/products/featured', [BarangController::class, 'mobileFeatured']);
+        
+        // Categories
+        Route::get('/categories', [KategoriBarangController::class, 'mobileIndex']);
+        Route::get('/categories/{id}/products', [KategoriBarangController::class, 'mobileProducts']);
+        
+        // Cart
+        Route::get('/cart', [KeranjangBelanjaController::class, 'mobileIndex']);
+        Route::post('/cart/add', [KeranjangBelanjaController::class, 'mobileAddToCart']);
+        Route::put('/cart/{id}', [KeranjangBelanjaController::class, 'mobileUpdateCart']);
+        Route::delete('/cart/{id}', [KeranjangBelanjaController::class, 'mobileRemoveFromCart']);
+        Route::post('/cart/clear', [KeranjangBelanjaController::class, 'mobileClearCart']);
+        Route::get('/cart/count', [KeranjangBelanjaController::class, 'mobileCartCount']);
+        
+        // Transactions
+        Route::get('/transactions', [TransaksiController::class, 'mobileIndex']);
+        Route::get('/transactions/{id}', [TransaksiController::class, 'mobileShow']);
+        Route::post('/transactions/checkout', [TransaksiController::class, 'mobileCheckout']);
+        
+        // Address
+        Route::get('/addresses', [AlamatController::class, 'mobileIndex']);
+        Route::post('/addresses', [AlamatController::class, 'mobileStore']);
+        Route::put('/addresses/{id}', [AlamatController::class, 'mobileUpdate']);
+        Route::delete('/addresses/{id}', [AlamatController::class, 'mobileDestroy']);
+        
+        // Shipping
+        Route::get('/shipping/options', [PengirimanController::class, 'mobileOptions']);
+        Route::post('/shipping/calculate', [PengirimanController::class, 'mobileCalculate']);
+    });
+});
+
+// ========================================
+// MOBILE MENU AND PERMISSIONS ROUTES
+// ========================================
+
+// Mobile Menu Routes
+Route::middleware('auth:sanctum')->group(function () {
+    Route::get('/mobile/menu', [AuthController::class, 'getMobileMenu']);
+    Route::get('/mobile/permissions', [MobileMenuController::class, 'getUserPermissions']);
+    Route::post('/mobile/check-permission', [MobileMenuController::class, 'checkPermission']);
+    Route::get('/mobile/navigation', [MobileMenuController::class, 'getNavigationStructure']);
+});
+
+// ========================================
+// MOBILE DASHBOARD ROUTES
+// ========================================
+
+Route::middleware(['auth:sanctum'])->prefix('mobile')->name('mobile.')->group(function () {
+    // Dashboard data based on role
+    Route::get('/dashboard', [AuthController::class, 'mobileDashboard']);
+    
+    // Menu based on role
+    Route::get('/menu', [AuthController::class, 'getMobileMenu']);
+    
+    // Additional menu and permission routes
+    Route::get('/permissions', [MobileMenuController::class, 'getUserPermissions']);
+    Route::post('/check-permission', [MobileMenuController::class, 'checkPermission']);
+    Route::get('/navigation', [MobileMenuController::class, 'getNavigationStructure']);
+    
+    // Profile management
+    Route::get('/profile', [AuthController::class, 'mobileProfile']);
+    Route::put('/profile', [AuthController::class, 'updateMobileProfile']);
+    
+    // Role-specific mobile routes
+    Route::middleware('role:pembeli')->group(function () {
+        Route::get('/buyer/dashboard', [DashboardBuyerController::class, 'mobileIndex']);
+        Route::get('/buyer/transactions', [BuyerTransactionController::class, 'mobileIndex']);
+        Route::get('/buyer/cart', [KeranjangBelanjaController::class, 'mobileCart']);
+    });
+    
+    Route::middleware('role:penitip')->group(function () {
+        Route::get('/consignor/dashboard', [DashboardConsignorController::class, 'mobileIndex']);
+        Route::get('/consignor/items', [DashboardConsignorController::class, 'mobileItems']);
+        Route::get('/consignor/transactions', [DashboardConsignorController::class, 'mobileTransactions']);
+    });
+    
+    Route::middleware('role:admin')->group(function () {
+        Route::get('/admin/dashboard', [DashboardAdminController::class, 'mobileIndex']);
+        Route::get('/admin/users', [DashboardAdminController::class, 'mobileUsers']);
+    });
+});
+
+// Protected routes
+Route::middleware('auth:sanctum')->group(function () {
+    Route::get('/user', function (Request $request) {
+        return $request->user();
+    });
 });
 
 // ========================================
@@ -82,6 +238,18 @@ Route::middleware('auth:api')->group(function () {
     Route::post('/keranjang/hapus', [WebViewController::class, 'hapusDariKeranjang']);
     Route::get('/checkout', [WebViewController::class, 'checkout']);
     Route::post('/checkout/proses', [WebViewController::class, 'prosesCheckout']);
+    Route::post('/checkout', [TransaksiController::class, 'store']);
+});
+
+// Shipping calculation routes
+Route::middleware('auth:api')->group(function () {
+    Route::post('/shipping/calculate', [TransaksiController::class, 'calculateShipping']);
+    Route::get('/shipping/info', [TransaksiController::class, 'getShippingInfo']);
+});
+
+// Cart selected items route
+Route::middleware('auth:api')->group(function () {
+    Route::post('/cart/selected-items', [WebViewController::class, 'getSelectedCartItems']);
 });
 
 // ========================================
@@ -96,6 +264,15 @@ Route::middleware('auth:api')->group(function () {
     Route::get('/dashboard/penitip', [WebViewController::class, 'dashboardPenitip'])->middleware('role:penitip');
     Route::get('/dashboard/pembeli', [WebViewController::class, 'dashboardPembeli'])->middleware('role:pembeli');
     Route::get('/dashboard/organisasi', [WebViewController::class, 'dashboardOrganisasi'])->middleware('role:organisasi');
+});
+
+// Transaction status and auto-cancel routes
+Route::get('/transactions/{id}/status', [WebViewController::class, 'checkTransactionStatus']);
+Route::post('/transactions/{id}/auto-cancel', [WebViewController::class, 'autoCancelExpiredTransaction']);
+
+Route::middleware('auth:api')->group(function () {
+    Route::get('/buyer/alamat/default', [AlamatController::class, 'getDefault']);
+    Route::get('/buyer/alamat/select', [AlamatController::class, 'getForSelection']);
 });
 
 // ========================================
@@ -223,6 +400,21 @@ Route::post('/transaksi-penitipan/{id}/extend', [TransaksiPenitipanController::c
 // ========================================
 
 Route::apiResource('users', UserController::class);
+
+// ========================================
+// APP INFO ROUTES
+// ========================================
+
+Route::get('/app-info', function() {
+    return response()->json([
+        'success' => true,
+        'data' => [
+            'name' => 'Reusemart Mobile API',
+            'version' => '1.0.0',
+            'status' => 'active'
+        ]
+    ]);
+});
 
 // ========================================
 // FALLBACK ROUTE

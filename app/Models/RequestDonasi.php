@@ -2,26 +2,35 @@
 
 namespace App\Models;
 
+use Illuminate\Database\Eloquent\Factories\HasFactory;
 use Illuminate\Database\Eloquent\Model;
 
 class RequestDonasi extends Model
 {
-    protected $table = 'request_donasi'; // Nama tabel yang digunakan di database
-    protected $primaryKey = 'request_id'; // Primary key yang digunakan di tabel
-    public $timestamps = false; // Jika tabel tidak menggunakan kolom created_at dan updated_at
+    use HasFactory;
 
+    protected $table = 'request_donasi';
+    protected $primaryKey = 'request_id';
+    
     protected $fillable = [
-        'request_id',        // ID permintaan
-        'organisasi_id',     // ID organisasi yang membuat permintaan
-        'deskripsi',         // Deskripsi permintaan
-        'tanggal_request',   // Tanggal permintaan dibuat
-        'status_request',    // Status permintaan (misalnya: pending, approved, rejected)
+        'organisasi_id',
+        'tanggal_request',
+        'status_request',
+        'deskripsi',
+        'jumlah_barang_diminta'
+    ];
+
+    protected $casts = [
+        'tanggal_request' => 'date'
     ];
 
     public function organisasi()
-{
-    return $this->belongsTo(Organisasi::class, 'organisasi_id');
-}
+    {
+        return $this->belongsTo(Organisasi::class, 'organisasi_id', 'organisasi_id');
+    }
 
+    public function donasi()
+    {
+        return $this->hasMany(Donasi::class, 'request_id', 'request_id');
+    }
 }
-

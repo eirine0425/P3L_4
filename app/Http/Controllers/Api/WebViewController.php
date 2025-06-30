@@ -23,6 +23,7 @@ use App\Models\Pembeli;
 use App\Models\Organisasi;
 use App\Models\Pegawai;
 use App\Models\Alamat;
+use Illuminate\Support\Facades\DB;
 
 class WebViewController extends Controller
 {
@@ -138,6 +139,9 @@ class WebViewController extends Controller
                 $message = 'Garansi dengan nomor seri tersebut tidak ditemukan.';
             }
         }
+        {
+            $message = 'Garansi dengan nomor seri tersebut tidak ditemukan.';
+        }
         
         return view('warranty.check', compact('warranty', 'message'));
     }
@@ -199,7 +203,7 @@ class WebViewController extends Controller
     public function removeFromCart(Request $request)
     {
         $request->validate([
-            'cart_id' => 'required|exists:keranjang_id'
+            'keranjang_id' => 'required|exists:keranjang_belanja,keranjang_id'
         ]);
         
         KeranjangBelanja::where('keranjang_id', $request->cart_id)
@@ -279,7 +283,7 @@ class WebViewController extends Controller
             // Total
             $total = $subtotal + $shippingCost + $adminFee;
 
-            // Get user addresses
+            // FIXED: Get user addresses - INI YANG PENTING!
             $alamats = Alamat::where('pembeli_id', $pembeli->pembeli_id)
                 ->orderBy('status_default', 'desc')
                 ->orderBy('created_at', 'desc')
@@ -287,6 +291,9 @@ class WebViewController extends Controller
 
             // Get default address
             $defaultAlamat = $alamats->where('status_default', 'Y')->first();
+            
+            // FIXED: Set alamat terpilih
+            $alamatTerpilih = $defaultAlamat ? $defaultAlamat->alamat_id : null;
 
             return view('checkout.show', compact(
                 'cartItems',
@@ -296,12 +303,322 @@ class WebViewController extends Controller
                 'total',
                 'alamats',
                 'defaultAlamat',
-                'selectedItems'
+                'selectedItems',
+                'alamatTerpilih'  // TAMBAHKAN INI
             ));
 
         } catch (\Exception $e) {
             Log::error('Error in showCheckout: ' . $e->getMessage());
             return redirect()->route('cart.index')->with('error', 'Terjadi kesalahan saat memuat halaman checkout');
+        }
+    }
+    
+    // Tambahkan method berikut di bawah method showCheckout
+
+    /**
+     * Show payment countdown page
+     */
+    public function showPaymentCountdown($id)
+    {
+        try {
+            $user = Auth::user();
+            $pembeli = Pembeli::where('user_id', $user->id)->first();
+            
+            if (!$pembeli) {
+                return redirect()->route('home')->with('error', 'Data pembeli tidak ditemukan');
+            }
+
+            $transaction = Transaksi::with(['details.barang', 'alamat'])
+                ->where('transaksi_id', $id)
+                ->where('pembeli_id', $pembeli->pembeli_id)
+                ->firstOrFail();
+
+            // Check if transaction is already expired
+            if ($transaction->batas_pembayaran && now()->gt($transaction->batas_pembayaran)) {
+                return redirect()->route('checkout.cancel', ['transaksi_id' => $id])
+                    ->with('error', 'Batas waktu pembayaran telah berakhir');
+            }
+
+            return view('checkout.payment', compact('transaction'));
+
+        } catch (\Exception $e) {
+            Log::error('Payment countdown error: ' . $e->getMessage());
+            return redirect()->route('home')->with('error', 'Transaksi tidak ditemukan');
+        }
+    }
+
+    /**
+     * Check transaction status
+     */
+    public function checkTransactionStatus($id)
+    {
+        try {
+            $user = Auth::user();
+            $pembeli = Pembeli::where('user_id', $user->id)->first();
+            
+            if (!$pembeli) {
+                return response()->json([
+                    'status' => 'error',
+                    'message' => 'Data pembeli tidak ditemukan'
+                ], 404);
+            }
+
+            $transaction = Transaksi::where('transaksi_id', $id)
+                ->where('pembeli_id', $pembeli->pembeli_id)
+                ->first();
+
+            if (!$transaction) {
+                return response()->json([
+                    'status' => 'error',
+                    'message' => 'Transaksi tidak ditemukan'
+                ], 404);
+            }
+
+            // Check if transaction is expired
+            $isExpired = $transaction->batas_pembayaran && now()->gt($transaction->batas_pembayaran);
+            $remainingTime = $isExpired ? 0 : now()->diffInSeconds($transaction->batas_pembayaran);
+
+            return response()->json([
+                'status' => 'success',
+                'data' => [
+                    'transaksi_id' => $transaction->transaksi_id,
+                    'status' => $transaction->status_transaksi,
+                    'is_expired' => $isExpired,
+                    'remaining_time' => $remainingTime,
+                    'batas_pembayaran' => $transaction->batas_pembayaran
+                ]
+            ]);
+
+        } catch (\Exception $e) {
+            Log::error('Check transaction status error: ' . $e->getMessage());
+            return response()->json([
+                'status' => 'error',
+                'message' => 'Terjadi kesalahan saat memeriksa status transaksi'
+            ], 500);
+        }
+    }
+
+    /**
+     * Cancel transaction (manual or auto)
+     */
+    public function cancelTransaction($id)
+    {
+        try {
+            $user = Auth::user();
+            $pembeli = Pembeli::where('user_id', $user->id)->first();
+            
+            if (!$pembeli) {
+                return redirect()->route('home')->with('error', 'Data pembeli tidak ditemukan');
+            }
+
+            DB::beginTransaction();
+
+            $transaction = Transaksi::with(['details.barang'])
+                ->where('transaksi_id', $id)
+                ->where('pembeli_id', $pembeli->pembeli_id)
+                ->where('status_transaksi', 'menunggu_pembayaran')
+                ->firstOrFail();
+
+            // Update transaction status
+            $transaction->status_transaksi = 'batal';
+            $transaction->save();
+
+            // Return points to buyer if used
+            if ($transaction->point_digunakan > 0) {
+                $pembeli->increment('point', $transaction->point_digunakan);
+            }
+
+            // Make products available again - PERBAIKI STATUS
+            foreach ($transaction->details as $detail) {
+                $detail->barang->update(['status' => 'belum_terjual']); // UBAH KE belum_terjual
+            }
+
+            DB::commit();
+
+            return redirect()->route('checkout.cancelled', ['transaksi_id' => $id])
+                ->with('info', 'Transaksi telah dibatalkan karena melewati batas waktu pembayaran');
+
+        } catch (\Exception $e) {
+            DB::rollBack();
+            Log::error('Cancel transaction error: ' . $e->getMessage());
+            return redirect()->route('home')->with('error', 'Terjadi kesalahan saat membatalkan transaksi');
+        }
+    }
+
+    /**
+     * Auto cancel expired transactions (API endpoint)
+     */
+    public function autoCancelExpiredTransaction($id)
+    {
+        try {
+            DB::beginTransaction();
+
+            $transaction = Transaksi::with(['details.barang', 'pembeli'])
+                ->where('transaksi_id', $id)
+                ->where('status_transaksi', 'menunggu_pembayaran')
+                ->first();
+
+            if (!$transaction) {
+                return response()->json([
+                    'status' => 'error',
+                    'message' => 'Transaksi tidak ditemukan atau sudah diproses'
+                ], 404);
+            }
+
+            // Check if really expired
+            if (!$transaction->batas_pembayaran || now()->lte($transaction->batas_pembayaran)) {
+                return response()->json([
+                    'status' => 'error',
+                    'message' => 'Transaksi belum expired'
+                ], 400);
+            }
+
+            // Update transaction status
+            $transaction->status_transaksi = 'batal';
+            $transaction->save();
+
+            // Return points to buyer if used
+            if ($transaction->point_digunakan > 0) {
+                $transaction->pembeli->increment('point', $transaction->point_digunakan);
+            }
+
+            // Make products available again
+            foreach ($transaction->details as $detail) {
+                $detail->barang->update(['status' => 'belum_terjual']);
+            }
+
+            DB::commit();
+
+            return response()->json([
+                'status' => 'success',
+                'message' => 'Transaksi berhasil dibatalkan otomatis'
+            ]);
+
+        } catch (\Exception $e) {
+            DB::rollBack();
+            Log::error('Auto cancel transaction error: ' . $e->getMessage());
+            
+            return response()->json([
+                'status' => 'error',
+                'message' => 'Terjadi kesalahan saat membatalkan transaksi'
+            ], 500);
+        }
+    }
+
+    /**
+     * Show cancelled transaction page
+     */
+    public function showCancelledPage($id)
+    {
+        try {
+            $user = Auth::user();
+            $pembeli = Pembeli::where('user_id', $user->id)->first();
+            
+            if (!$pembeli) {
+                return redirect()->route('home')->with('error', 'Data pembeli tidak ditemukan');
+            }
+
+            $transaction = Transaksi::with(['details.barang'])
+                ->where('transaksi_id', $id)
+                ->where('pembeli_id', $pembeli->pembeli_id)
+                ->where('status_transaksi', 'batal')
+                ->firstOrFail();
+
+            return view('checkout.cancelled', compact('transaction'));
+
+        } catch (\Exception $e) {
+            Log::error('Show cancelled page error: ' . $e->getMessage());
+            return redirect()->route('home')->with('error', 'Transaksi tidak ditemukan');
+        }
+    }
+
+    /**
+     * Upload payment proof
+     */
+    public function uploadBuktiPembayaran(Request $request, $id)
+    {
+        try {
+            $request->validate([
+                'bukti_pembayaran' => 'required|image|max:2048', // max 2MB
+            ]);
+
+            $user = Auth::user();
+            $pembeli = Pembeli::where('user_id', $user->id)->first();
+            
+            if (!$pembeli) {
+                return redirect()->back()->with('error', 'Data pembeli tidak ditemukan');
+            }
+
+            $transaction = Transaksi::where('transaksi_id', $id)
+                ->where('pembeli_id', $pembeli->pembeli_id)
+                ->firstOrFail();
+
+            if ($transaction->status_transaksi != 'menunggu_pembayaran') {
+                return redirect()->back()->with('error', 'Status transaksi tidak valid untuk upload bukti pembayaran');
+            }
+
+            // Check if still within payment deadline
+            if ($transaction->batas_pembayaran && now()->gt($transaction->batas_pembayaran)) {
+                return redirect()->route('checkout.cancel', $id)->with('error', 'Batas waktu pembayaran telah berakhir');
+            }
+
+            DB::beginTransaction();
+
+            // Upload bukti pembayaran
+            if ($request->hasFile('bukti_pembayaran')) {
+                $file = $request->file('bukti_pembayaran');
+                $fileName = time() . '_' . $file->getClientOriginalName();
+                $file->move(public_path('uploads/bukti_pembayaran'), $fileName);
+                
+                $transaction->bukti_pembayaran = 'uploads/bukti_pembayaran/' . $fileName;
+                $transaction->status_transaksi = 'dikemas'; // Change to dikemas after payment proof uploaded
+                $transaction->tanggal_pelunasan = now();
+                $transaction->save();
+
+                // Update product status to sold
+                foreach ($transaction->details as $detail) {
+                    $detail->barang->update(['status' => 'terjual']);
+                }
+            }
+
+            DB::commit();
+
+            return redirect()->route('checkout.success', $id)
+                ->with('success', 'Bukti pembayaran berhasil diupload! Status pesanan berubah menjadi "Dikemas"');
+
+        } catch (\Exception $e) {
+            DB::rollBack();
+            Log::error('Upload bukti pembayaran error: ' . $e->getMessage());
+            return redirect()->back()
+                ->with('error', 'Terjadi kesalahan saat mengupload bukti pembayaran')
+                ->withInput();
+        }
+    }
+
+    /**
+     * Show success page after payment
+     */
+    public function showSuccessPage($id)
+    {
+        try {
+            $user = Auth::user();
+            $pembeli = Pembeli::where('user_id', $user->id)->first();
+            
+            if (!$pembeli) {
+                return redirect()->route('home')->with('error', 'Data pembeli tidak ditemukan');
+            }
+
+            $transaction = Transaksi::with(['details.barang'])
+                ->where('transaksi_id', $id)
+                ->where('pembeli_id', $pembeli->pembeli_id)
+                ->where('status_transaksi', 'dikemas')
+                ->firstOrFail();
+
+            return view('checkout.success', compact('transaction'));
+
+        } catch (\Exception $e) {
+            Log::error('Show success page error: ' . $e->getMessage());
+            return redirect()->route('home')->with('error', 'Transaksi tidak ditemukan');
         }
     }
     
@@ -360,7 +677,7 @@ class WebViewController extends Controller
         // Clear cart
         KeranjangBelanja::where('user_id', Auth::id())->delete();
         
-        return redirect()->route('thank-you', ['transaction_id' => $transaction->id]);
+        return redirect()->route('thank-you', ['transaksi_id' => $transaction->id]);
     }
     
     // Thank you page
@@ -370,10 +687,11 @@ class WebViewController extends Controller
         
         return view('checkout.thank-you', compact('transaction'));
     }
+    
     public function profilePembeli()
-{
-    return view('profile.pembeli'); // ganti dengan nama view yang benar
-}
+    {
+        return view('profile.pembeli'); // ganti dengan nama view yang benar
+    }
 
     // Dashboard
     public function dashboard()
@@ -442,6 +760,98 @@ class WebViewController extends Controller
         return view('dashboard.organization.index');
     }
 
+    /**
+     * Get selected cart items for checkout (AJAX endpoint)
+     */
+    public function getSelectedCartItems(Request $request)
+    {
+        try {
+            $request->validate([
+                'selected_items' => 'required|array',
+                'selected_items.*' => 'integer|exists:keranjang_belanja,keranjang_id'
+            ]);
+
+            $user = Auth::user();
+            $pembeli = Pembeli::where('user_id', $user->id)->first();
+            
+            if (!$pembeli) {
+                return response()->json([
+                    'status' => 'error',
+                    'message' => 'Data pembeli tidak ditemukan'
+                ], 404);
+            }
+
+            $selectedItems = KeranjangBelanja::with(['barang', 'barang.kategoriBarang'])
+                ->where('pembeli_id', $pembeli->pembeli_id)
+                ->whereIn('keranjang_id', $request->selected_items)
+                ->get();
+
+            if ($selectedItems->isEmpty()) {
+                return response()->json([
+                    'status' => 'error',
+                    'message' => 'Item yang dipilih tidak ditemukan'
+                ], 404);
+            }
+
+            // Calculate subtotal
+            $subtotal = $selectedItems->sum(function($item) {
+                $barang = $item->barang ?? null;
+                if ($barang) {
+                    $harga = $barang->harga ?? 0;
+                    $jumlah = $item->jumlah ?? 1;
+                    return $harga * $jumlah;
+                }
+                return 0;
+            });
+
+            // Format items for response
+            $formattedItems = $selectedItems->map(function($item) {
+                $barang = $item->barang;
+                return [
+                    'keranjang_id' => $item->keranjang_id,
+                    'jumlah' => $item->jumlah ?? 1,
+                    'barang' => [
+                        'barang_id' => $barang->barang_id,
+                        'nama_barang' => $barang->nama_barang,
+                        'harga' => $barang->harga,
+                        'foto_barang' => $barang->foto_barang,
+                        'kondisi' => $barang->kondisi,
+                        'kategori_barang' => [
+                            'nama_kategori' => $barang->kategoriBarang->nama_kategori ?? 'Tanpa Kategori'
+                        ]
+                    ]
+                ];
+            });
+
+            return response()->json([
+                'status' => 'success',
+                'data' => [
+                    'items' => $formattedItems,
+                    'count' => $selectedItems->count(),
+                    'subtotal' => $subtotal
+                ]
+            ]);
+
+        } catch (\Illuminate\Validation\ValidationException $e) {
+            return response()->json([
+                'status' => 'error',
+                'message' => 'Data tidak valid',
+                'errors' => $e->errors()
+            ], 422);
+        } catch (\Exception $e) {
+            Log::error('Get selected cart items error: ' . $e->getMessage(), [
+                'user_id' => Auth::id(),
+                'request_data' => $request->all(),
+                'trace' => $e->getTraceAsString()
+            ]);
+            
+            return response()->json([
+                'status' => 'error',
+                'message' => 'Terjadi kesalahan saat memuat item'
+            ], 500);
+        }
+    }
+
     // ========== ALAMAT FUNCTIONS - ADDED BELOW ==========
     
     /**
@@ -459,13 +869,12 @@ class WebViewController extends Controller
                 return redirect()->route('dashboard.buyer')->with('error', 'Data pembeli tidak ditemukan');
             }
 
-            // Ambil alamat berdasarkan pembeli_id - TIDAK MENGGUNAKAN PAGINATION
-            $alamats = Alamat::where('pembeli_id', $pembeli->id)
+            // FIXED: Gunakan pembeli_id yang benar
+            $alamats = Alamat::where('pembeli_id', $pembeli->pembeli_id)
                         ->orderBy('status_default', 'desc')
                         ->orderBy('created_at', 'desc')
-                        ->get(); // GUNAKAN get() BUKAN paginate()
+                        ->get();
     
-            // PASTIKAN RETURN VIEW BUKAN JSON
             return view('dashboard.buyer.alamat.index', compact('alamats'));
                         
         } catch (\Exception $e) {
@@ -488,7 +897,6 @@ class WebViewController extends Controller
     {
         try {
             $request->validate([
-                'nama_penerima' => 'required|string|max:255',
                 'no_telepon' => 'required|string|max:20',
                 'alamat' => 'required|string',
                 'kota' => 'required|string|max:100',
@@ -503,20 +911,19 @@ class WebViewController extends Controller
                 return redirect()->back()->with('error', 'Data pembeli tidak ditemukan');
             }
 
-            // Cek apakah ini alamat pertama
-            $existingAlamats = Alamat::where('pembeli_id', $pembeli->id)->count();
+            // FIXED: Gunakan pembeli_id yang benar
+            $existingAlamats = Alamat::where('pembeli_id', $pembeli->pembeli_id)->count();
             $statusDefault = $existingAlamats == 0 ? 'Y' : 'N';
 
             // Jika user memilih untuk set sebagai default
             if ($request->has('set_default') && $request->set_default == '1') {
                 // Reset semua alamat lain menjadi tidak default
-                Alamat::where('pembeli_id', $pembeli->id)->update(['status_default' => 'N']);
+                Alamat::where('pembeli_id', $pembeli->pembeli_id)->update(['status_default' => 'N']);
                 $statusDefault = 'Y';
             }
 
             Alamat::create([
-                'pembeli_id' => $pembeli->id,
-                'nama_penerima' => $request->nama_penerima,
+                'pembeli_id' => $pembeli->pembeli_id, // FIXED: Gunakan pembeli_id yang benar
                 'no_telepon' => $request->no_telepon,
                 'alamat' => $request->alamat,
                 'kota' => $request->kota,
@@ -537,7 +944,8 @@ class WebViewController extends Controller
     public function alamatEdit($id)
     {
         try {
-            $alamat = Alamat::find($id);
+            // FIXED: Gunakan primary key yang benar
+            $alamat = Alamat::where('alamat_id', $id)->first();
             
             if (!$alamat) {
                 return redirect()->route('buyer.alamat.index')->with('error', 'Alamat tidak ditemukan');
@@ -547,7 +955,7 @@ class WebViewController extends Controller
             $user = Auth::user();
             $pembeli = Pembeli::where('user_id', $user->id)->first();
             
-            if ($alamat->pembeli_id != $pembeli->id) {
+            if ($alamat->pembeli_id != $pembeli->pembeli_id) {
                 return redirect()->route('buyer.alamat.index')->with('error', 'Anda tidak memiliki akses ke alamat ini');
             }
 
@@ -564,7 +972,6 @@ class WebViewController extends Controller
     {
         try {
             $request->validate([
-                'nama_penerima' => 'required|string|max:255',
                 'no_telepon' => 'required|string|max:20',
                 'alamat' => 'required|string',
                 'kota' => 'required|string|max:100',
@@ -572,7 +979,8 @@ class WebViewController extends Controller
                 'kode_pos' => 'required|string|max:10',
             ]);
 
-            $alamat = Alamat::find($id);
+            // FIXED: Gunakan primary key yang benar
+            $alamat = Alamat::where('alamat_id', $id)->first();
             
             if (!$alamat) {
                 return redirect()->route('buyer.alamat.index')->with('error', 'Alamat tidak ditemukan');
@@ -582,21 +990,20 @@ class WebViewController extends Controller
             $user = Auth::user();
             $pembeli = Pembeli::where('user_id', $user->id)->first();
             
-            if ($alamat->pembeli_id != $pembeli->id) {
+            if ($alamat->pembeli_id != $pembeli->pembeli_id) {
                 return redirect()->route('buyer.alamat.index')->with('error', 'Anda tidak memiliki akses ke alamat ini');
             }
 
             // Jika user memilih untuk set sebagai default
             if ($request->has('set_default') && $request->set_default == '1') {
                 // Reset semua alamat lain menjadi tidak default
-                Alamat::where('pembeli_id', $pembeli->id)->update(['status_default' => 'N']);
+                Alamat::where('pembeli_id', $pembeli->pembeli_id)->update(['status_default' => 'N']);
                 $statusDefault = 'Y';
             } else {
                 $statusDefault = $alamat->status_default; // Keep existing status
             }
 
             $alamat->update([
-                'nama_penerima' => $request->nama_penerima,
                 'no_telepon' => $request->no_telepon,
                 'alamat' => $request->alamat,
                 'kota' => $request->kota,
@@ -617,7 +1024,8 @@ class WebViewController extends Controller
     public function alamatDestroy($id)
     {
         try {
-            $alamat = Alamat::find($id);
+            // FIXED: Gunakan primary key yang benar
+            $alamat = Alamat::where('alamat_id', $id)->first();
             
             if (!$alamat) {
                 return redirect()->route('buyer.alamat.index')->with('error', 'Alamat tidak ditemukan');
@@ -627,20 +1035,20 @@ class WebViewController extends Controller
             $user = Auth::user();
             $pembeli = Pembeli::where('user_id', $user->id)->first();
             
-            if ($alamat->pembeli_id != $pembeli->id) {
+            if ($alamat->pembeli_id != $pembeli->pembeli_id) {
                 return redirect()->route('buyer.alamat.index')->with('error', 'Anda tidak memiliki akses ke alamat ini');
             }
 
             // Check if this is the only address
-            $alamatCount = Alamat::where('pembeli_id', $pembeli->id)->count();
+            $alamatCount = Alamat::where('pembeli_id', $pembeli->pembeli_id)->count();
             if ($alamatCount <= 1) {
                 return redirect()->route('buyer.alamat.index')->with('error', 'Tidak dapat menghapus alamat terakhir');
             }
 
             // If deleting default address, set another address as default
             if ($alamat->status_default == 'Y') {
-                $nextAlamat = Alamat::where('pembeli_id', $pembeli->id)
-                                   ->where('id', '!=', $id)
+                $nextAlamat = Alamat::where('pembeli_id', $pembeli->pembeli_id)
+                                   ->where('alamat_id', '!=', $id)
                                    ->first();
                 if ($nextAlamat) {
                     $nextAlamat->update(['status_default' => 'Y']);
@@ -661,7 +1069,8 @@ class WebViewController extends Controller
     public function alamatSetDefault($id)
     {
         try {
-            $alamat = Alamat::find($id);
+            // FIXED: Gunakan primary key yang benar
+            $alamat = Alamat::where('alamat_id', $id)->first();
             
             if (!$alamat) {
                 return redirect()->route('buyer.alamat.index')->with('error', 'Alamat tidak ditemukan');
@@ -671,12 +1080,12 @@ class WebViewController extends Controller
             $user = Auth::user();
             $pembeli = Pembeli::where('user_id', $user->id)->first();
             
-            if ($alamat->pembeli_id != $pembeli->id) {
+            if ($alamat->pembeli_id != $pembeli->pembeli_id) {
                 return redirect()->route('buyer.alamat.index')->with('error', 'Anda tidak memiliki akses ke alamat ini');
             }
 
             // Reset semua alamat lain menjadi tidak default
-            Alamat::where('pembeli_id', $pembeli->id)->update(['status_default' => 'N']);
+            Alamat::where('pembeli_id', $pembeli->pembeli_id)->update(['status_default' => 'N']);
             
             // Set alamat ini sebagai default
             $alamat->update(['status_default' => 'Y']);
@@ -684,30 +1093,6 @@ class WebViewController extends Controller
             return redirect()->route('buyer.alamat.index')->with('success', 'Alamat berhasil dijadikan alamat utama');
         } catch (\Exception $e) {
             return redirect()->route('buyer.alamat.index')->with('error', 'Terjadi kesalahan: ' . $e->getMessage());
-        }
-    }
-
-    /**
-     * Get addresses for checkout selection (API ONLY)
-     */
-    public function getAlamatsForCheckout()
-    {
-        try {
-            $user = Auth::user();
-            $pembeli = Pembeli::where('user_id', $user->id)->first();
-            
-            if (!$pembeli) {
-                return response()->json(['error' => 'Data pembeli tidak ditemukan'], 404);
-            }
-
-            $alamats = Alamat::where('pembeli_id', $pembeli->id)
-                            ->orderBy('status_default', 'desc')
-                            ->orderBy('created_at', 'desc')
-                            ->get();
-
-            return response()->json(['alamats' => $alamats]);
-        } catch (\Exception $e) {
-            return response()->json(['error' => 'Terjadi kesalahan: ' . $e->getMessage()], 500);
         }
     }
 
@@ -724,7 +1109,8 @@ class WebViewController extends Controller
                 return response()->json(['error' => 'Data pembeli tidak ditemukan'], 404);
             }
 
-            $defaultAlamat = Alamat::where('pembeli_id', $pembeli->id)
+            // FIXED: Gunakan pembeli_id yang benar
+            $defaultAlamat = Alamat::where('pembeli_id', $pembeli->pembeli_id)
                                   ->where('status_default', 'Y')
                                   ->first();
 
@@ -738,6 +1124,34 @@ class WebViewController extends Controller
         }
     }
 
+    /**
+     * Get addresses for checkout selection (API ONLY)
+     */
+    public function getAlamatsForCheckout()
+    {
+        try {
+            $user = Auth::user();
+            $pembeli = Pembeli::where('user_id', $user->id)->first();
+            
+            if (!$pembeli) {
+                return response()->json(['error' => 'Data pembeli tidak ditemukan'], 404);
+            }
+
+            // FIXED: Gunakan pembeli_id yang benar
+            $alamats = Alamat::where('pembeli_id', $pembeli->pembeli_id)
+                            ->orderBy('status_default', 'desc')
+                            ->orderBy('created_at', 'desc')
+                            ->get();
+
+            return response()->json(['alamats' => $alamats]);
+        } catch (\Exception $e) {
+            return response()->json(['error' => 'Terjadi kesalahan: ' . $e->getMessage()], 500);
+        }
+    }
+
+    /**
+     * Get specific address details for selection
+     */
     public function alamatSelect(Request $request)
     {
         try {
@@ -748,7 +1162,8 @@ class WebViewController extends Controller
                 return response()->json(['error' => 'Data pembeli tidak ditemukan'], 404);
             }
 
-            $alamats = Alamat::where('pembeli_id', $pembeli->id)
+            // FIXED: Gunakan pembeli_id yang benar
+            $alamats = Alamat::where('pembeli_id', $pembeli->pembeli_id)
                             ->orderBy('status_default', 'desc')
                             ->orderBy('created_at', 'desc')
                             ->get();
@@ -786,8 +1201,9 @@ class WebViewController extends Controller
                 return response()->json(['error' => 'Data pembeli tidak ditemukan'], 404);
             }
 
+            // FIXED: Gunakan primary key yang benar dan pembeli_id yang benar
             $alamat = Alamat::where('alamat_id', $id)
-                           ->where('pembeli_id', $pembeli->id)
+                           ->where('pembeli_id', $pembeli->pembeli_id)
                            ->first();
 
             if (!$alamat) {
