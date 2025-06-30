@@ -22,11 +22,17 @@ use App\Http\Controllers\Api\DashboardWarehouseController;
 use App\Http\Controllers\Api\DashboardCSController;
 use App\Http\Controllers\Api\DashboardHunterController;
 use App\Http\Controllers\Api\AlamatController;
+use App\Http\Controllers\Dashboard\Owner\RequestDonasiController;
 use App\Http\Controllers\Api\DashboardOrganisasiController;
 use App\Http\Controllers\Api\DashboardAdminController;
 use App\Http\Controllers\Api\DashboardConsignorController;
+use App\Http\Controllers\Api\DashboardOwnerController; // ADDED: Import Owner Controller
 use App\Http\Controllers\Api\BuyerProfileController;
 use App\Http\Controllers\Api\DashboardProfileController;
+use App\Http\Controllers\Api\PenitipBarangController;
+use App\Http\Controllers\Api\PenitipTransaksiController;
+use App\Http\Controllers\Api\ConsignorPickupController;
+use App\Http\Controllers\Api\UnsoldItemPickupController;
 
 use App\Http\Controllers\Api\PenitipBarangController;
 use App\Http\Controllers\Api\PenitipTransaksiController;
@@ -37,6 +43,7 @@ use App\Http\Controllers\Api\RatingController;
 use Illuminate\Support\Facades\Log;
 use App\Http\Controllers\Api\ReportController;
 use App\Http\Controllers\Api\OwnerReportController;
+use App\Models\Transaksi;
 use Illuminate\Http\Request;
 
 /*
@@ -203,6 +210,8 @@ Route::middleware(['auth', 'role:pembeli'])->group(function () {
     Route::put('/dashboard/alamat/{id}', [WebViewController::class, 'alamatUpdate'])->name('buyer.alamat.update');
     Route::delete('/dashboard/alamat/{id}', [WebViewController::class, 'alamatDestroy'])->name('buyer.alamat.destroy');
     Route::patch('/dashboard/alamat/{id}/set-default', [WebViewController::class, 'alamatSetDefault'])->name('buyer.alamat.set-default');
+    // Untuk web route
+    Route::get('/buyer/alamat/select', [\App\Http\Controllers\Api\AlamatController::class, 'getForSelection'])->name('buyer.alamat.select');
 
     // Profile Routes
     Route::prefix('dashboard/buyer/profile')->name('buyer.profile.')->group(function () {
@@ -246,18 +255,16 @@ Route::middleware(['auth', 'role:pembeli'])->group(function () {
     // Process checkout
     Route::post('/checkout/process', [TransaksiController::class, 'store'])->name('checkout.process');
     
-    // Thank you page
+    // Payment routes
+    Route::get('/payment/{transaksi_id}', [TransaksiController::class, 'show'])->name('payment.show');
+    Route::post('/payment/{transaksi_id}/upload', [TransaksiController::class, 'uploadProof'])->name('payment.upload');
+    Route::get('/payment/{transaksi_id}/cancel', [TransaksiController::class, 'cancelTransaction'])->name('transaction.cancel');
+
+    // Thank you page - REDIRECT LANGSUNG KE PAYMENT
     Route::get('/checkout/thank-you/{transaction_id}', function($transactionId) {
-        $transaction = \App\Models\Transaksi::with(['details.barang.kategoriBarang', 'alamat'])
-            ->where('transaksi_id', $transactionId)
-            ->where('pembeli_id', function($query) {
-                $user = Auth::user();
-                $pembeli = \App\Models\Pembeli::where('user_id', $user->id)->first();
-                return $pembeli ? $pembeli->pembeli_id : $user->id;
-            })
-            ->firstOrFail();
-            
-        return view('checkout.thank-you', compact('transaction'));
+        // Langsung redirect ke payment countdown tanpa validasi tambahan
+        return redirect()->route('checkout.payment', ['id' => $transactionId])
+            ->with('success', 'Pesanan berhasil dibuat! Silakan lakukan pembayaran.');
     })->name('checkout.thank-you');
     
     // API Routes for checkout
@@ -271,13 +278,37 @@ Route::middleware(['auth', 'role:pembeli'])->group(function () {
     Route::get('/dashboard/alamat-selector-demo', function () {
         return view('examples.alamat-selector-usage');
     })->name('buyer.alamat.selector.demo');
+    
+    // Payment countdown page - PERBAIKI INI
+    Route::get('/checkout/payment/{id}', [WebViewController::class, 'showPaymentCountdown'])
+        ->name('checkout.payment');
+    
+    // Check transaction status endpoint
+    Route::get('/checkout/check-status/{transaction_id}', [WebViewController::class, 'checkTransactionStatus'])
+        ->name('checkout.check-status');
+    
+    // Cancel transaction endpoint
+    Route::get('/checkout/cancel/{transaction_id}', [WebViewController::class, 'cancelTransaction'])
+        ->name('checkout.cancel');
+    
+    // Cancelled transaction page
+    Route::get('/checkout/cancelled/{transaction_id}', [WebViewController::class, 'showCancelledPage'])
+        ->name('checkout.cancelled');
+    
+    // Upload payment proof
+    Route::post('/buyer/transactions/{id}/upload-payment', [WebViewController::class, 'uploadBuktiPembayaran'])
+        ->name('buyer.transactions.upload-payment');
+
+    // Tambahkan route untuk success page
+    Route::get('/checkout/success/{transaction_id}', [WebViewController::class, 'showSuccessPage'])
+        ->name('checkout.success');
 
     // Buyer Rating Routes
     Route::get('/dashboard/buyer/profile/ratings', [BuyerProfileController::class, 'showRatings'])->name('buyer.profile.ratings');
     Route::post('/dashboard/buyer/rating/submit', [BuyerProfileController::class, 'submitRating'])->name('buyer.rating.submit');
     Route::put('/dashboard/buyer/rating/{rating}/update', [BuyerProfileController::class, 'updateRating'])->name('buyer.rating.update');
     Route::delete('/dashboard/buyer/rating/{rating}/delete', [BuyerProfileController::class, 'deleteRating'])->name('buyer.rating.delete');
-    
+
     // View consignor ratings
     Route::get('/dashboard/consignor/{penitip_id}/ratings', [RatingController::class, 'showConsignorRatings'])->name('consignor.ratings');
 });
@@ -299,12 +330,20 @@ Route::middleware(['auth', 'role:penitip'])->group(function () {
     Route::put('/dashboard/barang-saya/{id}', [DashboardConsignorController::class, 'updateItem'])->name('consignor.items.update');
     Route::delete('/dashboard/barang-saya/{id}', [DashboardConsignorController::class, 'destroyItem'])->name('consignor.items.destroy');
     
+    // Extension Route - NEW
+    Route::post('/dashboard/barang-saya/{id}/extend', [DashboardConsignorController::class, 'extendItem'])->name('items.extend');
+
     // Consignment Transaction Routes - Enhanced
     Route::get('/dashboard/transaksi', [DashboardConsignorController::class, 'transactions'])->name('consignor.transactions');
     Route::get('/dashboard/transaksi/{id}', [DashboardConsignorController::class, 'showTransaction'])->name('consignor.transactions.show');
     
     // Extension Route - NEW
     Route::post('/dashboard/transaksi/extend', [DashboardConsignorController::class, 'extendTransaction'])->name('consignor.transactions.extend');
+    
+    // Expiring Transactions Routes - NEW
+    Route::get('/dashboard/transaksi-berakhir', [DashboardConsignorController::class, 'expiringTransactions'])->name('consignor.transactions.expiring');
+    Route::get('/dashboard/transaksi-berakhir/{id}', [DashboardConsignorController::class, 'showExpiringTransaction'])->name('consignor.transactions.expiring.show');
+    Route::post('/dashboard/transaksi-berakhir/{id}/extend', [DashboardConsignorController::class, 'extendTransaction'])->name('consignor.transactions.extend');
     
     // Fallback routes for missing views
     Route::get('/dashboard/transaksi/fallback', function () {
@@ -315,6 +354,9 @@ Route::middleware(['auth', 'role:penitip'])->group(function () {
         return view('errors.missing-view', ['view' => 'dashboard.consignor.transactions.show', 'id' => $id]);
     })->name('consignor.transactions.show.fallback');
     
+    // Ratings Routes for Consignors
+    Route::get('/dashboard/rating-diterima', [DashboardConsignorController::class, 'showRatings'])->name('consignor.ratings');
+    Route::get('/dashboard/rating-diterima/{id}', [DashboardConsignorController::class, 'showRatingDetail'])->name('consignor.ratings.show');
 
     // Consignor Pickup Routes
     Route::get('/dashboard/consignor/pickup', [App\Http\Controllers\Api\ConsignorPickupController::class, 'index'])->name('consignor.pickup');
@@ -359,6 +401,11 @@ Route::middleware(['auth', 'role:gudang,pegawai gudang'])->group(function () {
         Route::post('/dashboard/warehouse/confirm-received/{orderId}', [DashboardWarehouseController::class, 'confirmItemReceived'])->name('dashboard.warehouse.confirm-received');
         // SEARCH FUNCTIONALITY ROUTES
         
+        // NEW ROUTES FOR VERIFIED TRANSACTIONS
+        Route::get('/verified-transactions', [DashboardWarehouseController::class, 'verifiedTransactions'])->name('verified-transactions');
+        Route::post('/transaction/{id}/prepare', [DashboardWarehouseController::class, 'updateTransactionToPrepared'])->name('transaction.prepare');
+        Route::post('/transactions/bulk-prepare', [DashboardWarehouseController::class, 'bulkUpdateToPrepared'])->name('transactions.bulk-prepare');
+        
         // NEW ROUTES FOR SEARCH FUNCTIONALITY
         Route::get('/export', [DashboardWarehouseController::class, 'exportResults'])->name('export');
         Route::post('/bulk-update', [DashboardWarehouseController::class, 'bulkUpdate'])->name('bulk-update');
@@ -390,6 +437,15 @@ Route::get('/shipments', [DashboardWarehouseController::class, 'shipments'])->na
         // PDF PRINTING ROUTES
         Route::get('/print-note/{id}', [DashboardWarehouseController::class, 'printConsignmentNote'])->name('print-note');
         Route::post('/print-bulk-notes', [DashboardWarehouseController::class, 'printBulkConsignmentNotes'])->name('print-bulk-notes');
+        // PDF PRINTING ROUTES - FIXED
+        Route::get('/print/item/{id}', [DashboardWarehouseController::class, 'printItemDetail'])->name('print-item-detail');
+        Route::post('/print/selected-items', [DashboardWarehouseController::class, 'printSelectedItems'])->name('print-selected-items');
+        Route::get('/print/consigned-items', [DashboardWarehouseController::class, 'printConsignedItems'])->name('print-consigned-items');
+        Route::get('/print/inventory-summary', [DashboardWarehouseController::class, 'printInventorySummary'])->name('print-inventory-summary');
+        
+        // Legacy print routes for backward compatibility
+        Route::get('/print-note/{id}', [DashboardWarehouseController::class, 'printItemDetail'])->name('print-note');
+        Route::post('/print-bulk-notes', [DashboardWarehouseController::class, 'printSelectedItems'])->name('print-bulk-notes');
         
         // CONSIGNMENT MANAGEMENT
         Route::get('/consignment/create', [DashboardWarehouseController::class, 'createConsignmentItem'])->name('consignment.create');
@@ -418,6 +474,13 @@ Route::get('/shipments', [DashboardWarehouseController::class, 'shipments'])->na
 Route::get('/shipments-ready', [DashboardWarehouseController::class, 'shipmentsReady'])->name('shipments-ready');
 
         // TRANSACTION MANAGEMENT
+        // Shipments Management (Features 1 & 2)
+        Route::get('/shipments', [DashboardWarehouseController::class, 'shipments'])->name('shipments'); // Feature 1
+        Route::get('/shipments/{id}', [DashboardWarehouseController::class, 'showShipment'])->name('shipments.show');
+        Route::get('/shipments/{id}/create', [DashboardWarehouseController::class, 'createShipment'])->name('shipments.create'); // Feature 2
+        Route::post('/shipments', [DashboardWarehouseController::class, 'storeShipment'])->name('shipments.store'); // Feature 2
+        Route::put('/shipments/{id}/status', [DashboardWarehouseController::class, 'updateShipmentStatus'])->name('shipments.update-status');
+        Route::put('/shipments/{id}/courier', [DashboardWarehouseController::class, 'assignCourier'])->name('shipments.assign-courier'); // Feature 2
 
 // Consignment Transactions with search functionality
 Route::get('/consignment/transactions', [DashboardWarehouseController::class, 'consignmentTransactions'])->name('consignment.transactions');
@@ -462,6 +525,14 @@ Route::put('/shipments/{id}/courier', [DashboardWarehouseController::class, 'ass
         
         // COURIER NOTE ROUTE - Add this new route
         Route::get('/courier-note/{id}', [DashboardWarehouseController::class, 'generateCourierNote'])->name('courier-note');
+    Route::get('/pickup/{id}/detail', [DashboardWarehouseController::class, 'showPickupDetail'])->name('pickup.detail');
+    Route::post('/pickup/{id}/confirm', [DashboardWarehouseController::class, 'confirmItemPickup'])->name('pickup.confirm');
+    Route::post('/pickup/bulk-confirm', [DashboardWarehouseController::class, 'bulkConfirmPickup'])->name('pickup.bulk-confirm');
+    Route::get('/pickup/report', [DashboardWarehouseController::class, 'generatePickupReport'])->name('pickup.report');
+
+        // Add this route for extending consignment
+        Route::put('/item/{id}/extend', [DashboardWarehouseController::class, 'extendConsignment'])
+            ->name('item.extend');
     });
     
     // Legacy Routes (for backward compatibility)
@@ -481,6 +552,19 @@ Route::put('/shipments/{id}/courier', [DashboardWarehouseController::class, 'ass
 Route::middleware(['auth', 'role:cs'])->group(function () {
     // Dashboard
     Route::get('/dashboard/cs', [DashboardCSController::class, 'index'])->name('dashboard.cs');
+    
+    // Merchandise Claims Routes - NEW
+    Route::prefix('dashboard/cs/merchandise-claims')->name('cs.merchandise.claims.')->group(function () {
+        Route::get('/', [DashboardCSController::class, 'merchandiseClaims'])->name('index');
+        Route::get('/{pembeliId}/{merchId}/{tanggalPenukaran}', [DashboardCSController::class, 'showMerchandiseClaim'])->name('show');
+        Route::put('/{pembeliId}/{merchId}/{tanggalPenukaran}', [DashboardCSController::class, 'updateMerchandiseClaim'])->name('update');
+        Route::post('/bulk-update', [DashboardCSController::class, 'bulkUpdateMerchandiseClaims'])->name('bulk-update');
+    });
+    
+    // Alternative merchandise claims routes
+    Route::get('/dashboard/cs/merchandise-claims', [DashboardCSController::class, 'merchandiseClaims'])->name('cs.merchandise.claims');
+    Route::get('/dashboard/cs/merchandise-claims/{pembeliId}/{merchId}/{tanggalPenukaran}', [DashboardCSController::class, 'showMerchandiseClaim'])->name('cs.merchandise.claims.show');
+    Route::put('/dashboard/cs/merchandise-claims/{pembeliId}/{merchId}/{tanggalPenukaran}', [DashboardCSController::class, 'updateMerchandiseClaim'])->name('cs.merchandise.claims.update');
     
     // Discussions Routes
     Route::get('/dashboard/cs/diskusi', function () {
@@ -585,6 +669,38 @@ Route::middleware(['auth', 'role:admin'])->prefix('dashboard/admin')->name('dash
     Route::get('/ratings/reports', [RatingController::class, 'ratingReports'])->name('ratings.reports');
 });
 
+// Owner Dashboard Routes
+Route::middleware(['auth', 'role:owner'])->prefix('dashboard/owner')->name('dashboard.owner.')->group(function () {
+
+    // Donasi Routes
+    Route::get('/donasi', function () {
+        return view('dashboard.owner.donasi.index');
+    })->name('donasi.index');
+
+    Route::get('/donasi/print-report', [App\Http\Controllers\Api\DashboardOwnerController::class, 'printDonasiReport'])->name('donasi.print');
+    Route::get('/donasi/report-data', [DashboardOwnerController::class, 'donasiReport'])->name('donasi.report-data');
+    Route::get('/donasi/export-data', [DashboardOwnerController::class, 'exportDonasiReport'])->name('donasi.export-data');
+
+    // Request Donasi Routes
+    Route::get('/request-donasi', function () {
+        return view('dashboard.owner.request-donasi.index');
+    })->name('request-donasi.index');
+
+    Route::get('/request-donasi/print-report', [DashboardOwnerController::class, 'printRequestDonasiReport'])->name('request-donasi.print');
+    Route::get('/request-donasi/report-data', [DashboardOwnerController::class, 'requestDonasiReport'])->name('request-donasi.report-data');
+    Route::get('/request-donasi/export-data', [DashboardOwnerController::class, 'exportRequestDonasiReport'])->name('request-donasi.export-data');
+
+    // Transaksi Penitipan Routes
+    Route::get('/transaksi-penitipan', [DashboardOwnerController::class, 'transaksiPenitipanIndex'])->name('transaksi-penitipan.index');
+    Route::get('/transaksi-penitipan/report', [DashboardOwnerController::class, 'transaksiPenitipanReport'])->name('transaksi-penitipan.report');
+    Route::get('/transaksi-penitipan/print', [DashboardOwnerController::class, 'printTransaksiPenitipanReport'])->name('transaksi-penitipan.print');
+    Route::get('/transaksi-penitipan/export', [DashboardOwnerController::class, 'exportTransaksiPenitipanReport'])->name('transaksi-penitipan.export');
+
+});
+
+// Alternative admin route for compatibility
+Route::get('/dashboard/admin', [DashboardAdminController::class, 'index'])->name('dashboard.admin');
+
 // ========================================
 // OWNER ROUTES - FIXED
 // ========================================
@@ -614,6 +730,45 @@ Route::middleware(['auth', 'role:owner'])->prefix('owner')->group(function () {
     Route::get('/sales-report-category-hunter/pdf', [OwnerReportController::class, 'salesReportByCategoryWithHunterPDF'])
         ->name('dashboard.owner.sales-report-category-hunter-pdf');
     // Donation Routes
+// OWNER ROUTES - CORRECTED TO USE CONTROLLER
+// ========================================
+
+Route::middleware(['auth', 'role:owner'])->group(function () {
+    // Main Dashboard Route - Returns view, not JSON
+    Route::get('/dashboard/owner', function () {
+        return view('dashboard.owner.index');
+    })->name('dashboard.owner');
+
+    // Additional Owner Management Routes
+    Route::prefix('dashboard/owner')->name('owner.')->group(function () {
+        Route::get('/transactions', function () {
+            return view('errors.missing-view', ['view' => 'dashboard.owner.transactions.index']);
+        })->name('transactions');
+        Route::get('/consignors', function () {
+            return view('errors.missing-view', ['view' => 'dashboard.owner.consignors.index']);
+        })->name('consignors');
+        Route::get('/analytics', function () {
+            return view('errors.missing-view', ['view' => 'dashboard.owner.analytics.index']);
+        })->name('analytics');
+        Route::get('/settings', function () {
+            return view('errors.missing-view', ['view' => 'dashboard.owner.settings.index']);
+        })->name('settings');
+        Route::get('/financial-summary', function () {
+            return view('errors.missing-view', ['view' => 'dashboard.owner.financial.index']);
+        })->name('financial-summary');
+    });
+    
+    // Dashboard Data API Routes - These return JSON
+    Route::prefix('api/dashboard/owner')->name('api.dashboard.owner.')->group(function () {
+        Route::get('/data', [DashboardOwnerController::class, 'index'])->name('data');
+        Route::get('/sales-report', [DashboardOwnerController::class, 'salesReport'])->name('sales-report');
+        Route::get('/profit-report', [DashboardOwnerController::class, 'profitReport'])->name('profit-report');
+    });
+
+    // Print Report Route - NEW
+    Route::get('/dashboard/owner/print-report', [DashboardOwnerController::class, 'printReport'])->name('owner.print-report');
+    
+    // Legacy Donation Routes (keeping for backward compatibility)
     Route::get('/dashboard/donasi', function () {
         return view('errors.missing-view', ['view' => 'dashboard.owner.donations.index']);
     })->name('owner.donations');
@@ -622,19 +777,52 @@ Route::middleware(['auth', 'role:owner'])->prefix('owner')->group(function () {
         return view('errors.missing-view', ['view' => 'dashboard.owner.donations.show', 'id' => $id]);
     })->name('owner.donations.show');
 
-    // Report Routes
-    Route::get('/dashboard/laporan/penjualan', function () {
-        return view('errors.missing-view', ['view' => 'dashboard.owner.reports.sales']);
-    })->name('owner.reports.sales');
+    // Enhanced Report Routes
+    Route::prefix('dashboard/laporan')->name('owner.reports.')->group(function () {
+        Route::get('/penjualan', function () {
+            return view('errors.missing-view', ['view' => 'dashboard.owner.reports.sales']);
+        })->name('sales');
+        Route::get('/komisi', function () {
+            return view('errors.missing-view', ['view' => 'dashboard.owner.reports.commission']);
+        })->name('commission');
+        Route::get('/stok', function () {
+            return view('errors.missing-view', ['view' => 'dashboard.owner.reports.stock']);
+        })->name('stock');
+        Route::get('/kategori', function () {
+            return view('errors.missing-view', ['view' => 'dashboard.owner.reports.category']);
+        })->name('category');
+    });
+    
+    // Rating Reports
 
-    Route::get('/dashboard/laporan/komisi', function () {
-        return view('errors.missing-view', ['view' => 'dashboard.owner.reports.commission']);
-    })->name('owner.reports.commission');
+    // Donation Report Routes - TAMBAHKAN INI
+    Route::get('/donasi-report', [DashboardOwnerController::class, 'donasiReport'])->name('donasi.report');
+    Route::get('/donasi-export', [DashboardOwnerController::class, 'exportDonasiReport'])->name('donasi.export');
+});
 
-    Route::get('/dashboard/laporan/stok', function () {
-        return view('errors.missing-view', ['view' => 'dashboard.owner.reports.stock']);
-    })->name('owner.reports.stock');
+// ========================================
+// API ROUTES FOR DASHBOARD DATA
+// ========================================
 
+Route::middleware(['auth'])->prefix('api/dashboard')->name('api.dashboard.')->group(function () {
+    // Owner API Routes
+    Route::middleware(['role:owner'])->group(function () {
+        Route::get('/owner', [DashboardOwnerController::class, 'index'])->name('owner');
+        Route::get('/owner/export', [DashboardOwnerController::class, 'exportReport'])->name('owner.export');
+        Route::get('/owner/sales-report', [DashboardOwnerController::class, 'salesReport'])->name('owner.sales-report');
+        Route::get('/owner/profit-report', [DashboardOwnerController::class, 'profitReport'])->name('owner.profit-report');
+        Route::get('/owner/donasi-report', [DashboardOwnerController::class, 'donasiReport'])->name('owner.donasi-report');
+        Route::get('/owner/donasi-export', [DashboardOwnerController::class, 'exportDonasiReport'])->name('owner.donasi-export');
+    });
+    
+    // Other dashboard API routes
+    Route::get('/admin', [DashboardAdminController::class, 'index'])->middleware('role:admin');
+    Route::get('/warehouse', [DashboardWarehouseController::class, 'index'])->middleware('role:pegawai gudang');
+    Route::get('/cs', [DashboardCSController::class, 'index'])->middleware('role:cs');
+    Route::get('/consignor', [DashboardConsignorController::class, 'index'])->middleware('role:penitip');
+    Route::get('/buyer', [DashboardBuyerController::class, 'index'])->middleware('role:pembeli');
+    Route::get('/organization', [DashboardOrganisasiController::class, 'index'])->middleware('role:organisasi');
+    Route::get('/hunter', [DashboardHunterController::class, 'index'])->middleware('role:hunter');
     Route::get('/dashboard/laporan/kategori', function () {
         return view('errors.missing-view', ['view' => 'dashboard.owner.reports.category']);
     })->name('owner.reports.category');
@@ -767,6 +955,9 @@ Route::middleware(['auth'])->prefix('api')->name('api.')->group(function () {
         Route::get('/reports/expired-items/data', [ReportController::class, 'expiredItemsData'])->name('reports.expired-items.data');
         Route::get('/reports/expired-items/filters', [ReportController::class, 'getFilterOptions'])->name('reports.expired-items.filters');
     });
+    // TAMBAHKAN ROUTE API UNTUK COUNTDOWN
+    Route::get('/transactions/{id}/status', [WebViewController::class, 'checkTransactionStatus'])->name('transactions.status');
+    Route::post('/transactions/{id}/auto-cancel', [WebViewController::class, 'autoCancelExpiredTransaction'])->name('transactions.auto-cancel');
 });
 
 // ========================================
@@ -774,6 +965,17 @@ Route::middleware(['auth'])->prefix('api')->name('api.')->group(function () {
 // ========================================
 
 if (config('app.debug')) {
+    // Add these debugging routes (remove in production)
+    Route::get('/debug/transactions', [DashboardWarehouseController::class, 'debugTransactions'])->name('debug.transactions');
+    Route::get('/debug/transaction/{id}', [DashboardWarehouseController::class, 'getTransactionDetails'])->name('debug.transaction.details');
+
+    // Updated PDF Print Routes with better error handling
+    Route::get('/warehouse/consignment-note/{id}/print', [DashboardWarehouseController::class, 'printConsignmentNote'])->name('warehouse.consignment-note.print');
+    Route::get('/warehouse/consignment-note/{id}/preview', [DashboardWarehouseController::class, 'previewConsignmentNote'])->name('warehouse.consignment-note.preview');
+    Route::post('/warehouse/consignment-notes/bulk-print', [DashboardWarehouseController::class, 'bulkPrintConsignmentNotes'])->name('warehouse.consignment-notes.bulk-print');
+    Route::get('/warehouse/shipping-label/{id}/print', [DashboardWarehouseController::class, 'printShippingLabel'])->name('warehouse.shipping-label.print');
+    Route::get('/warehouse/inventory-report/print', [DashboardWarehouseController::class, 'printInventoryReport'])->name('warehouse.inventory-report.print');
+
     Route::middleware(['auth:web'])->group(function () {
         // Basic cart debug
         Route::get('/debug-cart', function() {
@@ -871,6 +1073,8 @@ if (config('app.debug')) {
                 'pembeli_sample' => DB::table('pembeli')->limit(5)->get()
             ]);
         });
+
+        Route::get('/dashboard/verified-transactions', [KeranjangBelanjaController::class, 'verifiedTransactions'])->name('dashboard.verified-transactions');
         
         // Debug ratings
         Route::get('/debug-ratings', function() {
@@ -912,6 +1116,14 @@ if (config('app.debug')) {
         });
     });
 }
+
+// Add the route for the donation hunter report
+Route::get('/dashboard/owner/donasi-hunter', [App\Http\Controllers\Api\DashboardOwnerController::class, 'donasiHunterIndex'])
+    ->name('dashboard.owner.donasi-hunter.index');
+
+// Add the route for printing the donation hunter report
+Route::get('/dashboard/owner/donasi-hunter/print', [App\Http\Controllers\Api\DashboardOwnerController::class, 'printDonasiHunterReport'])
+    ->name('dashboard.owner.donasi-hunter.print');
 
 // ========================================
 // FALLBACK ROUTE - FIXED

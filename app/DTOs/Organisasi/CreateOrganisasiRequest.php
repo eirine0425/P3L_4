@@ -15,6 +15,7 @@ class CreateOrganisasiRequest extends FormRequest
     {
         return [
             'nama_organisasi' => 'required|string|max:255',
+            'alamat' => 'required|string|max:255',
             'user_id'         => 'required|integer',
         ];
     }

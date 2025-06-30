@@ -202,7 +202,7 @@
                     </div>
                 </div>
                 @endif
-                
+           
                 <!-- Debug Information (remove this in production) -->
                 @if(config('app.debug'))
                 <div class="alert alert-info">

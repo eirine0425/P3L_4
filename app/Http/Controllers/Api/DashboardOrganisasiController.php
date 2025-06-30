@@ -28,7 +28,7 @@ class DashboardOrganisasiController extends Controller
         })->count();
 
         $pendingRequests = RequestDonasi::where('organisasi_id', $organization->id)
-            ->where('status', 'Menunggu Persetujuan')
+            ->where('status', 'Menunggu')
             ->count();
 
         $approvedRequests = RequestDonasi::where('organisasi_id', $organization->id)

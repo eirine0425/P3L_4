@@ -21,8 +21,8 @@ class BuyerTransactionController extends Controller
                 return redirect()->route('home')->with('error', 'Data pembeli tidak ditemukan.');
             }
             
-            // Ambil semua transaksi pembeli dengan pagination
-            $transactions = Transaksi::where('pembeli_id', $buyer->id)
+            // FIXED: Use correct pembeli_id reference
+            $transactions = Transaksi::where('pembeli_id', $buyer->pembeli_id)
                 ->with(['detailTransaksi.barang'])
                 ->orderBy('created_at', 'desc')
                 ->paginate(10);
@@ -44,12 +44,12 @@ class BuyerTransactionController extends Controller
                 return redirect()->route('home')->with('error', 'Data pembeli tidak ditemukan.');
             }
             
-            // Ambil detail transaksi
-            $transaction = Transaksi::where('id', $id)
-                ->where('pembeli_id', $buyer->id)
-                ->with(['detailTransaksi.barang', 'pengiriman'])
+            // FIXED: Use 'id' instead of 'transaksi_id' and correct pembeli_id reference
+            $transaction = Transaksi::where('transaksi_id', $id)
+                ->where('pembeli_id', $buyer->pembeli_id)
+                ->with(['detailTransaksi.barang', 'pengiriman', 'alamat'])
                 ->first();
-                
+            
             if (!$transaction) {
                 return redirect()->route('buyer.transactions')->with('error', 'Transaksi tidak ditemukan.');
             }

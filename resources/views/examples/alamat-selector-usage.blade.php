@@ -1,112 +1,105 @@
-@extends('layouts.dashboard')
-
-@section('title', 'Contoh Penggunaan Alamat Selector')
+@extends('layouts.app')
 
 @section('content')
-<div class="container-fluid">
+<div class="container py-5">
     <div class="row">
-        <div class="col-12">
-            <div class="card">
-                <div class="card-header">
-                    <h4>Contoh Penggunaan Fitur Pilih Alamat</h4>
+        <div class="col-md-8 mx-auto">
+            <div class="card shadow-sm">
+                <div class="card-header bg-primary text-white">
+                    <h5 class="mb-0">Contoh Penggunaan Dropdown Alamat</h5>
                 </div>
                 <div class="card-body">
-                    
-                    <!-- Contoh 1: Menggunakan komponen alamat display -->
                     <div class="mb-4">
-                        <h5>Contoh 1: Komponen Alamat Display</h5>
-                        <p class="text-muted">Komponen ini akan menampilkan alamat yang dipilih dan tombol untuk mengubahnya.</p>
-                        
-                        @include('components.alamat-display')
-                    </div>
-                    
-                    <hr>
-                    
-                    <!-- Contoh 2: Tombol manual untuk membuka selector -->
-                    <div class="mb-4">
-                        <h5>Contoh 2: Tombol Manual</h5>
-                        <p class="text-muted">Anda bisa membuka selector alamat dengan tombol custom.</p>
-                        
-                        <button type="button" class="btn btn-primary" onclick="openAlamatSelector(customAlamatHandler)">
-                            <i class="fas fa-map-marker-alt me-2"></i>Pilih Alamat Custom
+                        <h6 class="fw-bold">Alamat Pengiriman</h6>
+                        <div id="selectedAlamatDisplay" class="border rounded p-3 mb-3">
+                            <div class="text-center text-muted py-3">
+                                <i class="fas fa-map-marker-alt fa-2x mb-2"></i>
+                                <p>Belum ada alamat yang dipilih</p>
+                            </div>
+                        </div>
+                        <button type="button" class="btn btn-outline-primary" id="pilihAlamatBtn">
+                            <i class="fas fa-map-marker-alt me-2"></i>Pilih Alamat
                         </button>
-                        
-                        <div id="customAlamatResult" class="mt-3"></div>
                     </div>
                     
                     <hr>
                     
-                    <!-- Contoh 3: Dalam form -->
-                    <div class="mb-4">
-                        <h5>Contoh 3: Dalam Form</h5>
-                        <p class="text-muted">Contoh penggunaan dalam form checkout atau pengiriman.</p>
-                        
-                        <form id="checkoutForm">
-                            @csrf
-                            
-                            <div class="mb-3">
-                                <label class="form-label">Produk</label>
-                                <input type="text" class="form-control" value="Contoh Produk" readonly>
-                            </div>
-                            
-                            <div class="mb-3">
-                                <label class="form-label">Alamat Pengiriman</label>
-                                @include('components.alamat-display')
-                            </div>
-                            
-                            <div class="mb-3">
-                                <label class="form-label">Catatan</label>
-                                <textarea class="form-control" rows="3" placeholder="Catatan tambahan..."></textarea>
-                            </div>
-                            
-                            <button type="submit" class="btn btn-success">
-                                <i class="fas fa-shopping-cart me-2"></i>Proses Checkout
-                            </button>
-                        </form>
+                    <div class="mt-4">
+                        <h6 class="fw-bold">Kode Contoh</h6>
+                        <pre class="bg-light p-3 rounded"><code>// Tombol untuk membuka modal
+&lt;button type="button" class="btn btn-outline-primary" id="pilihAlamatBtn"&gt;
+    &lt;i class="fas fa-map-marker-alt me-2"&gt;&lt;/i&gt;Pilih Alamat
+&lt;/button&gt;
+
+// JavaScript untuk menangani pemilihan alamat
+document.getElementById('pilihAlamatBtn').addEventListener('click', function() {
+    // Buka modal pemilihan alamat
+    openAlamatSelector(function(alamat) {
+        // Callback akan dipanggil ketika alamat dipilih
+        if (alamat) {
+            // Tampilkan alamat yang dipilih
+            const displayEl = document.getElementById('selectedAlamatDisplay');
+            displayEl.innerHTML = `
+                &lt;div class="d-flex justify-content-between align-items-start"&gt;
+                    &lt;div&gt;
+                        &lt;h6 class="mb-1 fw-bold"&gt;${alamat.nama_penerima}&lt;/h6&gt;
+                        &lt;p class="mb-1"&gt;${alamat.no_telepon}&lt;/p&gt;
+                        &lt;p class="mb-1"&gt;${alamat.alamat}&lt;/p&gt;
+                        &lt;p class="mb-0 text-muted"&gt;${alamat.kota}, ${alamat.provinsi} ${alamat.kode_pos}&lt;/p&gt;
+                    &lt;/div&gt;
+                    &lt;div&gt;
+                        &lt;span class="badge bg-success"&gt;Terpilih&lt;/span&gt;
+                    &lt;/div&gt;
+                &lt;/div&gt;
+            `;
+            
+            // Simpan ID alamat untuk digunakan nanti
+            document.getElementById('alamat_id').value = alamat.alamat_id;
+        }
+    });
+});</code></pre>
                     </div>
-                    
                 </div>
             </div>
         </div>
     </div>
 </div>
 
-<!-- Include modal component -->
+<!-- Include the alamat selector modal -->
 @include('components.alamat-selector-modal')
 
+<!-- Hidden input to store the selected alamat ID -->
+<input type="hidden" id="alamat_id" name="alamat_id" value="">
+
 <script>
-// Custom handler untuk contoh 2
-function customAlamatHandler(alamatData) {
-    const resultDiv = document.getElementById('customAlamatResult');
-    resultDiv.innerHTML = `
-        <div class="alert alert-success">
-            <h6><i class="fas fa-check-circle me-2"></i>Alamat berhasil dipilih:</h6>
-            <strong>${alamatData.nama_penerima}</strong><br>
-            ${alamatData.alamat}<br>
-            ${alamatData.kota}, ${alamatData.provinsi} ${alamatData.kode_pos}
-        </div>
-    `;
-}
-
-// Handle form submission
-document.getElementById('checkoutForm').addEventListener('submit', function(e) {
-    e.preventDefault();
-    
-    const selectedAlamatId = document.getElementById('selectedAlamatId').value;
-    
-    if (!selectedAlamatId) {
-        alert('Silakan pilih alamat pengiriman terlebih dahulu');
-        return;
-    }
-    
-    alert('Form akan disubmit dengan alamat ID: ' + selectedAlamatId);
-    // Di sini Anda bisa melanjutkan dengan submit form yang sebenarnya
-});
-
-// Listen untuk event alamat selected
-document.addEventListener('alamatSelected', function(e) {
-    console.log('Alamat dipilih:', e.detail);
-    // Anda bisa menambahkan logic tambahan di sini
+document.addEventListener('DOMContentLoaded', function() {
+    // Set up the button to open the alamat selector modal
+    document.getElementById('pilihAlamatBtn').addEventListener('click', function() {
+        // Open the alamat selector modal
+        openAlamatSelector(function(alamat) {
+            // This callback will be called when an address is selected
+            if (alamat) {
+                // Display the selected address
+                const displayEl = document.getElementById('selectedAlamatDisplay');
+                displayEl.innerHTML = `
+                    <div class="d-flex justify-content-between align-items-start">
+                        <div>
+                            <h6 class="mb-1 fw-bold">${alamat.nama_penerima}</h6>
+                            <p class="mb-1">${alamat.no_telepon}</p>
+                            <p class="mb-1">${alamat.alamat}</p>
+                            <p class="mb-0 text-muted">${alamat.kota}, ${alamat.provinsi} ${alamat.kode_pos}</p>
+                        </div>
+                        <div>
+                            <span class="badge bg-success">Terpilih</span>
+                        </div>
+                    </div>
+                `;
+                
+                // Store the alamat ID for later use
+                document.getElementById('alamat_id').value = alamat.alamat_id;
+            }
+        });
+    });
 });
 </script>
 @endsection
