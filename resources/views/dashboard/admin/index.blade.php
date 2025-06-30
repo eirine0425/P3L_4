@@ -8,7 +8,7 @@
     <div class="row mb-4">
         <div class="col-12">
             <div class="d-flex justify-content-between align-items-center">
-                <h1 class="h3 mb-0">Dashboard Admin</h1>
+                <h1 class="h3 mb-0">Dashboard CS</h1>
                 <div class="btn-group">
                     <a href="{{ route('dashboard.admin.penitips.create') }}" class="btn btn-primary">
                         <i class="fas fa-user-plus"></i> Daftarkan Penitip

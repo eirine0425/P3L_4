@@ -169,3 +169,4 @@ class TestUserSeeder extends Seeder
         }
     }
 }
+

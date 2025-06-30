@@ -43,21 +43,7 @@
                 </div>
             </div>
         </div>
-        <div class="col-md-3">
-            <div class="card bg-info text-white">
-                <div class="card-body">
-                    <div class="d-flex justify-content-between">
-                        <div>
-                            <h3>{{ $soldItems }}</h3>
-                            <p>Terjual</p>
-                        </div>
-                        <div>
-                            <i class="fas fa-shopping-cart fa-2x"></i>
-                        </div>
-                    </div>
-                </div>
-            </div>
-        </div>
+       
         <div class="col-md-3">
             <div class="card bg-secondary text-white">
                 <div class="card-body">
@@ -414,9 +400,13 @@
                             </a>
                         </div>
                         <div class="col-md-2 mb-3">
-                            <a href="{{ route('dashboard.warehouse.shipments.ready') }}" class="btn btn-warning btn-lg w-100">
-                                <i class="fas fa-shipping-fast me-2"></i>
-                                Transaksi Siap Kirim
+                            <a href="{{ route('dashboard.warehouse.shipments-ready') }}" class="btn btn-warning btn-lg w-100">
+                                <i class="fas fa-shipping-fast me-2"></i>Kelola Pesanan
+                            </a>
+                        </div>
+                        <div class="col-md-2 mb-3">
+                            <a href="{{ route('dashboard.warehouse.pickup-scheduling') }}" class="btn btn-warning btn-lg w-100">
+                                <i class="fas fa-calendar-alt me-2"></i>Jadwalkan Pengambilan
                             </a>
                         </div>
                         <div class="col-md-2 mb-3">
@@ -430,10 +420,7 @@
                             </a>
                         </div>
                     </div>
-                </div>
-            </div>
-        </div>
-    </div>
+    
     
     <!-- Recent Items -->
     <div class="row mt-4">
@@ -478,10 +465,27 @@
                                             </td>
                                             <td>{{ $item->created_at->format('d M Y') }}</td>
                                             <td>
-                                                <a href="{{ route('dashboard.warehouse.item.show', $item->barang_id) }}" 
-                                                   class="btn btn-sm btn-outline-primary">
-                                                    <i class="fas fa-eye"></i> Detail
-                                                </a>
+                                                <div class="btn-group" role="group">
+                                                    <a href="{{ route('dashboard.warehouse.item.show', $item->barang_id) }}" 
+                                                       class="btn btn-sm btn-outline-primary" title="Lihat Detail">
+                                                        <i class="fas fa-eye"></i>
+                                                    </a>
+                                                    <a href="{{ route('dashboard.warehouse.item.edit', $item->barang_id) }}" 
+                                                       class="btn btn-sm btn-outline-warning" title="Edit Barang">
+                                                        <i class="fas fa-edit"></i>
+                                                    </a>
+                                                    @if($item->sisa_hari <= 7 && $item->status == 'belum_terjual')
+                                                        <button class="btn btn-sm btn-outline-success" 
+                                                                onclick="schedulePickup('{{ $item->barang_id }}')" 
+                                                                title="Jadwalkan Pengambilan">
+                                                            <i class="fas fa-calendar-plus"></i>
+                                                        </button>
+                                                    @endif
+                                                    <a href="{{ route('products.show', $item->barang_id) }}" 
+                                                       class="btn btn-sm btn-outline-info" target="_blank" title="Lihat di Katalog">
+                                                        <i class="fas fa-external-link-alt"></i>
+                                                    </a>
+                                                </div>
                                             </td>
                                         </tr>
                                     @endforeach
@@ -501,32 +505,7 @@
             </div>
         </div>
         
-        <!-- Charts -->
-        <div class="col-md-4">
-            <div class="card">
-                <div class="card-header">
-                    <h5 class="card-title">Status Barang</h5>
-                </div>
-                <div class="card-body">
-                    <canvas id="statusChart"></canvas>
-                </div>
-            </div>
-        </div>
-    </div>
-    
-    <!-- Category Distribution -->
-    <div class="row mt-4">
-        <div class="col-12">
-            <div class="card">
-                <div class="card-header">
-                    <h5 class="card-title">Distribusi Kategori Barang</h5>
-                </div>
-                <div class="card-body">
-                    <canvas id="categoryChart" height="100"></canvas>
-                </div>
-            </div>
-        </div>
-    </div>
+        
     @endif
 </div>
 @endsection

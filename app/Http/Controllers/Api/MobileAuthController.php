@@ -226,6 +226,15 @@ class MobileAuthController extends Controller
                     'token' => $token,
                 ]
             ], 201);
+
+        } catch (\Exception $e) {
+            return response()->json([
+                'success' => false,
+                'message' => 'Registrasi gagal: ' . $e->getMessage(),
+            ], 500);
+        }
+    }
+
                 'message' => 'Registration successful',
                 'data' => [
                     'token' => $token,
@@ -261,6 +270,7 @@ class MobileAuthController extends Controller
             ]
         ]);
     }
+}
 }
     public function logout(Request $request)
     {

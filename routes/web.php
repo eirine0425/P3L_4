@@ -41,6 +41,8 @@ use App\Http\Controllers\Api\ConsignorPickupController;
 use App\Http\Controllers\Api\RatingController;
 
 use Illuminate\Support\Facades\Log;
+use App\Http\Controllers\Api\ReportController;
+use App\Http\Controllers\Api\OwnerReportController;
 use App\Models\Transaksi;
 use Illuminate\Http\Request;
 
@@ -95,6 +97,7 @@ Route::post('/products/{id}/discussion', function() {
 
 Route::get('/login', [AuthController::class, 'showLoginForm'])->name('login');
 Route::post('/login', [AuthController::class, 'login']);
+Route::post('/mobile/login', [AuthController::class, 'mobileLogin']);
 Route::get('/register', [AuthController::class, 'showRegisterForm'])->name('register');
 Route::post('/register', [AuthController::class, 'register']);
 Route::post('/logout', [AuthController::class, 'logout'])->name('logout');
@@ -136,7 +139,7 @@ Route::middleware(['auth'])->get('/dashboard', function () {
     $role = strtolower($user->role->nama_role ?? '');
 
     return match ($role) {
-        'owner' => redirect()->route('dashboard.owner'),
+        'owner' => redirect()->route('owner.dashboard'),
         'admin' => redirect()->route('dashboard.admin.index'),
         'pegawai', 'gudang', 'pegawai gudang' => redirect()->route('dashboard.warehouse.index'),
         'cs' => redirect()->route('dashboard.cs'),
@@ -379,6 +382,24 @@ Route::middleware(['auth', 'role:gudang,pegawai gudang'])->group(function () {
         Route::get('/inventory', [DashboardWarehouseController::class, 'inventory'])->name('inventory');
         Route::get('/transactions', [DashboardWarehouseController::class, 'transactionsList'])->name('transactions');
         Route::get('/shipments', [DashboardWarehouseController::class, 'shipments'])->name('shipments');
+        Route::get('/verification', [DashboardWarehouseController::class, 'verification'])->name('verification');
+        // Route untuk konfirmasi pengambilan barang oleh pegawai gudang
+    Route::post('/dashboard/warehouse/confirm-pickup/{transaksi}', [App\Http\Controllers\Api\DashboardWarehouseController::class, 'confirmPickup'])->name('warehouse.confirm.pickup');
+    Route::post('/dashboard/warehouse/confirm-delivery/{transaksi}', [App\Http\Controllers\Api\DashboardWarehouseController::class, 'confirmDelivery'])->name('warehouse.confirm.delivery');
+        // KELOLA PESANAN ROUTE - MISSING ROUTE ADDED
+        Route::get('/kelola-pesanan', [DashboardWarehouseController::class, 'kelolaPesanan'])->name('kelola-pesanan');
+        Route::post('/kelola-pesanan/schedule', [DashboardWarehouseController::class, 'scheduleDelivery'])->name('kelola-pesanan.schedule');
+ Route::get('/dashboard/warehouse/daftar-transaksi', [App\Http\Controllers\Api\DashboardWarehouseController::class, 'daftarTransaksi'])->name('warehouse.daftar.transaksi');
+    Route::post('/dashboard/warehouse/mark-ready/{transaksi}', [App\Http\Controllers\Api\DashboardWarehouseController::class, 'markReadyForPickup'])->name('warehouse.mark.ready');
+        // PICKUP SCHEDULING ROUTES - ADD THESE MISSING ROUTES
+        Route::get('/pickup-scheduling', [DashboardWarehouseController::class, 'pickupScheduling'])->name('pickup-scheduling');
+        Route::post('/pickup-scheduling', [DashboardWarehouseController::class, 'storePickupSchedule'])->name('pickup-scheduling.store');
+        Route::get('/pickup-scheduling/create', [DashboardWarehouseController::class, 'createPickupSchedule'])->name('pickup-scheduling.create');
+        Route::get('/pickup-scheduling/{id}', [DashboardWarehouseController::class, 'showPickupSchedule'])->name('pickup-scheduling.show');
+        Route::put('/pickup-scheduling/{id}', [DashboardWarehouseController::class, 'updatePickupSchedule'])->name('pickup-scheduling.update');
+        Route::delete('/pickup-scheduling/{id}', [DashboardWarehouseController::class, 'cancelPickupSchedule'])->name('pickup-scheduling.cancel');
+        Route::post('/dashboard/warehouse/confirm-received/{orderId}', [DashboardWarehouseController::class, 'confirmItemReceived'])->name('dashboard.warehouse.confirm-received');
+        // SEARCH FUNCTIONALITY ROUTES
         
         // NEW ROUTES FOR VERIFIED TRANSACTIONS
         Route::get('/verified-transactions', [DashboardWarehouseController::class, 'verifiedTransactions'])->name('verified-transactions');
@@ -390,7 +411,32 @@ Route::middleware(['auth', 'role:gudang,pegawai gudang'])->group(function () {
         Route::post('/bulk-update', [DashboardWarehouseController::class, 'bulkUpdate'])->name('bulk-update');
         Route::post('/save-search', [DashboardWarehouseController::class, 'saveSearch'])->name('save-search');
         Route::get('/saved-searches', [DashboardWarehouseController::class, 'getSavedSearches'])->name('saved-searches');
+
+         Route::get('/transaksi-siap-ambil', [App\Http\Controllers\Api\DashboardWarehouseController::class, 'transaksiSiapAmbil'])->name('warehouse.transaksi.siap-ambil');
         
+Route::get('/shipments', [DashboardWarehouseController::class, 'shipments'])->name('shipments');
+    Route::get('/shipments/{id}', [DashboardWarehouseController::class, 'showShipment'])->name('shipments.show');
+    Route::get('/shipments/{id}/create', [DashboardWarehouseController::class, 'createShipment'])->name('shipments.create');
+    Route::post('/shipments', [DashboardWarehouseController::class, 'storeShipment'])->name('shipments.store');
+    Route::put('/shipments/{id}/status', [DashboardWarehouseController::class, 'updateShipmentStatus'])->name('shipments.update-status');
+    Route::put('/shipments/{id}/courier', [DashboardWarehouseController::class, 'assignCourier'])->name('shipments.assign-courier');
+
+    // SHIPPING VALIDATION & BULK OPERATIONS - TAMBAHAN BARU
+    Route::post('/validate-shipping-time', [DashboardWarehouseController::class, 'validateShippingTime'])->name('validate-shipping-time');
+    Route::post('/bulk-schedule-shipments', [DashboardWarehouseController::class, 'bulkScheduleShipments'])->name('bulk-schedule-shipments');
+ Route::get('/pickup-scheduling', [DashboardWarehouseController::class, 'pickupScheduling'])->name('pickup.scheduling');
+    Route::post('/pickup-scheduling', [DashboardWarehouseController::class, 'storePickupSchedule'])->name('pickup.schedule.store');
+    Route::get('/pickup-scheduling/create', [DashboardWarehouseController::class, 'createPickupSchedule'])->name('pickup.schedule.create');
+    Route::get('/pickup-scheduling/{id}', [DashboardWarehouseController::class, 'showPickupSchedule'])->name('pickup.schedule.show');
+    Route::put('/pickup-scheduling/{id}', [DashboardWarehouseController::class, 'updatePickupSchedule'])->name('pickup.schedule.update');
+    Route::delete('/pickup-scheduling/{id}', [DashboardWarehouseController::class, 'cancelPickupSchedule'])->name('pickup.schedule.cancel');
+    
+    // API endpoints for AJAX
+    Route::get('/api/penitip/{id}/items', [DashboardWarehouseController::class, 'getPenitipItems'])->name('api.penitip.items');
+    Route::post('/api/pickup-schedule/validate', [DashboardWarehouseController::class, 'validatePickupSchedule'])->name('api.pickup.validate');
+        // PDF PRINTING ROUTES
+        Route::get('/print-note/{id}', [DashboardWarehouseController::class, 'printConsignmentNote'])->name('print-note');
+        Route::post('/print-bulk-notes', [DashboardWarehouseController::class, 'printBulkConsignmentNotes'])->name('print-bulk-notes');
         // PDF PRINTING ROUTES - FIXED
         Route::get('/print/item/{id}', [DashboardWarehouseController::class, 'printItemDetail'])->name('print-item-detail');
         Route::post('/print/selected-items', [DashboardWarehouseController::class, 'printSelectedItems'])->name('print-selected-items');
@@ -401,20 +447,33 @@ Route::middleware(['auth', 'role:gudang,pegawai gudang'])->group(function () {
         Route::get('/print-note/{id}', [DashboardWarehouseController::class, 'printItemDetail'])->name('print-note');
         Route::post('/print-bulk-notes', [DashboardWarehouseController::class, 'printSelectedItems'])->name('print-bulk-notes');
         
-        // Consignment management
+        // CONSIGNMENT MANAGEMENT
         Route::get('/consignment/create', [DashboardWarehouseController::class, 'createConsignmentItem'])->name('consignment.create');
         Route::post('/consignment', [DashboardWarehouseController::class, 'storeConsignmentItem'])->name('consignment.store');
+        Route::get('/consignment/transactions', [DashboardWarehouseController::class, 'consignmentTransactions'])->name('consignment.transactions');
+        Route::get('/consignment/transaction/{id}', [DashboardWarehouseController::class, 'showConsignmentTransaction'])->name('consignment.transaction.show');
         
-        // Enhanced Item management with full editing capability
+        // ITEM MANAGEMENT
         Route::get('/items/{id}', [DashboardWarehouseController::class, 'showItem'])->name('item.show');
         Route::get('/items/{id}/edit', [DashboardWarehouseController::class, 'editItem'])->name('item.edit');
         Route::put('/items/{id}', [DashboardWarehouseController::class, 'updateItem'])->name('item.update');
         Route::put('/items/{id}/update-status', [DashboardWarehouseController::class, 'updateItemStatus'])->name('item.update-status');
+        Route::put('/items/{id}/extend', [DashboardWarehouseController::class, 'extendConsignment'])->name('item.extend');
         
         // Alternative item routes for compatibility
         Route::get('/item/{id}', [DashboardWarehouseController::class, 'showItem'])->name('item.show.alt');
         Route::put('/item/{id}/status', [DashboardWarehouseController::class, 'updateItemStatus'])->name('item.update-status.alt');
         
+        // SHIPMENTS MANAGEMENT
+        Route::get('/shipments/{id}', [DashboardWarehouseController::class, 'showShipment'])->name('shipments.show');
+        Route::get('/shipments/{id}/create', [DashboardWarehouseController::class, 'createShipment'])->name('shipments.create');
+        Route::post('/shipments', [DashboardWarehouseController::class, 'storeShipment'])->name('shipments.store');
+        Route::put('/shipments/{id}/status', [DashboardWarehouseController::class, 'updateShipmentStatus'])->name('shipments.update-status');
+        Route::put('/shipments/{id}/courier', [DashboardWarehouseController::class, 'assignCourier'])->name('shipments.assign-courier');
+        // Tambahkan di dalam grup 'dashboard/warehouse'
+Route::get('/shipments-ready', [DashboardWarehouseController::class, 'shipmentsReady'])->name('shipments-ready');
+
+        // TRANSACTION MANAGEMENT
         // Shipments Management (Features 1 & 2)
         Route::get('/shipments', [DashboardWarehouseController::class, 'shipments'])->name('shipments'); // Feature 1
         Route::get('/shipments/{id}', [DashboardWarehouseController::class, 'showShipment'])->name('shipments.show');
@@ -451,11 +510,21 @@ Route::put('/shipments/{id}/courier', [DashboardWarehouseController::class, 'ass
         Route::post('/transaction/{id}/confirm', [DashboardWarehouseController::class, 'confirmItemReceived'])->name('confirm-received');
         Route::post('/transaction/{id}/status', [DashboardWarehouseController::class, 'updateTransactionStatus'])->name('update-transaction-status');
 
+        // PICKUP MANAGEMENT
         Route::get('/pickup', [DashboardWarehouseController::class, 'itemPickup'])->name('item-pickup');
         Route::get('/pickup/{id}/detail', [DashboardWarehouseController::class, 'showPickupDetail'])->name('pickup.detail');
         Route::post('/pickup/{id}/confirm', [DashboardWarehouseController::class, 'confirmItemPickup'])->name('pickup.confirm');
         Route::post('/pickup/bulk-confirm', [DashboardWarehouseController::class, 'bulkConfirmPickup'])->name('pickup.bulk-confirm');
         Route::get('/pickup/report', [DashboardWarehouseController::class, 'generatePickupReport'])->name('pickup.report');
+        Route::get('/pickup-history', [DashboardWarehouseController::class, 'pickupHistory'])->name('pickup-history');
+        Route::get('/pickup-receipt/{id}', [DashboardWarehouseController::class, 'generatePickupReceipt'])->name('pickup-receipt');
+        
+        // PICKUP FORM ROUTES
+        Route::get('/item/{id}/record-pickup', [DashboardWarehouseController::class, 'showPickupForm'])->name('show-pickup-form');
+        Route::post('/item/{id}/record-pickup', [DashboardWarehouseController::class, 'recordItemPickup'])->name('record-pickup');
+        
+        // COURIER NOTE ROUTE - Add this new route
+        Route::get('/courier-note/{id}', [DashboardWarehouseController::class, 'generateCourierNote'])->name('courier-note');
     Route::get('/pickup/{id}/detail', [DashboardWarehouseController::class, 'showPickupDetail'])->name('pickup.detail');
     Route::post('/pickup/{id}/confirm', [DashboardWarehouseController::class, 'confirmItemPickup'])->name('pickup.confirm');
     Route::post('/pickup/bulk-confirm', [DashboardWarehouseController::class, 'bulkConfirmPickup'])->name('pickup.bulk-confirm');
@@ -633,6 +702,34 @@ Route::middleware(['auth', 'role:owner'])->prefix('dashboard/owner')->name('dash
 Route::get('/dashboard/admin', [DashboardAdminController::class, 'index'])->name('dashboard.admin');
 
 // ========================================
+// OWNER ROUTES - FIXED
+// ========================================
+
+Route::middleware(['auth', 'role:owner'])->prefix('owner')->group(function () {
+    // Dashboard
+    Route::get('/dashboard', function () {
+        return view('dashboard.owner.index');
+    })->name('owner.dashboard');
+    
+    // Reports
+    Route::get('/reports/expired-items', function () {
+        return view('dashboard.owner.reports.expired-items');
+    })->name('owner.reports.expired-items');
+    
+    // PDF download route - FIXED
+    Route::get('/reports/expired-items/pdf', [ReportController::class, 'expiredItemsReport'])
+        ->name('owner.reports.expired-items.pdf');
+    
+    // Sales Report by Category with Hunter
+    Route::get('/sales-report-category-hunter/form', [OwnerReportController::class, 'salesReportByCategoryWithHunterForm'])
+        ->name('dashboard.owner.sales-report-category-hunter-form');
+    
+    Route::post('/sales-report-category-hunter', [OwnerReportController::class, 'salesReportByCategoryWithHunter'])
+        ->name('dashboard.owner.sales-report-category-hunter');
+    
+    Route::get('/sales-report-category-hunter/pdf', [OwnerReportController::class, 'salesReportByCategoryWithHunterPDF'])
+        ->name('dashboard.owner.sales-report-category-hunter-pdf');
+    // Donation Routes
 // OWNER ROUTES - CORRECTED TO USE CONTROLLER
 // ========================================
 
@@ -853,6 +950,11 @@ Route::middleware(['auth'])->prefix('api')->name('api.')->group(function () {
     // Shipping calculation
     Route::post('/shipping/calculate', [WebViewController::class, 'calculateShipping'])->name('shipping.calculate');
     
+    // Report API routes - ADDED
+    Route::middleware(['role:owner'])->group(function () {
+        Route::get('/reports/expired-items/data', [ReportController::class, 'expiredItemsData'])->name('reports.expired-items.data');
+        Route::get('/reports/expired-items/filters', [ReportController::class, 'getFilterOptions'])->name('reports.expired-items.filters');
+    });
     // TAMBAHKAN ROUTE API UNTUK COUNTDOWN
     Route::get('/transactions/{id}/status', [WebViewController::class, 'checkTransactionStatus'])->name('transactions.status');
     Route::post('/transactions/{id}/auto-cancel', [WebViewController::class, 'autoCancelExpiredTransaction'])->name('transactions.auto-cancel');
@@ -895,113 +997,48 @@ if (config('app.debug')) {
             ]);
         });
         
-        // Detailed cart debug
-        Route::get('/debug-cart-detailed', function() {
-            $user = Auth::guard('web')->user();
-            $pembeli = \App\Models\Pembeli::where('user_id', $user->id)->first();
-            $pembeliId = $pembeli ? $pembeli->pembeli_id : $user->id;
-            
-            // Check table structure
-            $tableStructure = DB::select("DESCRIBE keranjang_belanja");
-            
-            // Get all cart items with different approaches
-            $allCartItems = \App\Models\KeranjangBelanja::all();
-            $userCartItems = \App\Models\KeranjangBelanja::where('pembeli_id', $user->id)->get();
-            $pembeliCartItems = \App\Models\KeranjangBelanja::where('pembeli_id', $pembeliId)->get();
-            
-            // Raw queries
-            $rawUserItems = DB::table('keranjang_belanja')->where('pembeli_id', $user->id)->get();
-            $rawPembeliItems = DB::table('keranjang_belanja')->where('pembeli_id', $pembeliId)->get();
-            
-            // Check barang table
-            $allBarang = \App\Models\Barang::limit(5)->get();
-            
-            return response()->json([
-                'user' => [
-                    'id' => $user->id,
-                    'email' => $user->email,
-                    'role' => $user->role->nama_role ?? 'No Role'
-                ],
-                'pembeli' => $pembeli ? $pembeli->toArray() : null,
-                'pembeli_id_used' => $pembeliId,
-                'table_structure' => $tableStructure,
-                'cart_queries' => [
-                    'all_cart_items' => $allCartItems->toArray(),
-                    'user_cart_items' => $userCartItems->toArray(),
-                    'pembeli_cart_items' => $pembeliCartItems->toArray(),
-                    'raw_user_items' => $rawUserItems->toArray(),
-                    'raw_pembeli_items' => $rawPembeliItems->toArray()
-                ],
-                'sample_barang' => $allBarang->toArray(),
-                'counts' => [
-                    'all_cart' => $allCartItems->count(),
-                    'user_cart' => $userCartItems->count(),
-                    'pembeli_cart' => $pembeliCartItems->count(),
-                    'raw_user' => $rawUserItems->count(),
-                    'raw_pembeli' => $rawPembeliItems->count()
-                ]
-            ]);
-        });
-        
-        // Test relationships
-        Route::get('/debug-relationships', function() {
-            $cartItem = \App\Models\KeranjangBelanja::first();
-            
-            if (!$cartItem) {
-                return response()->json(['error' => 'No cart items found']);
-            }
-            
-            return response()->json([
-                'cart_item' => $cartItem->toArray(),
-                'barang_relationship' => $cartItem->barang ? $cartItem->barang->toArray() : null,
-                'kategori_relationship' => $cartItem->barang && $cartItem->barang->kategoriBarang ? 
-                    $cartItem->barang->kategoriBarang->toArray() : null,
-                'pembeli_relationship' => $cartItem->pembeli ? $cartItem->pembeli->toArray() : null
-            ]);
-        });
-        
-        // Test cart add functionality
-        Route::get('/debug-test-add/{barang_id}', function($barang_id) {
-            $user = Auth::guard('web')->user();
-            $pembeli = \App\Models\Pembeli::where('user_id', $user->id)->first();
-            $pembeliId = $pembeli ? $pembeli->pembeli_id : $user->id;
-            
-            // Check if barang exists
-            $barang = \App\Models\Barang::find($barang_id);
-            if (!$barang) {
-                return response()->json(['error' => 'Barang not found']);
-            }
-            
-            // Check if already in cart
-            $existingItem = \App\Models\KeranjangBelanja::where('pembeli_id', $pembeliId)
-                ->where('barang_id', $barang_id)
-                ->first();
-            
-            if ($existingItem) {
-                return response()->json([
-                    'message' => 'Item already in cart',
-                    'existing_item' => $existingItem->toArray()
-                ]);
-            }
-            
-            // Try to add to cart
+        // Test database connection
+        Route::get('/debug-database', function() {
             try {
-                $cartItem = \App\Models\KeranjangBelanja::create([
-                    'pembeli_id' => $pembeliId,
-                    'barang_id' => $barang_id
-                ]);
+                $connection = DB::connection()->getPdo();
+                $tables = DB::select('SHOW TABLES');
                 
                 return response()->json([
-                    'success' => true,
-                    'message' => 'Item added to cart',
-                    'cart_item' => $cartItem->toArray(),
-                    'user_id' => $user->id,
-                    'pembeli_id' => $pembeliId,
-                    'barang' => $barang->toArray()
+                    'status' => 'connected',
+                    'database' => config('database.connections.mysql.database'),
+                    'tables_count' => count($tables),
+                    'tables' => array_map(function($table) {
+                        return array_values((array)$table)[0];
+                    }, $tables)
                 ]);
             } catch (\Exception $e) {
                 return response()->json([
-                    'error' => 'Failed to add to cart',
+                    'status' => 'error',
+                    'message' => $e->getMessage()
+                ]);
+            }
+        });
+        
+        // Test expired items query
+        Route::get('/debug-expired-items', function() {
+            try {
+                $query = \App\Models\Barang::with(['penitip.user', 'kategoriBarang'])
+                    ->whereRaw('DATEDIFF(CURDATE(), batas_penitipan) > 0')
+                    ->where('status', '!=', 'diambil_kembali')
+                    ->where('status', '!=', 'terjual');
+                
+                $items = $query->get();
+                
+                return response()->json([
+                    'status' => 'success',
+                    'sql' => $query->toSql(),
+                    'bindings' => $query->getBindings(),
+                    'count' => $items->count(),
+                    'items' => $items->take(5)->toArray()
+                ]);
+            } catch (\Exception $e) {
+                return response()->json([
+                    'status' => 'error',
                     'message' => $e->getMessage(),
                     'trace' => $e->getTraceAsString()
                 ]);
@@ -1089,9 +1126,9 @@ Route::get('/dashboard/owner/donasi-hunter/print', [App\Http\Controllers\Api\Das
     ->name('dashboard.owner.donasi-hunter.print');
 
 // ========================================
-// FALLBACK ROUTE
+// FALLBACK ROUTE - FIXED
 // ========================================
 
 Route::fallback(function () {
-    return view('errors.404');
+    return response()->view('errors.404', [], 404);
 });

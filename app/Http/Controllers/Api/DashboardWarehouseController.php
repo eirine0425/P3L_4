@@ -9,6 +9,10 @@ use App\Models\Barang;
 use App\Models\Pengiriman;
 use App\Models\KategoriBarang;
 use App\Models\Penitip;
+use App\Models\Pegawai;
+use App\Models\PickupLog;
+use App\Models\User;
+use Carbon\Carbon;
 use Illuminate\Support\Facades\DB;
 use Illuminate\Support\Facades\Session;
 use Illuminate\Support\Facades\Storage;
@@ -17,162 +21,160 @@ use Illuminate\Support\Facades\Validator;
 class DashboardWarehouseController extends Controller
 {
     public function index(Request $request)
-{
-    try {
-        // Statistik barang
-        $totalItems = Barang::count();
-        $activeItems = Barang::where('status', 'belum_terjual')->count();
-        $soldItems = Barang::where('status', 'terjual')->count();
-        $soldOutItems = Barang::where('status', 'sold out')->count();
-        $inactiveItems = Barang::where('status', 'Tidak Aktif')->count();
-        $pendingItems = Barang::where('status', 'Menunggu Verifikasi')->count();
+    {
+        try {
+            // Statistik barang
+            $totalItems = Barang::count();
+            $activeItems = Barang::where('status', 'belum_terjual')->count();
+            $soldItems = Barang::where('status', 'terjual')->count();
+            $soldOutItems = Barang::where('status', 'sold out')->count();
+            $inactiveItems = Barang::where('status', 'Tidak Aktif')->count();
+            $pendingItems = Barang::where('status', 'Menunggu Verifikasi')->count();
 
-        // Statistik durasi penitipan
-        $expiringSoonItems = Barang::expiringSoon()->count();
-        $expiredItems = Barang::expired()->count();
-        $needsAttentionItems = Barang::needsAttention()->count();
-        $waitingForPickupItems = Barang::where('status', 'belum_terjual')
-            ->whereRaw('DATEDIFF(CURDATE(), batas_penitipan) > 0')->count();
+            // Statistik durasi penitipan
+            $expiringSoonItems = Barang::expiringSoon()->count();
+            $expiredItems = Barang::expired()->count();
+            $needsAttentionItems = Barang::needsAttention()->count();
+            $waitingForPickupItems = Barang::where('status', 'belum_terjual')
+                ->whereRaw('DATEDIFF(CURDATE(), batas_penitipan) > 0')->count();
 
-        // Recent items
-        $recentItems = Barang::with(['kategori', 'penitip.user'])
-            ->orderBy('created_at', 'desc')->limit(5)->get();
+            // Recent items
+            $recentItems = Barang::with(['kategori', 'penitip.user'])
+                ->orderBy('created_at', 'desc')->limit(5)->get();
 
-        // Pending shipments
-        $pendingShipments = Pengiriman::with(['transaksi.pembeli.user', 'alamat'])
-            ->where('status_pengiriman', 'Menunggu Pengiriman')
-            ->take(5)->get();
+            // Pending shipments
+            $pendingShipments = Pengiriman::with(['transaksi.pembeli.user', 'alamat'])
+                ->where('status_pengiriman', 'Menunggu Pengiriman')
+                ->take(5)->get();
 
-        // Chart data (hanya ditampilkan jika tidak sedang search)
-        $itemsByCategory = DB::table('barang')
-            ->join('kategori_barang', 'barang.kategori_id', '=', 'kategori_barang.kategori_id')
-            ->select('kategori_barang.nama_kategori', DB::raw('count(*) as total'))
-            ->groupBy('kategori_barang.nama_kategori')->get();
+            // Chart data (hanya ditampilkan jika tidak sedang search)
+            $itemsByCategory = DB::table('barang')
+                ->join('kategori_barang', 'barang.kategori_id', '=', 'kategori_barang.kategori_id')
+                ->select('kategori_barang.nama_kategori', DB::raw('count(*) as total'))
+                ->groupBy('kategori_barang.nama_kategori')->get();
 
-        $itemsByStatus = DB::table('barang')
-            ->select('status', DB::raw('count(*) as total'))
-            ->groupBy('status')->get();
+            $itemsByStatus = DB::table('barang')
+                ->select('status', DB::raw('count(*) as total'))
+                ->groupBy('status')->get();
 
-        // Data untuk filter
-        $categories = KategoriBarang::all();
-        $statusOptions = [
-            'belum_terjual' => 'Belum Terjual',
-            'terjual' => 'Terjual',
-            'sold out' => 'Sold Out',
-            'untuk_donasi' => 'Untuk Donasi'
-        ];
-        $kondisiOptions = [
-            'baru' => 'Baru',
-            'sangat_layak' => 'Sangat Layak',
-            'layak' => 'Layak'
-        ];
+            // Data untuk filter
+            $categories = KategoriBarang::all();
+            $statusOptions = [
+                'belum_terjual' => 'Belum Terjual',
+                'terjual' => 'Terjual',
+                'sold out' => 'Sold Out',
+                'untuk_donasi' => 'Untuk Donasi'
+            ];
+            $kondisiOptions = [
+                'baru' => 'Baru',
+                'sangat_layak' => 'Sangat Layak',
+                'layak' => 'Layak'
+            ];
 
-        // Optional: hasil pencarian
-        $searchResults = null;
-        if ($request->hasAny(['search', 'status', 'kategori', 'min_price', 'max_price', 'start_date', 'end_date', 'kondisi', 'sort'])) {
-            $query = Barang::with(['kategori', 'penitip.user']);
+            // Optional: hasil pencarian
+            $searchResults = null;
+            if ($request->hasAny(['search', 'status', 'kategori', 'min_price', 'max_price', 'start_date', 'end_date', 'kondisi', 'sort'])) {
+                $query = Barang::with(['kategori', 'penitip.user']);
 
-            if ($request->filled('search')) {
-                $search = $request->search;
-                $query->where(function($q) use ($search) {
-                    $q->where('nama_barang', 'like', "%{$search}%")
-                      ->orWhere('deskripsi', 'like', "%{$search}%")
-                      ->orWhere('barang_id', 'like', "%{$search}%")
-                      ->orWhereHas('penitip.user', function($subQ) use ($search) {
-                          $subQ->where('name', 'like', "%{$search}%");
-                      })
-                      ->orWhereHas('kategori', function($subQ) use ($search) {
-                          $subQ->where('nama_kategori', 'like', "%{$search}%");
-                      });
-                });
+                if ($request->filled('search')) {
+                    $search = $request->search;
+                    $query->where(function($q) use ($search) {
+                        $q->where('nama_barang', 'like', "%{$search}%")
+                          ->orWhere('deskripsi', 'like', "%{$search}%")
+                          ->orWhere('barang_id', 'like', "%{$search}%")
+                          ->orWhereHas('penitip.user', function($subQ) use ($search) {
+                              $subQ->where('name', 'like', "%{$search}%");
+                          })
+                          ->orWhereHas('kategori', function($subQ) use ($search) {
+                              $subQ->where('nama_kategori', 'like', "%{$search}%");
+                          });
+                    });
+                }
+
+                if ($request->filled('status')) {
+                    $query->where('status', $request->status);
+                }
+
+                if ($request->filled('kategori')) {
+                    $query->where('kategori_id', $request->kategori);
+                }
+
+                if ($request->filled('kondisi')) {
+                    $query->where('kondisi', $request->kondisi);
+                }
+
+                if ($request->filled('min_price')) {
+                    $query->where('harga', '>=', $request->min_price);
+                }
+
+                if ($request->filled('max_price')) {
+                    $query->where('harga', '<=', $request->max_price);
+                }
+
+                if ($request->filled('start_date')) {
+                    $query->whereDate('created_at', '>=', $request->start_date);
+                }
+
+                if ($request->filled('end_date')) {
+                    $query->whereDate('created_at', '<=', $request->end_date);
+                }
+
+                switch ($request->sort) {
+                    case 'name_asc': $query->orderBy('nama_barang', 'asc'); break;
+                    case 'name_desc': $query->orderBy('nama_barang', 'desc'); break;
+                    case 'price_asc': $query->orderBy('harga', 'asc'); break;
+                    case 'price_desc': $query->orderBy('harga', 'desc'); break;
+                    case 'oldest': $query->orderBy('created_at', 'asc'); break;
+                    default: $query->orderBy('created_at', 'desc'); break;
+                }
+
+                $searchResults = $query->paginate(10)->appends($request->query());
             }
 
-            if ($request->filled('status')) {
-                $query->where('status', $request->status);
-            }
+            return view('dashboard.warehouse.index', compact(
+                'totalItems',
+                'activeItems',
+                'soldItems',
+                'soldOutItems',
+                'inactiveItems',
+                'pendingItems',
+                'expiringSoonItems',
+                'expiredItems',
+                'needsAttentionItems',
+                'waitingForPickupItems',
+                'recentItems',
+                'pendingShipments',
+                'itemsByCategory',
+                'itemsByStatus',
+                'categories',
+                'statusOptions',
+                'kondisiOptions',
+                'searchResults'
+            ));
 
-            if ($request->filled('kategori')) {
-                $query->where('kategori_id', $request->kategori);
-            }
-
-            if ($request->filled('kondisi')) {
-                $query->where('kondisi', $request->kondisi);
-            }
-
-            if ($request->filled('min_price')) {
-                $query->where('harga', '>=', $request->min_price);
-            }
-
-            if ($request->filled('max_price')) {
-                $query->where('harga', '<=', $request->max_price);
-            }
-
-            if ($request->filled('start_date')) {
-                $query->whereDate('created_at', '>=', $request->start_date);
-            }
-
-            if ($request->filled('end_date')) {
-                $query->whereDate('created_at', '<=', $request->end_date);
-            }
-
-            switch ($request->sort) {
-                case 'name_asc': $query->orderBy('nama_barang', 'asc'); break;
-                case 'name_desc': $query->orderBy('nama_barang', 'desc'); break;
-                case 'price_asc': $query->orderBy('harga', 'asc'); break;
-                case 'price_desc': $query->orderBy('harga', 'desc'); break;
-                case 'oldest': $query->orderBy('created_at', 'asc'); break;
-                default: $query->orderBy('created_at', 'desc'); break;
-            }
-
-            $searchResults = $query->paginate(10)->appends($request->query());
+        } catch (\Exception $e) {
+            return view('dashboard.warehouse.index', [
+                'totalItems' => 0,
+                'activeItems' => 0,
+                'soldItems' => 0,
+                'soldOutItems' => 0,
+                'inactiveItems' => 0,
+                'pendingItems' => 0,
+                'expiringSoonItems' => 0,
+                'expiredItems' => 0,
+                'needsAttentionItems' => 0,
+                'waitingForPickupItems' => 0,
+                'recentItems' => collect(),
+                'pendingShipments' => collect(),
+                'itemsByCategory' => collect(),
+                'itemsByStatus' => collect(),
+                'categories' => collect(),
+                'statusOptions' => [],
+                'kondisiOptions' => [],
+                'searchResults' => null
+            ]);
         }
-
-        return view('dashboard.warehouse.index', compact(
-            'totalItems',
-            'activeItems',
-            'soldItems',
-            'soldOutItems',
-            'inactiveItems',
-            'pendingItems',
-            'expiringSoonItems',
-            'expiredItems',
-            'needsAttentionItems',
-            'waitingForPickupItems',
-            'recentItems',
-            'pendingShipments',
-            'itemsByCategory',
-            'itemsByStatus',
-            'categories',
-            'statusOptions',
-            'kondisiOptions',
-            'searchResults'
-        ));
-
-    } catch (\Exception $e) {
-        return view('dashboard.warehouse.index', [
-            'totalItems' => 0,
-            'activeItems' => 0,
-            'soldItems' => 0,
-            'soldOutItems' => 0,
-            'inactiveItems' => 0,
-            'pendingItems' => 0,
-            'expiringSoonItems' => 0,
-            'expiredItems' => 0,
-            'needsAttentionItems' => 0,
-            'waitingForPickupItems' => 0,
-            'recentItems' => collect(),
-            'pendingShipments' => collect(),
-            'itemsByCategory' => collect(),
-            'itemsByStatus' => collect(),
-            'categories' => collect(),
-            'statusOptions' => [],
-            'kondisiOptions' => [],
-            'searchResults' => null
-        ]);
     }
-}
-
-
 
     
 
@@ -371,31 +373,57 @@ class DashboardWarehouseController extends Controller
         return view('dashboard.warehouse.sales-note', compact('transaction'));
     }
 
-    public function confirmItemReceived(Request $request, $transactionId)
+    public function confirmItemReceived(Request $request, $orderId)
     {
-        $transaction = Transaksi::findOrFail($transactionId);
-        
-        // Update pengiriman status
-        if ($transaction->pengiriman) {
-            $transaction->pengiriman->update([
-                'status_pengiriman' => 'Selesai',
-                'tanggal_terima' => now()
+        try {
+            // Validasi input
+            $request->validate([
+                'confirmed_by' => 'required|string',
+                'confirmation_time' => 'required|string'
             ]);
-        }
+
+            // Cari pesanan berdasarkan ID
+            $order = Transaksi::findOrFail($orderId);
         
-        // Update transaction status
-        $transaction->update([
-            'status_transaksi' => 'Selesai'
-        ]);
-        
-        // Update item status to sold
-        foreach ($transaction->detailTransaksi as $detail) {
-            $detail->barang->update([
-                'status' => 'Terjual'
+            // Update status pesanan menjadi selesai
+            $order->update([
+                'status_transaksi' => 'selesai',
+                'tanggal_selesai' => now(),
+                'confirmed_by' => auth()->user()->id,
+                'confirmation_notes' => 'Barang telah diterima/diambil oleh penitip - dikonfirmasi oleh pegawai gudang'
             ]);
-        }
+
+            // Update status barang terkait jika ada
+            foreach ($order->detailTransaksi as $detail) {
+                if ($detail->barang) {
+                    $detail->barang->update([
+                        'status' => 'terjual_selesai'
+                    ]);
+                }
+            }
+
+            // Log aktivitas
+            \Log::info("Pesanan {$orderId} dikonfirmasi telah diterima/diambil", [
+                'user_id' => auth()->id(),
+                'order_id' => $orderId,
+                'confirmed_at' => now()
+            ]);
+
+            return response()->json([
+                'success' => true,
+                'message' => 'Pengambilan barang berhasil dikonfirmasi',
+                'order_id' => $orderId,
+                'status' => 'selesai'
+            ]);
+
+        } catch (\Exception $e) {
+            \Log::error("Error confirming item received for order {$orderId}: " . $e->getMessage());
         
-        return redirect()->back()->with('success', 'Konfirmasi penerimaan barang berhasil.');
+            return response()->json([
+                'success' => false,
+                'message' => 'Terjadi kesalahan saat mengkonfirmasi pengambilan: ' . $e->getMessage()
+            ], 500);
+        }
     }
 
     public function createConsignmentItem()
@@ -664,13 +692,17 @@ class DashboardWarehouseController extends Controller
             ->where('status', '!=', 'terjual')
             ->count();
 
+        // Tambahkan link ke riwayat pengambilan
+        $pickedUpCount = Barang::where('status', 'diambil_kembali')->count();
+
         return view('dashboard.warehouse.item-pickup', compact(
             'items', 
             'categories', 
             'penitips',
             'totalExpiredItems',
             'itemsExpired30Plus',
-            'itemsExpired60Plus'
+            'itemsExpired60Plus',
+            'pickedUpCount'
         ));
     }
 
@@ -720,6 +752,135 @@ class DashboardWarehouseController extends Controller
             ->with('success', 'Barang berhasil dikonfirmasi untuk pengambilan.');
     }
 
+    public function confirmPickup($transaksiId)
+    {
+        try {
+            $transaksi = Transaksi::findOrFail($transaksiId);
+        
+            // Pastikan transaksi dalam status siap_diambil
+            if ($transaksi->status_transaksi !== 'siap_diambil') {
+                return response()->json([
+                    'success' => false,
+                    'message' => 'Transaksi tidak dalam status siap diambil'
+                ]);
+            }
+        
+            // Update status menjadi selesai
+            $transaksi->update([
+                'status_transaksi' => 'selesai',
+                'tanggal_selesai' => now()
+            ]);
+        
+            // Log aktivitas
+            \Log::info("Transaksi {$transaksiId} dikonfirmasi telah diambil oleh pegawai gudang", [
+                'user_id' => auth()->id(),
+                'transaksi_id' => $transaksiId
+            ]);
+        
+            return response()->json([
+                'success' => true,
+                'message' => 'Pengambilan berhasil dikonfirmasi'
+            ]);
+        
+        } catch (\Exception $e) {
+            \Log::error("Error confirming pickup for transaction {$transaksiId}: " . $e->getMessage());
+        
+            return response()->json([
+                'success' => false,
+                'message' => 'Terjadi kesalahan sistem'
+            ]);
+        }
+    }
+
+    public function confirmDelivery($transaksiId)
+    {
+        try {
+            $transaksi = Transaksi::findOrFail($transaksiId);
+        
+            // Pastikan transaksi dalam status dikirim
+            if ($transaksi->status_transaksi !== 'dikirim') {
+                return response()->json([
+                    'success' => false,
+                    'message' => 'Transaksi tidak dalam status dikirim'
+                ]);
+            }
+        
+            // Update status menjadi selesai
+            $transaksi->update([
+                'status_transaksi' => 'selesai',
+                'tanggal_selesai' => now()
+            ]);
+        
+            // Update status pengiriman jika ada
+            if ($transaksi->pengiriman) {
+                $transaksi->pengiriman->update([
+                    'status_pengiriman' => 'selesai',
+                    'tanggal_diterima' => now()
+                ]);
+            }
+        
+            // Log aktivitas
+            \Log::info("Transaksi {$transaksiId} dikonfirmasi telah diterima oleh pegawai gudang", [
+                'user_id' => auth()->id(),
+                'transaksi_id' => $transaksiId
+            ]);
+        
+            return response()->json([
+                'success' => true,
+                'message' => 'Penerimaan berhasil dikonfirmasi'
+            ]);
+        
+        } catch (\Exception $e) {
+            \Log::error("Error confirming delivery for transaction {$transaksiId}: " . $e->getMessage());
+        
+            return response()->json([
+                'success' => false,
+                'message' => 'Terjadi kesalahan sistem'
+            ]);
+        }
+    }
+
+    public function markReadyForPickup($transaksiId)
+    {
+        try {
+            $transaksi = Transaksi::findOrFail($transaksiId);
+        
+            // Pastikan transaksi dalam status dikemas
+            if ($transaksi->status_transaksi !== 'dikemas') {
+                return response()->json([
+                    'success' => false,
+                    'message' => 'Transaksi tidak dalam status dikemas'
+                ]);
+            }
+        
+            // Update status menjadi siap_diambil
+            $transaksi->update([
+                'status_transaksi' => 'siap_diambil'
+            ]);
+        
+            return response()->json([
+                'success' => true,
+                'message' => 'Transaksi berhasil ditandai siap diambil'
+            ]);
+        
+        } catch (\Exception $e) {
+            return response()->json([
+                'success' => false,
+                'message' => 'Terjadi kesalahan sistem'
+            ]);
+        }
+    }
+
+    public function daftarTransaksi()
+    {
+        $transaksis = Transaksi::with(['detailTransaksi.barang', 'pengiriman', 'pembeli'])
+            ->whereIn('status_transaksi', ['dikemas', 'siap_diambil', 'dikirim', 'selesai'])
+            ->orderBy('created_at', 'desc')
+            ->paginate(10);
+    
+        return view('dashboard.warehouse.daftar-transaksi', compact('transaksis'));
+    }
+
     public function bulkConfirmPickup(Request $request)
     {
         $request->validate([
@@ -755,6 +916,94 @@ class DashboardWarehouseController extends Controller
         }
 
         return redirect()->back()->with('success', "Berhasil mengkonfirmasi pengambilan {$updatedCount} barang.");
+    }
+
+    // Tambahkan fungsi recordItemPickup di bawah fungsi bulkConfirmPickup
+
+    public function recordItemPickup(Request $request, $id)
+    {
+        $request->validate([
+            'pegawai_id' => 'required|exists:pegawai,pegawai_id',
+            'catatan_pengambilan' => 'nullable|string|max:500',
+            'metode_pengambilan' => 'required|in:diambil_langsung,dikirim_kurir,dititipkan_pihak_lain',
+            'nama_pengambil' => 'required|string|max:255',
+            'relasi_pengambil' => 'nullable|string|max:255',
+            'bukti_pengambilan' => 'nullable|image|mimes:jpeg,png,jpg|max:2048',
+            'nomor_identitas_pengambil' => 'nullable|string|max:50'
+        ]);
+
+        try {
+            DB::beginTransaction();
+            
+            $item = Barang::with(['penitip.user', 'transaksiPenitipan'])->findOrFail($id);
+            
+            // Cek apakah barang sudah diambil sebelumnya
+            if ($item->status === 'diambil_kembali') {
+                return redirect()->back()->with('error', 'Barang ini sudah tercatat diambil kembali.');
+            }
+            
+            // Perbarui status barang
+            $item->update([
+                'status' => 'diambil_kembali',
+                'tanggal_pengambilan' => now(),
+                'catatan_pengambilan' => $request->catatan_pengambilan,
+                'metode_pengambilan' => $request->metode_pengambilan,
+                'pegawai_pickup_id' => $request->pegawai_id
+            ]);
+
+            // Update transaksi penitipan jika ada
+            if ($item->transaksiPenitipan) {
+                $item->transaksiPenitipan->update([
+                    'status_penitipan' => 'selesai_diambil',
+                    'tanggal_pengambilan' => now(),
+                    'catatan_pengambilan' => $request->catatan_pengambilan
+                ]);
+            }
+
+            // Simpan bukti pengambilan jika ada
+            $buktiPath = null;
+            if ($request->hasFile('bukti_pengambilan')) {
+                $file = $request->file('bukti_pengambilan');
+                $filename = time() . '_bukti_' . $file->getClientOriginalName();
+                $path = $file->storeAs('bukti_pengambilan', $filename, 'public');
+                $buktiPath = $path;
+            }
+
+            // Catat log pengambilan
+            PickupLog::create([
+                'barang_id' => $id,
+                'action' => 'picked_up',
+                'performed_by' => auth()->id(),
+                'notes' => json_encode([
+                    'pegawai_id' => $request->pegawai_id,
+                    'nama_pengambil' => $request->nama_pengambil,
+                    'relasi_pengambil' => $request->relasi_pengambil,
+                    'nomor_identitas' => $request->nomor_identitas_pengambil,
+                    'metode' => $request->metode_pengambilan,
+                    'catatan' => $request->catatan_pengambilan,
+                    'bukti_path' => $buktiPath
+                ]),
+                'created_at' => now()
+            ]);
+
+            // Kirim notifikasi ke penitip
+            if ($item->penitip && $item->penitip->user) {
+                $this->sendNotification(
+                    $item->penitip->user,
+                    'Barang Diambil',
+                    "Barang '{$item->nama_barang}' telah diambil kembali pada " . now()->format('d/m/Y H:i')
+                );
+            }
+
+            DB::commit();
+
+            return redirect()->route('dashboard.warehouse.item-pickup')
+                ->with('success', 'Pengambilan barang berhasil dicatat.');
+
+        } catch (\Exception $e) {
+            DB::rollback();
+            return redirect()->back()->with('error', 'Terjadi kesalahan: ' . $e->getMessage());
+        }
     }
 
     public function generatePickupReport(Request $request)
@@ -834,7 +1083,7 @@ class DashboardWarehouseController extends Controller
     }
 
     // Feature 1: Display list of transactions that need to be sent/picked up
-    public function shipments(Request $request)
+   /* public function shipments(Request $request)
     {
         $query = Transaksi::with([
             'pembeli.user',
@@ -878,7 +1127,7 @@ class DashboardWarehouseController extends Controller
 
         return view('dashboard.warehouse.shipments.index', compact('transactions'));
     }
-
+*/
     public function showShipment($id)
     {
         $transaction = Transaksi::with([
@@ -895,6 +1144,7 @@ class DashboardWarehouseController extends Controller
 
         return view('dashboard.warehouse.shipments.show', compact('transaction', 'couriers'));
     }
+    
 
     // Feature 2: Add shipping scheduling and courier assignment
     public function createShipment(Request $request, $transactionId)
@@ -923,13 +1173,26 @@ class DashboardWarehouseController extends Controller
         try {
             DB::beginTransaction();
 
+            // PERBARUI METHOD YANG SUDAH ADA - storeShipment
+            // Ganti bagian validasi business rule di method storeShipment dengan:
+
             // Business rule: Orders after 4 PM cannot be scheduled for the same day
             $orderTime = Carbon::parse($request->tanggal_kirim);
             $currentTime = Carbon::now();
-            
-            if ($orderTime->isSameDay($currentTime) && $currentTime->hour >= 16) {
+            $transaction = Transaksi::find($request->transaksi_id);
+            $orderDate = Carbon::parse($transaction->tanggal_pesan);
+
+            // Check if order was placed after 4 PM and trying to schedule same day
+            if ($orderTime->isSameDay($orderDate) && $orderDate->hour >= 16) {
                 return back()->withErrors([
                     'tanggal_kirim' => 'Pengiriman untuk pembelian di atas jam 4 sore tidak bisa dijadwalkan di hari yang sama.'
+                ]);
+            }
+
+            // Also check current time if scheduling for today
+            if ($orderTime->isToday() && $currentTime->hour >= 16) {
+                return back()->withErrors([
+                    'tanggal_kirim' => 'Pengiriman tidak bisa dijadwalkan untuk hari ini setelah jam 4 sore.'
                 ]);
             }
 
@@ -1152,6 +1415,46 @@ class DashboardWarehouseController extends Controller
         }
     }
 
+    // Tambahkan fungsi untuk menampilkan form pencatatan pengambilan
+    public function showPickupForm($id)
+    {
+        $item = Barang::with(['kategori', 'penitip.user'])->findOrFail($id);
+        $pegawaiList = Pegawai::with('user')->get();
+        
+        return view('dashboard.warehouse.record-pickup', compact('item', 'pegawaiList'));
+    }
+    public function shipmentsReady(Request $request)
+{
+    // Untuk sementara return view dengan data sample
+    // Nanti bisa diganti dengan data real dari database
+    return view('dashboard.warehouse.shipments-ready');
+}
+
+
+
+    // Tambahkan fungsi untuk melihat riwayat pengambilan
+    public function pickupHistory()
+    {
+        $pickedUpItems = Barang::with(['penitip.user', 'kategori'])
+            ->where('status', 'diambil_kembali')
+            ->orderBy('tanggal_pengambilan', 'desc')
+            ->paginate(15);
+            
+        return view('dashboard.warehouse.pickup-history', compact('pickedUpItems'));
+    }
+
+    // Tambahkan fungsi untuk mencetak bukti pengambilan
+    public function generatePickupReceipt($id)
+    {
+        $item = Barang::with(['penitip.user', 'kategori'])->findOrFail($id);
+        
+        if ($item->status !== 'diambil_kembali') {
+            return redirect()->back()->with('error', 'Barang belum diambil kembali.');
+        }
+        
+        return view('dashboard.warehouse.pickup-receipt', compact('item'));
+    }
+
     private function sendNotification($user, $title, $message)
     {
         // In a real application, you would implement proper notification system
@@ -1164,4 +1467,292 @@ class DashboardWarehouseController extends Controller
         // You could also store notifications in database for in-app notifications
         // Or send emails, push notifications, etc.
     }
+
+    // Add this new method for generating the courier note with real data
+    public function generateCourierNote($transactionId)
+    {
+        try {
+            // Get transaction with all related data
+            $transaction = \App\Models\Transaksi::with([
+                'pembeli.user',
+                'pembeli.alamat',
+                'detailTransaksi.barang.kategoriBarang',
+                'pengiriman',
+                'alamat'
+            ])->findOrFail($transactionId);
+
+            // Return the courier note view
+            return view('pdf.nota-kurir-dynamic', compact('transaction'));
+            
+        } catch (\Exception $e) {
+            return redirect()->back()->with('error', 'Gagal memuat nota kurir: ' . $e->getMessage());
+        }
+    }
+
+// TAMBAHAN BARU - SHIPMENT MANAGEMENT METHODS
+
+public function shipments(Request $request)
+{
+    $query = Transaksi::with([
+        'pembeli.user',
+        'detailTransaksi.barang',
+        'pengiriman.pengirim'
+    ])->where('status_transaksi', 'Lunas');
+
+    // Filter by shipment status
+    if ($request->filled('status')) {
+        switch ($request->status) {
+            case 'need_shipping':
+                $query->whereDoesntHave('pengiriman');
+                break;
+            case 'scheduled':
+                $query->whereHas('pengiriman', function($q) {
+                    $q->where('status_pengiriman', 'Dijadwalkan');
+                });
+                break;
+            case 'in_progress':
+                $query->whereHas('pengiriman', function($q) {
+                    $q->whereIn('status_pengiriman', ['Menunggu Pengiriman', 'Dalam Perjalanan']);
+                });
+                break;
+            case 'completed':
+                $query->whereHas('pengiriman', function($q) {
+                    $q->where('status_pengiriman', 'Terkirim');
+                });
+                break;
+        }
+    }
+
+    // Filter by date range
+    if ($request->filled('date_from')) {
+        $query->whereDate('tanggal_pesan', '>=', $request->date_from);
+    }
+    if ($request->filled('date_to')) {
+        $query->whereDate('tanggal_pesan', '<=', $request->date_to);
+    }
+
+    // Search functionality
+    if ($request->filled('search')) {
+        $search = $request->search;
+        $query->where(function($q) use ($search) {
+            $q->where('transaksi_id', 'like', "%{$search}%")
+              ->orWhereHas('pembeli.user', function($subQ) use ($search) {
+                  $subQ->where('name', 'like', "%{$search}%")
+                       ->orWhere('email', 'like', "%{$search}%");
+              });
+        });
+    }
+
+    // Sorting
+    switch ($request->sort) {
+        case 'oldest':
+            $query->orderBy('tanggal_pesan', 'asc');
+            break;
+        case 'customer_asc':
+            $query->join('pembeli', 'transaksi.pembeli_id', '=', 'pembeli.pembeli_id')
+                  ->join('users', 'pembeli.user_id', '=', 'users.id')
+                  ->orderBy('users.name', 'asc')
+                  ->select('transaksi.*');
+            break;
+        case 'customer_desc':
+            $query->join('pembeli', 'transaksi.pembeli_id', '=', 'pembeli.pembeli_id')
+                  ->join('users', 'pembeli.user_id', '=', 'users.id')
+                  ->orderBy('users.name', 'desc')
+                  ->select('transaksi.*');
+            break;
+        default:
+            $query->orderBy('tanggal_pesan', 'desc');
+    }
+
+    $transactions = $query->paginate(15)->appends($request->query());
+
+    // Statistics
+    $stats = [
+        'total' => Transaksi::where('status_transaksi', 'Lunas')->count(),
+        'need_shipping' => Transaksi::where('status_transaksi', 'Lunas')
+            ->whereDoesntHave('pengiriman')->count(),
+        'scheduled' => Transaksi::where('status_transaksi', 'Lunas')
+            ->whereHas('pengiriman', function($q) {
+                $q->where('status_pengiriman', 'Dijadwalkan');
+            })->count(),
+        'in_progress' => Transaksi::where('status_transaksi', 'Lunas')
+            ->whereHas('pengiriman', function($q) {
+                $q->whereIn('status_pengiriman', ['Menunggu Pengiriman', 'Dalam Perjalanan']);
+            })->count(),
+        'completed' => Transaksi::where('status_transaksi', 'Lunas')
+            ->whereHas('pengiriman', function($q) {
+                $q->where('status_pengiriman', 'Terkirim');
+            })->count(),
+    ];
+
+    return view('dashboard.warehouse.shipments.index', compact('transactions', 'stats'));
+}
+
+public function validateShippingTime(Request $request)
+{
+    $tanggalKirim = Carbon::parse($request->tanggal_kirim);
+    $tanggalPesan = Carbon::parse($request->tanggal_pesan ?? now());
+    $currentTime = Carbon::now();
+    
+    // Business rule: Orders after 4 PM cannot be scheduled for the same day
+    if ($tanggalKirim->isSameDay($tanggalPesan) && $tanggalPesan->hour >= 16) {
+        return response()->json([
+            'valid' => false,
+            'message' => 'Pengiriman untuk pembelian di atas jam 4 sore tidak bisa dijadwalkan di hari yang sama. Silakan pilih tanggal besok atau setelahnya.'
+        ]);
+    }
+    
+    // Also check if trying to schedule for today when current time is after 4 PM
+    if ($tanggalKirim->isToday() && $currentTime->hour >= 16) {
+        return response()->json([
+            'valid' => false,
+            'message' => 'Pengiriman tidak bisa dijadwalkan untuk hari ini setelah jam 4 sore. Silakan pilih tanggal besok atau setelahnya.'
+        ]);
+    }
+    
+    return response()->json(['valid' => true]);
+}
+
+public function transaksiSiapAmbil()
+    {
+        // Ambil transaksi dengan status "siap diambil"
+        $transaksis = Transaksi::with(['pembeli.user', 'detailTransaksi.barang'])
+            ->where('status_transaksi', 'siap_diambil')
+            ->orderBy('tanggal_pesan', 'desc')
+            ->paginate(10);
+
+        return view('dashboard.warehouse.transaksi-siap-ambil', compact('transaksis'));
+    }
+
+ 
+
+public function bulkScheduleShipments(Request $request)
+{
+    $request->validate([
+        'transaction_ids' => 'required|array',
+        'transaction_ids.*' => 'exists:transaksi,transaksi_id',
+        'pengirim_id' => 'required|exists:users,id',
+        'tanggal_kirim' => 'required|date|after_or_equal:today'
+    ]);
+
+    try {
+        DB::beginTransaction();
+
+        $scheduledCount = 0;
+        $errors = [];
+
+        foreach ($request->transaction_ids as $transactionId) {
+            $transaction = Transaksi::with(['pembeli.alamat'])->find($transactionId);
+            
+            if (!$transaction) {
+                $errors[] = "Transaksi #{$transactionId} tidak ditemukan";
+                continue;
+            }
+
+            if ($transaction->pengiriman) {
+                $errors[] = "Transaksi #{$transactionId} sudah memiliki jadwal pengiriman";
+                continue;
+            }
+
+            // Validate shipping time for this specific transaction
+            $tanggalKirim = Carbon::parse($request->tanggal_kirim);
+            $tanggalPesan = Carbon::parse($transaction->tanggal_pesan);
+            
+            if ($tanggalKirim->isSameDay($tanggalPesan) && $tanggalPesan->hour >= 16) {
+                $errors[] = "Transaksi #{$transactionId} tidak bisa dijadwalkan di hari yang sama (dipesan setelah jam 4 sore)";
+                continue;
+            }
+
+            // Create shipment
+            Pengiriman::create([
+                'pengirim_id' => $request->pengirim_id,
+                'transaksi_id' => $transactionId,
+                'alamat_id' => $transaction->pembeli->alamat->alamat_id ?? null,
+                'status_pengiriman' => 'Dijadwalkan',
+                'tanggal_kirim' => $request->tanggal_kirim,
+                'nama_penerima' => $transaction->pembeli->user->name,
+                'catatan' => $request->catatan ?? null
+            ]);
+
+            $scheduledCount++;
+        }
+
+        DB::commit();
+
+        $message = "Berhasil menjadwalkan {$scheduledCount} pengiriman.";
+        if (!empty($errors)) {
+            $message .= " Errors: " . implode(', ', $errors);
+        }
+
+        return redirect()->back()->with('success', $message);
+
+    } catch (\Exception $e) {
+        DB::rollback();
+        return redirect()->back()->with('error', 'Terjadi kesalahan saat menjadwalkan pengiriman: ' . $e->getMessage());
+    }
+}
+
+public function kelolaPesanan()
+    {
+        // Get orders that need processing
+        $orders = collect([
+            [
+                'id' => 'TRX001',
+                'buyer_name' => 'Cinta',
+                'buyer_email' => 'cinta@gmail.com',
+                'item_name' => 'iPhone 13 Pro Max',
+                'item_color' => 'Gold',
+                'total' => 15999000,
+                'status' => 'Menunggu Proses',
+                'method' => 'Diantar',
+                'date' => '2025-06-01 14:30:00',
+                'scheduled' => false
+            ],
+            [
+                'id' => 'TRX002',
+                'buyer_name' => 'Janssen',
+                'buyer_email' => 'janssen@gmail.com',
+                'item_name' => 'MacBook Pro 14"',
+                'item_color' => '16GB RAM',
+                'total' => 32999000,
+                'status' => 'Menunggu Pengambilan',
+                'method' => 'Ambil Sendiri',
+                'date' => '2025-06-01 09:15:00',
+                'scheduled' => true
+            ],
+            [
+                'id' => 'TRX003',
+                'buyer_name' => 'Charlene',
+                'buyer_email' => 'charlene@gmail.com',
+                'item_name' => 'Samsung Galaxy S23',
+                'item_color' => 'White',
+                'total' => 24998000,
+                'status' => 'Dalam Pengiriman',
+                'method' => 'Diantar',
+                'date' => '2025-05-31 16:45:00',
+                'scheduled' => true
+            ]
+        ]);
+
+        return view('dashboard.warehouse.kelola-pesanan', compact('orders'));
+    }
+public function scheduleDelivery(Request $request)
+{
+    $request->validate([
+        'order_id' => 'required|string',
+        'delivery_date' => 'required|date',
+        'delivery_time' => 'required|string',
+        'courier_id' => 'required|string',
+        'delivery_address' => 'required|string',
+        'delivery_notes' => 'nullable|string'
+    ]);
+
+    // Here you would normally save to database
+    // For now, just return success response
+    
+    return response()->json([
+        'success' => true,
+        'message' => "Pengiriman untuk pesanan {$request->order_id} telah dijadwalkan."
+    ]);
+}
 }

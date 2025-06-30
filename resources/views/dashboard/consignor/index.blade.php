@@ -43,21 +43,7 @@
                 </div>
             </div>
         </div>
-        <div class="col-md-3">
-            <div class="card bg-info text-white">
-                <div class="card-body">
-                    <div class="d-flex justify-content-between">
-                        <div>
-                            <h3>{{ $soldItems }}</h3>
-                            <p>Terjual</p>
-                        </div>
-                        <div>
-                            <i class="fas fa-check-circle fa-2x"></i>
-                        </div>
-                    </div>
-                </div>
-            </div>
-        </div>
+        
         <div class="col-md-3">
             <div class="card bg-secondary text-white">
                 <div class="card-body">
@@ -379,7 +365,7 @@
                 ],
                 backgroundColor: [
                     '#28a745', // Belum Terjual - Green
-                    '#17a2b8', // Terjual - Blue
+                 
                     '#6c757d'  // Sold Out - Gray
                 ]
             }]

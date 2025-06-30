@@ -128,7 +128,6 @@
                                         <th>Kategori</th>
                                         <th>Harga</th>
                                         <th>Status</th>
-                                        <th>Durasi</th>
                                         <th>Aksi</th>
                                     </tr>
                                 </thead>
@@ -171,21 +170,6 @@
                                                 @else
                                                     <span class="badge bg-warning">{{ ucfirst($item->status) }}</span>
                                                 @endif
-                                            </td>
-                                            <td>
-                                                @try
-                                                    @if($item->sisa_hari > 7)
-                                                        <span class="badge bg-success">{{ $item->sisa_hari }} hari</span>
-                                                    @elseif($item->sisa_hari > 0)
-                                                        <span class="badge bg-warning">{{ $item->sisa_hari }} hari</span>
-                                                    @elseif($item->sisa_hari == 0)
-                                                        <span class="badge bg-danger">Hari ini</span>
-                                                    @else
-                                                        <span class="badge bg-danger">Kadaluarsa</span>
-                                                    @endif
-                                                @catch(\Exception $e)
-                                                    <span class="badge bg-secondary">-</span>
-                                                @endtry
                                             </td>
                                             <td>
                                                 <div class="btn-group" role="group">
