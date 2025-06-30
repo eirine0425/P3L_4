@@ -19,6 +19,7 @@ class Donasi extends Model
     protected $fillable = [
         'barang_id',
         'deskripsi',
+        'tanggal_donasi',
         'nama_kategori',
         'nama_penerima',
     ];

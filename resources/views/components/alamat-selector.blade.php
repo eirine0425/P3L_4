@@ -22,7 +22,7 @@
                         </p>
                     </div>
                     <div class="text-end">
-                        <button type="button" class="btn btn-outline-primary btn-sm select-alamat-btn">
+                        <button type="button" class="btn btn-outline-primary btn-sm select-alamat-btn" onclick="selectAlamat({{ $alamat->alamat_id }})">
                             <i class="fas fa-check me-1"></i>Pilih
                         </button>
                     </div>
@@ -42,26 +42,35 @@
 </div>
 
 <script>
-$(document).ready(function() {
+document.addEventListener('DOMContentLoaded', function() {
     // Handle alamat selection
-    $('.alamat-option').on('click', function() {
-        const alamatId = $(this).data('alamat-id');
-        const alamatData = $(this).data('alamat');
-        
-        // Remove previous selection
-        $('.alamat-option').removeClass('selected');
-        $(this).addClass('selected');
-        
-        // Trigger selection event
-        if (typeof selectAlamat === 'function') {
-            selectAlamat(alamatId, alamatData);
-        }
+    const alamatOptions = document.querySelectorAll('.alamat-option');
+    alamatOptions.forEach(option => {
+        option.addEventListener('click', function() {
+            const alamatId = this.dataset.alamatId;
+            
+            // Remove previous selection
+            alamatOptions.forEach(opt => opt.classList.remove('selected'));
+            this.classList.add('selected');
+            
+            // Trigger selection event
+            if (typeof window.selectAlamat === 'function') {
+                window.selectAlamat(alamatId);
+            }
+        });
     });
     
     // Handle select button click
-    $('.select-alamat-btn').on('click', function(e) {
-        e.stopPropagation();
-        $(this).closest('.alamat-option').trigger('click');
+    const selectButtons = document.querySelectorAll('.select-alamat-btn');
+    selectButtons.forEach(button => {
+        button.addEventListener('click', function(e) {
+            e.stopPropagation();
+            const alamatId = this.closest('.alamat-option').dataset.alamatId;
+            
+            if (typeof window.selectAlamat === 'function') {
+                window.selectAlamat(alamatId);
+            }
+        });
     });
 });
 </script>

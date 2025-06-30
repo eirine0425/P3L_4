@@ -142,21 +142,7 @@
                 </div>
                 @endif
                 
-                <!-- Debug Information (remove this in production) -->
-                @if(config('app.debug'))
-                <div class="alert alert-info">
-                    <strong>Debug Info:</strong><br>
-                    Auth Status: {{ Auth::check() ? 'Logged In' : 'Not Logged In' }}<br>
-                    @auth
-                    User Role: {{ auth()->user()->role->nama_role ?? 'No Role' }}<br>
-                    User ID: {{ auth()->user()->id }}<br>
-                    @endauth
-                    Product ID: {{ $product->barang_id ?? 'No Product ID' }}<br>
-                    Product Status: {{ $product->status ?? 'No Status' }}<br>
-                    Product Available: {{ $product->isAvailable() ? 'Yes' : 'No' }}
-                </div>
-                @endif
-
+             
                 <!-- Cart Actions -->
                 <div class="cart-actions">
                     @auth

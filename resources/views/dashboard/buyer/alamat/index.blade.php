@@ -68,16 +68,6 @@
                                                         <i class="fas fa-ellipsis-v"></i>
                                                     </button>
                                                     <ul class="dropdown-menu dropdown-menu-end">
-                                                        @if($alamat->status_default != 'Y')
-                                                            <li>
-                                                                <form action="{{ route('buyer.alamat.set-default', ['id' => $alamat->alamat_id]) }}" method="POST" class="d-inline">
-                                                                    @csrf
-                                                                    <button type="submit" class="dropdown-item">
-                                                                        <i class="fas fa-star text-warning me-2"></i>Jadikan Utama
-                                                                    </button>
-                                                                </form>
-                                                            </li>
-                                                        @endif
                                                         <li>
                                                             <a class="dropdown-item" href="{{ route('buyer.alamat.edit', ['id' => $alamat->alamat_id]) }}">
                                                                 <i class="fas fa-edit text-info me-2"></i>Edit
@@ -122,14 +112,7 @@
 
                                             <!-- Action Buttons -->
                                             <div class="d-grid gap-2 d-md-flex justify-content-md-end">
-                                                @if($alamat->status_default != 'Y')
-                                                    <form action="{{ route('buyer.alamat.set-default', ['id' => $alamat->alamat_id]) }}" method="POST" class="d-inline">
-                                                        @csrf
-                                                        <button type="submit" class="btn btn-outline-warning btn-sm">
-                                                            <i class="fas fa-star me-1"></i>Jadikan Utama
-                                                        </button>
-                                                    </form>
-                                                @endif
+                                               
                                                 
                                                 <a href="{{ route('buyer.alamat.edit', ['id' => $alamat->alamat_id]) }}" class="btn btn-outline-primary btn-sm">
                                                     <i class="fas fa-edit me-1"></i>Edit

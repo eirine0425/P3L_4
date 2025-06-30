@@ -139,7 +139,7 @@ class KeranjangBelanjaController extends Controller
                     DB::commit();
                     
                     Log::info('Cart item created successfully', [
-                        'cart_id' => $cartItemId,
+                        'keranjang_id' => $cartItemId,
                         'pembeli_id' => $pembeliId,
                         'barang_id' => $barangId
                     ]);
@@ -330,7 +330,7 @@ class KeranjangBelanjaController extends Controller
         } catch (\Exception $e) {
             Log::error('Error showing cart item', [
                 'error' => $e->getMessage(),
-                'cart_id' => $id
+                'keranjang_id' => $id
             ]);
             
             return response()->json(['message' => 'Internal server error'], 500);
@@ -392,7 +392,7 @@ class KeranjangBelanjaController extends Controller
         } catch (\Exception $e) {
             Log::error('Error updating cart item', [
                 'error' => $e->getMessage(),
-                'cart_id' => $id
+                'keranjang_id' => $id
             ]);
             
             if ($request->expectsJson()) {
@@ -453,7 +453,7 @@ class KeranjangBelanjaController extends Controller
             $cartItem->delete();
             
             Log::info('Cart item deleted successfully', [
-                'cart_id' => $id,
+                'keranjang_id' => $id,
                 'pembeli_id' => $pembeliId,
                 'barang_id' => $cartItem->barang_id
             ]);
@@ -470,7 +470,7 @@ class KeranjangBelanjaController extends Controller
         } catch (\Exception $e) {
             Log::error('Error removing cart item', [
                 'error' => $e->getMessage(),
-                'cart_id' => $id
+                'keranjang_id' => $id
             ]);
             
             if ($request->expectsJson()) {

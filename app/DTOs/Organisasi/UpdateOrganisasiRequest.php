@@ -15,6 +15,7 @@ class UpdateOrganisasiRequest extends FormRequest
     {
         return [
             'nama_organisasi' => 'sometimes|required|string|max:255',
+            'alamat' => 'sometimes|required|string|max:255',
             'user_id'         => 'sometimes|required|integer',
         ];
     }    

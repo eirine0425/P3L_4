@@ -1,609 +1,542 @@
-@extends('layouts.app')
+@php
+use App\Models\KeranjangBelanja;
+use App\Models\Alamat;
+use App\Models\Pembeli;
 
+// Ambil dari session dengan validasi yang lebih baik
+$rawSelected = session('checkout_items', []);
+$selectedIds = [];
+
+// Validasi dan konversi data session
+if (is_string($rawSelected)) {
+    $decoded = json_decode($rawSelected, true);
+    $selectedIds = is_array($decoded) ? $decoded : [];
+} elseif (is_array($rawSelected)) {
+    $selectedIds = $rawSelected;
+}
+
+// Jika tidak ada di session, coba ambil dari request
+if (empty($selectedIds)) {
+    $requestItems = request()->input('selected_items', []);
+    if (is_string($requestItems)) {
+        $decoded = json_decode($requestItems, true);
+        $selectedIds = is_array($decoded) ? $decoded : [];
+    } elseif (is_array($requestItems)) {
+        $selectedIds = $requestItems;
+    }
+}
+
+// Pastikan $selectedIds adalah array dan tidak kosong
+$selectedIds = is_array($selectedIds) ? array_filter($selectedIds) : [];
+
+// Ambil data keranjang beserta barang hanya jika ada selectedIds
+$selectedItems = collect(); // Inisialisasi sebagai empty collection
+$subtotal = 0;
+$itemsLoadedFromServer = false;
+
+// FIXED: Ambil alamat user yang sedang login
+$alamats = collect();
+$alamatTerpilih = null;
+if (Auth::check()) {
+    $user = Auth::user();
+    $pembeli = Pembeli::where('user_id', $user->id)->first();
+    if ($pembeli) {
+        $alamats = Alamat::where('pembeli_id', $pembeli->pembeli_id)
+            ->orderBy('status_default', 'desc')
+            ->orderBy('created_at', 'desc')
+            ->get();
+        $defaultAlamat = $alamats->where('status_default', 'Y')->first();
+        $alamatTerpilih = $defaultAlamat ? $defaultAlamat->alamat_id : null;
+    }
+}
+
+if (!empty($selectedIds) && is_array($selectedIds)) {
+    try {
+        $selectedItems = KeranjangBelanja::with(['barang', 'barang.kategoriBarang'])
+            ->whereIn('keranjang_id', $selectedIds)
+            ->get();
+        // Hitung subtotal hanya jika ada items
+        if ($selectedItems->isNotEmpty()) {
+            foreach($selectedItems as $item) {
+                $barang = $item->barang ?? null;
+                if ($barang) {
+                    $harga = $barang->harga ?? 0;
+                    $jumlah = $item->jumlah ?? 1;
+                    $subtotal += $harga * $jumlah;
+                }
+            }
+            $itemsLoadedFromServer = true;
+        }
+    } catch (Exception $e) {
+        // Jika terjadi error saat query, set sebagai empty collection
+        $selectedItems = collect();
+        $subtotal = 0;
+        $itemsLoadedFromServer = false;
+        // Log error untuk debugging
+        \Log::error('Error loading selected items: ' . $e->getMessage());
+    }
+}
+
+// Hitung shipping cost - default gratis untuk ambil sendiri
+$shippingCost = 0;
+$total = $subtotal + $shippingCost;
+@endphp
+
+@extends('layouts.app')
 @section('content')
 <div class="container">
-    <h1>Checkout</h1>
+    
+    <!-- Breadcrumb Navigation -->
+    <div class="row mb-4">
+        <div class="col-12">
+            <h1><i class="fas fa-shopping-cart me-2"></i>Checkout</h1>
+        </div>
+    </div>
 
     <div class="row">
-        <div class="col-md-8">
-            <h2>Item yang Dipilih</h2>
-            <div id="selected-items-container">
-                <!-- Item yang dipilih akan ditampilkan di sini -->
+        <div class="col-lg-8">
+            <!-- Selected Items Section -->
+            <div class="card mb-4 shadow-sm">
+                <div class="card-header bg-primary text-white">
+                    <h5 class="mb-0"><i class="fas fa-box me-2"></i>Item yang Dipilih</h5>
+                </div>
+                <div class="card-body">
+                    <div id="selected-items-container">
+                        @if($itemsLoadedFromServer)
+                            @forelse ($selectedItems as $index => $item)
+                                @php
+                                    $barang = $item->barang ?? $item;
+                                    $kategori = $barang->kategoriBarang->nama_kategori ?? 'Tanpa Kategori';
+                                    $image = $barang->foto_barang ? asset('storage/' . $barang->foto_barang) : '/placeholder.svg?height=80&width=80';
+                                    $harga = $barang->harga ?? 0;
+                                    $jumlah = $item->jumlah ?? 1;
+                                @endphp
+                                <div class="border-bottom py-3 {{ $loop->last ? 'border-bottom-0' : '' }}">
+                                    <div class="row align-items-center">
+                                        <div class="col-md-2">
+                                            <img src="{{ $image }}" alt="{{ $barang->nama_barang }}" class="img-fluid rounded shadow-sm" style="height: 80px; width: 80px; object-fit: cover;" onerror="this.onerror=null; this.src='/img/no-image.png';">
+                                        </div>
+                                        <div class="col-md-7">
+                                            <h6 class="mb-1 fw-bold">{{ $barang->nama_barang }}</h6>
+                                            <p class="text-muted mb-1">
+                                                <i class="fas fa-tag me-1"></i>{{ $kategori }}
+                                            </p>
+                                            <small class="text-muted">
+                                                <i class="fas fa-info-circle me-1"></i>Kondisi: {{ $barang->kondisi ?? 'Baik' }}
+                                            </small>
+                                            @if($jumlah > 1)
+                                                <br><small class="text-muted">Jumlah: {{ $jumlah }}</small>
+                                            @endif
+                                        </div>
+                                        <div class="col-md-3 text-end">
+                                            <span class="fw-bold text-primary fs-5">Rp {{ number_format($harga, 0, ',', '.') }}</span>
+                                            @if($jumlah > 1)
+                                                <br><small class="text-muted">Total: Rp {{ number_format($harga * $jumlah, 0, ',', '.') }}</small>
+                                            @endif
+                                        </div>
+                                    </div>
+                                </div>
+                            @empty
+                                <div class="text-center py-4">
+                                    <i class="fas fa-shopping-bag fa-3x text-muted mb-3"></i>
+                                    <p class="text-muted mb-3">Tidak ada item yang dipilih</p>
+                                    <a href="{{ route('cart.index') }}" class="btn btn-primary">
+                                        <i class="fas fa-arrow-left me-2"></i>Kembali ke Keranjang
+                                    </a>
+                                </div>
+                            @endforelse
+                        @else
+                            <div id="loading-items" class="text-center py-4">
+                                <div class="spinner-border text-primary" role="status">
+                                    <span class="visually-hidden">Loading...</span>
+                                </div>
+                                <p class="mt-2 text-muted">Memuat item yang dipilih...</p>
+                            </div>
+                            <!-- Error message akan ditampilkan setelah timeout -->
+                            <div id="loading-error" class="text-center py-4" style="display: none;">
+                                <i class="fas fa-exclamation-circle fa-3x text-danger mb-3"></i>
+                                <p class="text-muted mb-3">Gagal memuat item. Silakan coba lagi.</p>
+                                <button id="retry-load-items" class="btn btn-primary">
+                                    <i class="fas fa-sync me-2"></i>Coba Lagi
+                                </button>
+                                <a href="{{ route('cart.index') }}" class="btn btn-outline-secondary ms-2">
+                                    <i class="fas fa-arrow-left me-2"></i>Kembali ke Keranjang
+                                </a>
+                            </div>
+                        @endif
+                    </div>
+                </div>
             </div>
 
-            <h2>Alamat Pengiriman</h2>
-            <div id="alamat-container">
-                <div id="alamat-display-container">
-                    <!-- Alamat akan ditampilkan di sini -->
+            <!-- Delivery Method Section -->
+            <div class="card mb-4 shadow-sm">
+                <div class="card-header bg-success text-white">
+                    <h5 class="mb-0"><i class="fas fa-truck me-2"></i>Metode Pengiriman</h5>
                 </div>
-                <button type="button" class="btn btn-primary mt-2" data-bs-toggle="modal" data-bs-target="#alamatSelectorModal">
-                    Pilih Alamat Pengiriman
-                </button>
+                <div class="card-body">
+                    <div class="mb-3">
+                        <label for="metode_pengiriman" class="form-label"><strong>Metode Pengiriman</strong></label>
+                        <select class="form-select" id="metode_pengiriman" name="metode_pengiriman">
+                            <option value="diambil">Ambil Sendiri - Di Gudang Reusemart</option>
+                            <option value="diantar">Diantar Kurir - @if($subtotal >= 1500000) GRATIS @else Rp {{ number_format(100000, 0, ',', '.') }} @endif</option>
+                        </select>
+                    </div>
+                    
+                    <!-- FIXED: Alamat Dropdown Section - SELALU TAMPIL -->
+                    <div id="alamat-dropdown-section" class="mb-3">
+                        <label for="alamat_dropdown" class="form-label"><strong>Alamat Pengiriman</strong></label>
+                        <select class="form-select" id="alamat_dropdown" name="alamat_id">
+                            <option value=""> -- Pilih alamat -- </option>
+                            @if ($alamats && $alamats->count() > 0)
+                                @foreach ($alamats as $alamat)
+                                    @php
+                                        $label = "{$alamat->nama_penerima} - {$alamat->alamat}, {$alamat->kota}";
+                                        $isDefault = $alamat->status_default === 'Y';
+                                    @endphp
+                                    <option value="{{ $alamat->alamat_id }}" {{ $alamatTerpilih == $alamat->alamat_id ? 'selected' : '' }}>
+                                        {{ $label }}{{ $isDefault ? ' (Utama)' : '' }}
+                                    </option>
+                                @endforeach
+                            @else
+                                <option value="">Tidak ada alamat tersedia</option>
+                            @endif
+                        </select>
+                        <div class="mt-2">
+                            <small class="text-muted">
+                                <i class="fas fa-info-circle me-1"></i> Pilih alamat pengiriman untuk pesanan Anda
+                            </small>
+                        </div>
+                        <div class="mt-3">
+                            <a href="{{ route('buyer.alamat.create') }}" class="btn btn-outline-primary btn-sm">
+                                <i class="fas fa-plus me-1"></i>Tambah Alamat Baru
+                            </a>
+                        </div>
+                    </div>
+                </div>
             </div>
 
-            <div class="mt-4">
-                <h2>Metode Pembayaran</h2>
-                <div class="form-check">
-                    <input class="form-check-input" type="radio" name="payment_method" id="cod" value="cod" checked>
-                    <label class="form-check-label" for="cod">
-                        Bayar di Tempat (COD)
-                    </label>
+            <!-- Point Usage Section -->
+            <div class="card mb-4 shadow-sm">
+                <div class="card-header bg-warning text-dark">
+                    <h5 class="mb-0"><i class="fas fa-star me-2"></i>Gunakan Point Reward</h5>
                 </div>
-                <div class="form-check">
-                    <input class="form-check-input" type="radio" name="payment_method" id="bank_transfer" value="bank_transfer">
-                    <label class="form-check-label" for="bank_transfer">
-                        Transfer Bank
-                    </label>
-                </div>
-                
-                <div id="cod-info" class="mt-2">
-                    <p class="text-muted">Anda akan membayar saat barang sampai di tempat.</p>
-                </div>
-                
-                <div id="bank-transfer-info" class="mt-2" style="display: none;">
-                    <p class="text-muted">Silakan transfer ke rekening berikut:</p>
-                    <ul class="list-unstyled">
-                        <li>Bank: [Nama Bank]</li>
-                        <li>Nomor Rekening: [Nomor Rekening]</li>
-                        <li>Atas Nama: [Nama Pemilik Rekening]</li>
-                    </ul>
-                    <p class="text-muted">Upload bukti pembayaran setelah melakukan transfer.</p>
+                <div class="card-body">
+                    <div class="row align-items-center">
+                        <div class="col-md-8">
+                            <p class="mb-2">Point tersedia: <strong id="available-points">{{ auth()->user()->pembeli->point ?? 0 }}</strong> point</p>
+                            <div class="input-group">
+                                <span class="input-group-text"><i class="fas fa-star"></i></span>
+                                <input type="number" class="form-control" id="point-usage" name="point_digunakan" placeholder="Masukkan jumlah point" min="0" max="{{ auth()->user()->pembeli->point ?? 0 }}">
+                                <span class="input-group-text">point</span>
+                            </div>
+                        </div>
+                        <div class="col-md-4 text-end">
+                            <div class="text-muted">Potongan:</div>
+                            <div class="fw-bold text-success fs-5" id="point-discount">Rp 0</div>
+                        </div>
+                    </div>
                 </div>
             </div>
         </div>
 
-        <div class="col-md-4">
-            <h2>Ringkasan Pesanan</h2>
-            <div class="card">
+        <div class="col-lg-4">
+            <!-- Order Summary -->
+            <div class="card sticky-top shadow-sm" style="top: 20px;">
+                <div class="card-header bg-dark text-white">
+                    <h5 class="mb-0"><i class="fas fa-receipt me-2"></i>Ringkasan Pesanan</h5>
+                </div>
                 <div class="card-body">
                     <div class="d-flex justify-content-between align-items-center mb-3">
                         <span class="text-muted">Item:</span>
-                        <span id="checkout-item-count">0</span>
+                        <span id="checkout-item-count" class="fw-bold">{{ $itemsLoadedFromServer ? $selectedItems->count() : 0 }}</span>
                     </div>
                     <div class="d-flex justify-content-between align-items-center mb-3">
                         <span class="text-muted">Subtotal:</span>
-                        <span id="checkout-subtotal">Rp 0</span>
+                        <span id="checkout-subtotal" class="fw-bold">
+                            @if($itemsLoadedFromServer)
+                                Rp {{ number_format($subtotal, 0, ',', '.') }}
+                            @else
+                                Rp 0
+                            @endif
+                        </span>
                     </div>
                     <div class="d-flex justify-content-between align-items-center mb-3">
                         <span class="text-muted">Ongkos Kirim:</span>
-                        <span id="shipping-cost">Rp 0</span>
+                        <span id="shipping-cost" class="fw-bold">
+                            <span class="text-success">GRATIS</span>
+                        </span>
+                    </div>
+                    <div class="d-flex justify-content-between align-items-center mb-3">
+                        <span class="text-muted">Potongan Point:</span>
+                        <span id="point-discount-display" class="fw-bold text-success">Rp 0</span>
+                    </div>
+                    <div class="d-flex justify-content-between align-items-center mb-3">
+                        <span class="text-muted">Point Diperoleh:</span>
+                        <span id="point-earned" class="fw-bold text-warning">
+                            <i class="fas fa-star me-1"></i>{{ floor($subtotal / 10000) }} point
+                        </span>
                     </div>
                     <hr>
-                    <div class="d-flex justify-content-between align-items-center">
-                        <span class="fw-bold">Total:</span>
-                        <span class="fw-bold" id="checkout-total">Rp 0</span>
+                    <div class="d-flex justify-content-between align-items-center mb-4">
+                        <span class="fw-bold fs-5">Total:</span>
+                        <span class="fw-bold fs-5 text-primary" id="checkout-total">
+                            @if($itemsLoadedFromServer)
+                                Rp {{ number_format($total, 0, ',', '.') }}
+                            @else
+                                Rp 0
+                            @endif
+                        </span>
+                    </div>
+                    <form id="checkout-form" action="{{ route('checkout.process') }}" method="POST">
+                        @csrf
+                        <input type="hidden" name="alamat_id" id="hidden-alamat-id" value="{{ $alamatTerpilih }}">
+                        <input type="hidden" name="selected_items" id="hidden-selected-items" value="{{ json_encode($selectedIds) }}">
+                        <input type="hidden" name="metode_pengiriman" id="hidden-metode-pengiriman" value="diambil">
+                        <input type="hidden" name="subtotal" id="hidden-subtotal" value="{{ $subtotal }}">
+                        <input type="hidden" name="shipping_cost" id="hidden-shipping-cost" value="0">
+                        <input type="hidden" name="point_digunakan" id="hidden-point-digunakan" value="0">
+                        <input type="hidden" name="point_diperoleh" id="hidden-point-diperoleh" value="{{ floor($subtotal / 10000) }}">
+                        <input type="hidden" name="total_harga" id="hidden-total-harga" value="{{ $total }}">
+                        <button type="submit" class="btn btn-success w-100 btn-lg" id="place-order-btn" {{ ($itemsLoadedFromServer && $selectedItems->count() > 0) ? '' : 'disabled' }}>
+                            <span id="order-spinner" class="spinner-border spinner-border-sm d-none me-2" role="status" aria-hidden="true"></span>
+                            <i class="fas fa-shopping-cart me-2"></i>Pesan Sekarang
+                        </button>
+                    </form>
+                    <!-- Security Badge -->
+                    <div class="text-center mt-3">
+                        <small class="text-muted">
+                            <i class="fas fa-shield-alt me-1"></i> Transaksi Aman & Terpercaya
+                        </small>
                     </div>
                 </div>
             </div>
-
-            <form id="checkout-form" action="{{ route('checkout.process') }}" method="POST">
-                @csrf
-                <input type="hidden" name="alamat_id" id="hidden-alamat-id">
-                <input type="hidden" name="selected_items" id="hidden-selected-items">
-                <input type="hidden" name="payment_method" id="hidden-payment-method" value="cod">
-                <input type="hidden" name="subtotal" id="hidden-subtotal">
-                <input type="hidden" name="shipping_cost" id="hidden-shipping-cost">
-                <input type="hidden" name="total" id="hidden-total">
-                
-                <button type="submit" class="btn btn-success w-100 mt-3" id="place-order-btn" disabled>
-                    <span id="order-spinner" class="spinner-border spinner-border-sm d-none" role="status" aria-hidden="true"></span>
-                    Pesan Sekarang
-                </button>
-            </form>
         </div>
     </div>
 </div>
 
-<div class="modal fade" id="alamatSelectorModal" tabindex="-1" aria-labelledby="alamatSelectorModalLabel" aria-hidden="true">
-    <div class="modal-dialog">
-        <div class="modal-content">
-            <div class="modal-header">
-                <h5 class="modal-title" id="alamatSelectorModalLabel">Pilih Alamat Pengiriman</h5>
-                <button type="button" class="btn-close" data-bs-dismiss="modal" aria-label="Close"></button>
-            </div>
-            <div class="modal-body" id="alamat-selector-content">
-                <!-- Alamat selector content will be loaded here -->
-            </div>
-        </div>
-    </div>
-</div>
-
-<div class="modal fade" id="errorModal" tabindex="-1" aria-labelledby="errorModalLabel" aria-hidden="true">
-    <div class="modal-dialog">
-        <div class="modal-content">
-            <div class="modal-header">
-                <h5 class="modal-title" id="errorModalLabel">Error</h5>
-                <button type="button" class="btn-close" data-bs-dismiss="modal" aria-label="Close"></button>
-            </div>
-            <div class="modal-body" id="error-message">
-                <!-- Pesan error akan ditampilkan di sini -->
-            </div>
-            <div class="modal-footer">
-                <button type="button" class="btn btn-secondary" data-bs-dismiss="modal">Tutup</button>
-            </div>
-        </div>
-    </div>
-</div>
-
-<div class="modal fade" id="noAlamatModal" tabindex="-1" aria-labelledby="noAlamatModalLabel" aria-hidden="true">
-    <div class="modal-dialog">
-        <div class="modal-content">
-            <div class="modal-header">
-                <h5 class="modal-title" id="noAlamatModalLabel">Peringatan</h5>
-                <button type="button" class="btn-close" data-bs-dismiss="modal" aria-label="Close"></button>
-            </div>
-            <div class="modal-body">
-                Anda belum memiliki alamat. Silakan tambahkan alamat terlebih dahulu.
-            </div>
-            <div class="modal-footer">
-                <button type="button" class="btn btn-secondary" data-bs-dismiss="modal">Tutup</button>
-            </div>
-        </div>
-    </div>
-</div>
-
-<div class="modal fade" id="alamatModal" tabindex="-1" aria-labelledby="alamatModalLabel" aria-hidden="true">
-    <div class="modal-dialog">
-        <div class="modal-content">
-            <div class="modal-header">
-                <h5 class="modal-title" id="alamatModalLabel">Pilih Alamat</h5>
-                <button type="button" class="btn-close" data-bs-dismiss="modal" aria-label="Close"></button>
-            </div>
-            <div class="modal-body" id="alamat-list">
-                <!-- Daftar alamat akan ditampilkan di sini -->
-            </div>
-            <div class="modal-footer">
-                <button type="button" class="btn btn-secondary" data-bs-dismiss="modal">Tutup</button>
-            </div>
-        </div>
-    </div>
-</div>
-
-@endsection
-
-@section('scripts')
 <script src="https://code.jquery.com/jquery-3.6.0.min.js"></script>
 <script>
 $(document).ready(function() {
-    // Initialize variables
-    const selectedItems = @json(request()->input('selected_items', []));
-    let isLoadingItems = false;
-    let isLoadingAlamat = false;
-    
-    console.log('Checkout initialized with items:', selectedItems);
-    
-    // Validate selected items
-    if (!selectedItems || selectedItems.length === 0) {
-        showError('Tidak ada item yang dipilih untuk checkout');
-        setTimeout(() => {
-            window.location.href = '{{ route("cart.index") }}';
-        }, 2000);
-        return;
-    }
-    
-    // Initialize page
-    initializePage();
-    
-    function initializePage() {
-        // Load selected items
-        loadSelectedItems(selectedItems);
-        
-        // Load default alamat
-        loadDefaultAlamat();
-        
-        // Setup event handlers
-        setupEventHandlers();
-    }
-    
+    console.log('=== CHECKOUT PAGE LOADED ===');
+    const selectedItems = @json(array_values($selectedIds));
+    let currentDeliveryMethod = $('#metode_pengiriman').val() || 'diambil';
+    let itemsLoadedFromServer = @json($itemsLoadedFromServer);
+
+    // Set the hidden input value immediately on page load
+    $('#hidden-metode-pengiriman').val(currentDeliveryMethod);
+
+    // Subtotal dan threshold untuk gratis ongkir
+    let subtotal = {{ $subtotal }};
+    const freeShippingThreshold = 1500000;
+    const standardShippingCost = 100000;
+
+    console.log('Initial data:', {
+        selectedItems: selectedItems,
+        itemsLoadedFromServer: itemsLoadedFromServer,
+        subtotal: subtotal,
+        currentDeliveryMethod: currentDeliveryMethod,
+        alamatsCount: {{ $alamats->count() }}
+    });
+
+    // Setup event handlers
+    setupEventHandlers();
+
+    // Initialize delivery method state
+    updateDeliveryMethodState();
+
+    // Point usage functionality
+    setupPointUsage();
+
     function setupEventHandlers() {
-        // Payment method change
-        $('input[name="payment_method"]').on('change', function() {
-            const method = $(this).val();
-            $('#hidden-payment-method').val(method);
-            
-            if (method === 'bank_transfer') {
-                $('#bank-transfer-info').show();
-                $('#cod-info').hide();
-            } else {
-                $('#bank-transfer-info').hide();
-                $('#cod-info').show();
+        console.log('Setting up event handlers...');
+
+        // Alamat dropdown change handler
+        $('#alamat_dropdown').on('change', function() {
+            const alamatId = $(this).val();
+            console.log('   Alamat dropdown changed:', alamatId);
+            $('#hidden-alamat-id').val(alamatId);
+            updatePlaceOrderButton();
+            if (alamatId) {
+                showSuccess('Alamat pengiriman berhasil dipilih');
             }
         });
-        
+
+        // Delivery method change
+        $('#metode_pengiriman').on('change', function() {
+            currentDeliveryMethod = $(this).val();
+            console.log('   Metode pengiriman dipilih:', currentDeliveryMethod);
+            $('#hidden-metode-pengiriman').val(currentDeliveryMethod);
+            updateDeliveryMethodState();
+            updateOrderSummary();
+        });
+
         // Form submission
         $('#checkout-form').on('submit', function(e) {
-            const alamatId = $('#hidden-alamat-id').val();
+            console.log('=== FORM SUBMISSION ===');
             const selectedItemsValue = $('#hidden-selected-items').val();
-            
-            if (!alamatId) {
-                e.preventDefault();
-                showError('Silakan pilih alamat pengiriman terlebih dahulu');
-                return false;
-            }
-            
-            if (!selectedItemsValue) {
+            if (!selectedItemsValue || selectedItemsValue === '[]') {
                 e.preventDefault();
                 showError('Data item tidak valid');
                 return false;
             }
-            
+
+            // Check if courier is selected and alamat is required
+            if (currentDeliveryMethod === 'diantar') {
+                const alamatId = $('#hidden-alamat-id').val();
+                if (!alamatId) {
+                    e.preventDefault();
+                    showError('Silakan pilih alamat pengiriman untuk metode diantar kurir');
+                    return false;
+                }
+            }
+
             // Show loading state
             $('#place-order-btn').prop('disabled', true);
             $('#order-spinner').removeClass('d-none');
-            
-            // Add timeout to prevent infinite loading
-            setTimeout(() => {
-                if ($('#place-order-btn').prop('disabled')) {
-                    $('#place-order-btn').prop('disabled', false);
-                    $('#order-spinner').addClass('d-none');
-                    showError('Proses checkout timeout. Silakan coba lagi.');
-                }
-            }, 30000); // 30 seconds timeout
-        });
-        
-        // Modal event handlers
-        $('#alamatSelectorModal').on('show.bs.modal', function() {
-            if (!isLoadingAlamat) {
-                loadAlamatSelector();
-            }
-        });
-        
-        // Handle alamat selection (delegated event)
-        $(document).on('click', '.alamat-option', function(e) {
-            e.preventDefault();
-            const alamatId = $(this).data('alamat-id');
-            const alamatData = {
-                alamat_id: alamatId,
-                nama_penerima: $(this).data('nama-penerima'),
-                no_telepon: $(this).data('no-telepon'),
-                alamat: $(this).data('alamat'),
-                kota: $(this).data('kota'),
-                provinsi: $(this).data('provinsi'),
-                kode_pos: $(this).data('kode-pos'),
-                status_default: $(this).data('status-default')
-            };
-            
-            selectAlamat(alamatId, alamatData);
-            $('#alamatSelectorModal').modal('hide');
         });
     }
-    
-    function loadSelectedItems(selectedItems) {
-        if (isLoadingItems) return;
+
+    function setupPointUsage() {
+        const pointInput = $('#point-usage');
+        const availablePoints = parseInt($('#available-points').text()) || 0;
         
-        isLoadingItems = true;
-        console.log('Loading selected items:', selectedItems);
-        
-        // Show loading state
-        $('#selected-items-container').html(`
-            <div class="text-center py-4">
-                <div class="spinner-border text-primary" role="status">
-                    <span class="visually-hidden">Loading...</span>
-                </div>
-                <p class="mt-2 text-muted">Memuat item yang dipilih...</p>
-            </div>
-        `);
-        
-        $.ajax({
-            url: '{{ route("buyer.cart.selected-items") }}',
-            method: 'POST',
-            data: {
-                _token: '{{ csrf_token() }}',
-                selected_items: selectedItems
-            },
-            timeout: 15000,
-            success: function(response) {
-                console.log('Selected items response:', response);
-                
-                if (response && response.status === 'success' && response.data) {
-                    displaySelectedItems(response.data.items || []);
-                    updateOrderSummary(response.data);
-                    $('#hidden-selected-items').val(JSON.stringify(selectedItems));
-                } else {
-                    const message = response?.message || 'Gagal memuat item yang dipilih';
-                    showError(message);
-                    displayEmptyItems();
-                }
-            },
-            error: function(xhr, status, error) {
-                console.error('Error loading selected items:', {xhr, status, error});
-                
-                let errorMessage = 'Terjadi kesalahan saat memuat item';
-                
-                if (status === 'timeout') {
-                    errorMessage = 'Permintaan timeout. Silakan coba lagi.';
-                } else if (xhr.status === 404) {
-                    errorMessage = 'Route tidak ditemukan. Periksa konfigurasi.';
-                } else if (xhr.status === 419) {
-                    errorMessage = 'Sesi telah berakhir. Silakan refresh halaman.';
-                } else if (xhr.status === 500) {
-                    errorMessage = 'Terjadi kesalahan server. Silakan coba lagi.';
-                } else if (xhr.responseJSON?.message) {
-                    errorMessage = xhr.responseJSON.message;
-                }
-                
-                showError(errorMessage);
-                displayEmptyItems();
-            },
-            complete: function() {
-                isLoadingItems = false;
+        pointInput.on('input', function() {
+            let pointsToUse = parseInt($(this).val()) || 0;
+            
+            // Validate points
+            if (pointsToUse > availablePoints) {
+                pointsToUse = availablePoints;
+                $(this).val(pointsToUse);
             }
+            
+            if (pointsToUse < 0) {
+                pointsToUse = 0;
+                $(this).val(pointsToUse);
+            }
+            
+            // Calculate discount (1 point = Rp 1000)
+            const discount = pointsToUse * 1000;
+            
+            // Update displays
+            $('#point-discount').text('Rp ' + formatNumber(discount));
+            $('#point-discount-display').text('Rp ' + formatNumber(discount));
+            $('#hidden-point-digunakan').val(pointsToUse);
+            
+            // Update total
+            updateOrderSummary();
         });
     }
-    
-    function displaySelectedItems(items) {
-        let html = '';
-        
-        if (!items || items.length === 0) {
-            displayEmptyItems();
-            return;
+
+    function updateDeliveryMethodState() {
+        console.log('   Updating delivery method state:', currentDeliveryMethod);
+        if (currentDeliveryMethod === 'diantar') {
+            $('#courier-info').show();
+            // Dropdown alamat tetap tampil, hanya info yang berubah
+        } else {
+            $('#courier-info').hide();
+            // Clear alamat selection when switching to pickup
+            $('#hidden-alamat-id').val('');
+            $('#alamat_dropdown').val('');
         }
-        
-        items.forEach(function(item, index) {
-            const barang = item.barang || item;
-            const kategori = barang.kategori_barang?.nama_kategori || barang.kategori || 'Tanpa Kategori';
-            const imageUrl = barang.foto_barang ? 
-                '{{ asset("storage/") }}/' + barang.foto_barang : 
-                '/placeholder.svg?height=80&width=80';
-            const harga = barang.harga || 0;
-            const jumlah = item.jumlah || 1;
-            
-            html += `
-                <div class="border-bottom py-3 ${index === items.length - 1 ? 'border-bottom-0' : ''}">
-                    <div class="row align-items-center">
-                        <div class="col-md-2">
-                            <img src="${imageUrl}" alt="${barang.nama_barang || 'Produk'}" 
-                                 class="img-fluid rounded shadow-sm" 
-                                 style="height: 80px; width: 80px; object-fit: cover;"
-                                 onerror="this.src='/placeholder.svg?height=80&width=80'">
-                        </div>
-                        <div class="col-md-7">
-                            <h6 class="mb-1 fw-bold">${barang.nama_barang || 'Nama tidak tersedia'}</h6>
-                            <p class="text-muted mb-1">
-                                <i class="fas fa-tag me-1"></i>${kategori}
-                            </p>
-                            <small class="text-muted">
-                                <i class="fas fa-info-circle me-1"></i>Kondisi: ${barang.kondisi || 'Baik'}
-                            </small>
-                            ${jumlah > 1 ? `<br><small class="text-muted">Jumlah: ${jumlah}</small>` : ''}
-                        </div>
-                        <div class="col-md-3 text-end">
-                            <span class="fw-bold text-primary fs-5">Rp ${formatNumber(harga)}</span>
-                            ${jumlah > 1 ? `<br><small class="text-muted">Total: Rp ${formatNumber(harga * jumlah)}</small>` : ''}
-                        </div>
-                    </div>
-                </div>
-            `;
+        // Update place order button state
+        updatePlaceOrderButton();
+    }
+
+    function updatePlaceOrderButton() {
+        const currentSubtotal = parseInt($('#hidden-subtotal').val()) || 0;
+        let canPlaceOrder = false;
+        let buttonText = '<i class="fas fa-shopping-cart me-2"></i>Pesan Sekarang';
+        console.log('   Updating place order button:', {
+            subtotal: currentSubtotal,
+            deliveryMethod: currentDeliveryMethod
         });
-        
-        $('#selected-items-container').html(html);
+        if (currentSubtotal && currentSubtotal > 0) {
+            if (currentDeliveryMethod === 'diambil') {
+                // Pickup doesn't need alamat
+                canPlaceOrder = true;
+            } else if (currentDeliveryMethod === 'diantar') {
+                // Courier needs alamat
+                const alamatId = $('#hidden-alamat-id').val();
+                canPlaceOrder = alamatId && alamatId !== '';
+                if (!canPlaceOrder) {
+                    buttonText = '<i class="fas fa-map-marker-alt me-2"></i>Pilih Alamat Pengiriman';
+                }
+                console.log('   Courier - alamat ID:', alamatId, 'Can place order:', canPlaceOrder);
+            }
+        } else {
+            buttonText = '<i class="fas fa-shopping-cart me-2"></i>Tidak Ada Item';
+        }
+        const orderBtn = $('#place-order-btn');
+        orderBtn.prop('disabled', !canPlaceOrder);
+        orderBtn.html(buttonText);
+        console.log('   Place order button enabled:', canPlaceOrder);
     }
-    
-    function displayEmptyItems() {
-        $('#selected-items-container').html(`
-            <div class="text-center py-4">
-                <i class="fas fa-shopping-bag fa-3x text-muted mb-3"></i>
-                <p class="text-muted mb-3">Tidak ada item yang dipilih</p>
-                <a href="{{ route('cart.index') }}" class="btn btn-primary">
-                    <i class="fas fa-arrow-left me-2"></i>Kembali ke Keranjang
-                </a>
-            </div>
-        `);
-    }
-    
-    function updateOrderSummary(data) {
-        const subtotal = data.subtotal || 0;
-        const count = data.count || 0;
-        const shippingCost = subtotal > 1500000 ? 0 : 100000; // Free shipping over 1.5M
-        const adminFee = 2500;
-        const total = subtotal + shippingCost + adminFee;
-        
-        $('#checkout-item-count').text(count);
-        $('#checkout-subtotal').text('Rp ' + formatNumber(subtotal));
-        $('#shipping-cost').text(shippingCost === 0 ? 'GRATIS' : 'Rp ' + formatNumber(shippingCost));
+
+    function updateOrderSummary() {
+        const currentSubtotal = parseInt($('#hidden-subtotal').val()) || subtotal;
+        const pointDiscount = parseInt($('#hidden-point-digunakan').val()) * 1000 || 0;
+        let shippingCost = 0;
+
+        // Calculate shipping cost based on delivery method
+        if (currentDeliveryMethod === 'diantar') {
+            shippingCost = currentSubtotal >= freeShippingThreshold ? 0 : standardShippingCost;
+        } else {
+            shippingCost = 0;
+        }
+
+        const total = currentSubtotal + shippingCost - pointDiscount;
+
+        // Update shipping cost display
+        const shippingCostEl = $('#shipping-cost');
+        if (shippingCost === 0) {
+            shippingCostEl.html('<span class="text-success">GRATIS</span>');
+        } else {
+            shippingCostEl.html('<span class="text-dark">Rp ' + formatNumber(shippingCost) + '</span>');
+        }
+
+        // Update total
         $('#checkout-total').text('Rp ' + formatNumber(total));
-        
-        // Update hidden fields
-        $('#hidden-subtotal').val(subtotal);
         $('#hidden-shipping-cost').val(shippingCost);
-        $('#hidden-total').val(total);
+        $('#hidden-total-harga').val(total);
         
-        // Enable place order button if alamat is selected
-        const alamatId = $('#hidden-alamat-id').val();
-        if (alamatId && subtotal > 0) {
-            $('#place-order-btn').prop('disabled', false);
-        }
+        // Update point earned (1 point per 10,000 spent)
+        const pointsEarned = Math.floor(currentSubtotal / 10000);
+        $('#point-earned').html('<i class="fas fa-star me-1"></i>' + pointsEarned + ' point');
+        $('#hidden-point-diperoleh').val(pointsEarned);
     }
-    
-    function loadDefaultAlamat() {
-        if (isLoadingAlamat) return;
-        
-        isLoadingAlamat = true;
-        
-        $.ajax({
-            url: '{{ route("buyer.alamat.default") }}',
-            method: 'GET',
-            timeout: 10000,
-            success: function(response) {
-                console.log('Default alamat response:', response);
-                
-                if (response && response.alamat) {
-                    displaySelectedAlamat(response.alamat);
-                    $('#hidden-alamat-id').val(response.alamat.alamat_id);
-                    
-                    // Enable place order button if items are loaded
-                    const subtotal = $('#hidden-subtotal').val();
-                    if (subtotal && subtotal > 0) {
-                        $('#place-order-btn').prop('disabled', false);
-                    }
-                } else {
-                    displayNoAlamat();
-                }
-            },
-            error: function(xhr, status, error) {
-                console.error('Error loading default alamat:', {xhr, status, error});
-                displayNoAlamat();
-            },
-            complete: function() {
-                isLoadingAlamat = false;
-            }
-        });
-    }
-    
-    function displaySelectedAlamat(alamat) {
-        const html = `
-            <div class="selected-alamat">
-                <div class="d-flex justify-content-between align-items-start">
-                    <div>
-                        <h6 class="mb-1 fw-bold">${alamat.nama_penerima || 'Nama tidak tersedia'}</h6>
-                        <p class="mb-1"><i class="fas fa-phone me-1"></i>${alamat.no_telepon || 'No telepon tidak tersedia'}</p>
-                        <p class="mb-1"><i class="fas fa-map-marker-alt me-1"></i>${alamat.alamat || 'Alamat tidak tersedia'}</p>
-                        <p class="mb-0 text-muted">${alamat.kota || ''}, ${alamat.provinsi || ''} ${alamat.kode_pos || ''}</p>
-                    </div>
-                    <div>
-                        ${alamat.status_default === 'Y' ? '<span class="badge bg-success">Alamat Utama</span>' : ''}
-                    </div>
-                </div>
-            </div>
-        `;
-        
-        $('#alamat-display-container').html(html);
-    }
-    
-    function displayNoAlamat() {
-        const html = `
-            <div class="text-center py-4">
-                <i class="fas fa-map-marker-alt fa-3x text-muted mb-3"></i>
-                <p class="text-muted mb-3">Belum ada alamat pengiriman</p>
-                <a href="{{ route('buyer.alamat.create') }}" class="btn btn-primary">
-                    <i class="fas fa-plus me-2"></i>Tambah Alamat
-                </a>
-            </div>
-        `;
-        
-        $('#alamat-display-container').html(html);
-    }
-    
-    function loadAlamatSelector() {
-        $('#alamat-selector-content').html(`
-            <div class="text-center py-3">
-                <div class="spinner-border text-primary" role="status">
-                    <span class="visually-hidden">Loading...</span>
-                </div>
-                <p class="mt-2">Memuat daftar alamat...</p>
-            </div>
-        `);
-        
-        $.ajax({
-            url: '{{ route("buyer.alamat.select") }}',
-            method: 'GET',
-            timeout: 10000,
-            success: function(response) {
-                console.log('Alamat selector response:', response);
-                
-                if (response && response.success && response.html) {
-                    $('#alamat-selector-content').html(response.html);
-                } else if (response && response.alamats) {
-                    displayAlamatList(response.alamats);
-                } else {
-                    $('#alamat-selector-content').html('<p class="text-center text-muted">Gagal memuat daftar alamat</p>');
-                }
-            },
-            error: function(xhr, status, error) {
-                console.error('Error loading alamat selector:', {xhr, status, error});
-                $('#alamat-selector-content').html('<p class="text-center text-muted">Terjadi kesalahan saat memuat alamat</p>');
-            }
-        });
-    }
-    
-    function displayAlamatList(alamats) {
-        if (!alamats || alamats.length === 0) {
-            $('#alamat-selector-content').html(`
-                <div class="text-center py-4">
-                    <i class="fas fa-map-marker-alt fa-3x text-muted mb-3"></i>
-                    <p class="text-muted">Belum ada alamat tersimpan</p>
-                </div>
-            `);
-            return;
-        }
-        
-        let html = '<div class="list-group">';
-        alamats.forEach(alamat => {
-            html += `
-                <a href="#" class="list-group-item list-group-item-action alamat-option" 
-                   data-alamat-id="${alamat.alamat_id}"
-                   data-nama-penerima="${alamat.nama_penerima}"
-                   data-no-telepon="${alamat.no_telepon}"
-                   data-alamat="${alamat.alamat}"
-                   data-kota="${alamat.kota}"
-                   data-provinsi="${alamat.provinsi}"
-                   data-kode-pos="${alamat.kode_pos}"
-                   data-status-default="${alamat.status_default}">
-                    <div class="d-flex justify-content-between align-items-start">
-                        <div>
-                            <strong>${alamat.nama_penerima}</strong>
-                            ${alamat.status_default === 'Y' ? '<span class="badge bg-success ms-2">Utama</span>' : ''}
-                            <br>
-                            <small class="text-muted">${alamat.no_telepon}</small>
-                            <br>
-                            ${alamat.alamat}, ${alamat.kota}, ${alamat.provinsi} ${alamat.kode_pos}
-                        </div>
-                    </div>
-                </a>
-            `;
-        });
-        html += '</div>';
-        
-        $('#alamat-selector-content').html(html);
-    }
-    
-    function selectAlamat(alamatId, alamatData) {
-        $('#hidden-alamat-id').val(alamatId);
-        displaySelectedAlamat(alamatData);
-        
-        // Enable place order button if items are loaded
-        const subtotal = $('#hidden-subtotal').val();
-        if (subtotal && subtotal > 0) {
-            $('#place-order-btn').prop('disabled', false);
-        }
-        
-        showSuccess('Alamat pengiriman berhasil dipilih');
-    }
-    
+
     function formatNumber(num) {
         if (!num) return '0';
         return num.toString().replace(/\B(?=(\d{3})+(?!\d))/g, ".");
     }
-    
+
     function showError(message) {
+        console.error('   Showing error:', message);
         const alertHtml = `
             <div class="alert alert-danger alert-dismissible fade show" role="alert">
                 <i class="fas fa-exclamation-triangle me-2"></i>${message}
                 <button type="button" class="btn-close" data-bs-dismiss="alert" aria-label="Close"></button>
             </div>
         `;
-        
-        $('.alert').remove();
+        $('.alert-danger, .alert-success').remove();
         $('.container').first().prepend(alertHtml);
-        
         // Scroll to top
         $('html, body').animate({ scrollTop: 0 }, 500);
     }
-    
+
     function showSuccess(message) {
+        console.log('   Showing success:', message);
         const alertHtml = `
             <div class="alert alert-success alert-dismissible fade show" role="alert">
                 <i class="fas fa-check-circle me-2"></i>${message}
                 <button type="button" class="btn-close" data-bs-dismiss="alert" aria-label="Close"></button>
             </div>
         `;
-        
-        $('.alert').remove();
+        $('.alert-danger, .alert-success').remove();
         $('.container').first().prepend(alertHtml);
-        
         // Auto hide after 3 seconds
         setTimeout(() => {
-            $('.alert').fadeOut();
+            $('.alert-success').fadeOut();
         }, 3000);
     }
 });
