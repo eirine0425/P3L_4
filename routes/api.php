@@ -60,6 +60,9 @@ use App\Http\Controllers\Api\UnsoldItemPickupController;
 // ========================================
 
 // Authentication
+// AUTHENTICATION ROUTES
+// ========================================
+
 Route::post('/register', [AuthController::class, 'register']);
 Route::post('/login', [AuthController::class, 'login']);
 Route::post('/forgot-password', [AuthController::class, 'forgotPassword']);
@@ -71,6 +74,23 @@ Route::get('/products/{id}', [WebViewController::class, 'productDetail']);
 Route::get('/categories', [KategoriBarangController::class, 'index']);
 
 // Web view routes (public)
+// ========================================
+// SANCTUM AUTHENTICATED ROUTES
+// ========================================
+
+Route::middleware(['auth:sanctum'])->group(function () {
+    Route::post('/logout', [AuthController::class, 'logout']);
+
+    // Penitip Transaction Management
+    Route::get('/penitip/my-transaksi', [PenitipTransaksiController::class, 'myTransaksi']);
+    Route::post('/penitip/extend-penitipan', [PenitipTransaksiController::class, 'extendMyPenitipan']);
+    Route::post('/transaksi/extend', [PenitipTransaksiController::class, 'extendMyPenitipan']);
+});
+
+// ========================================
+// WEB VIEW ROUTES (PUBLIC)
+// ========================================
+
 Route::get('/beranda', [WebViewController::class, 'beranda']);
 Route::get('/produk', [WebViewController::class, 'daftarProduk']);
 Route::get('/produk/{id}', [WebViewController::class, 'tampilProduk']);
@@ -244,6 +264,45 @@ Route::middleware(['auth:sanctum'])->group(function () {
 
     // Core Rating CRUD
    
+// ========================================
+// CART & CHECKOUT ROUTES (AUTHENTICATED)
+// ========================================
+
+Route::middleware('auth:api')->group(function () {
+    Route::get('/keranjang', [WebViewController::class, 'keranjang']);
+    Route::post('/keranjang/tambah', [WebViewController::class, 'tambahKeKeranjang']);
+    Route::post('/keranjang/hapus', [WebViewController::class, 'hapusDariKeranjang']);
+    Route::get('/checkout', [WebViewController::class, 'checkout']);
+    Route::post('/checkout/proses', [WebViewController::class, 'prosesCheckout']);
+});
+
+// ========================================
+// DASHBOARD ROUTES (ROLE-BASED)
+// ========================================
+
+Route::middleware('auth:api')->group(function () {
+    Route::get('/dashboard/pemilik', [WebViewController::class, 'dashboardPemilik'])->middleware('role:owner');
+    Route::get('/dashboard/admin', [WebViewController::class, 'dashboardAdmin'])->middleware('role:admin');
+    Route::get('/dashboard/gudang', [WebViewController::class, 'dashboardGudang'])->middleware('role:pegawai gudang');
+    Route::get('/dashboard/cs', [WebViewController::class, 'dashboardCS'])->middleware('role:cs');
+    Route::get('/dashboard/penitip', [WebViewController::class, 'dashboardPenitip'])->middleware('role:penitip');
+    Route::get('/dashboard/pembeli', [WebViewController::class, 'dashboardPembeli'])->middleware('role:pembeli');
+    Route::get('/dashboard/organisasi', [WebViewController::class, 'dashboardOrganisasi'])->middleware('role:organisasi');
+});
+
+// ========================================
+// RATING SYSTEM ROUTES
+// ========================================
+
+Route::middleware(['auth:api'])->group(function () {
+    // Core Rating CRUD
+    Route::apiResource('ratings', RatingController::class);
+    
+    // Rating Query Routes
+    Route::get('/ratings/item/{barang_id}', [RatingController::class, 'getItemRatings']);
+    Route::get('/ratings/consignor/{penitip_id}', [RatingController::class, 'getConsignorRatings']);
+    Route::get('/my-ratings', [RatingController::class, 'getMyRatings']);
+    Route::get('/ratable-items', [RatingController::class, 'getRatableItems']);
     
     // Buyer Profile Rating Routes
     Route::prefix('buyer')->name('api.buyer.')->group(function () {
@@ -377,6 +436,108 @@ Route::middleware(['web', 'auth'])->group(function () {
 
 Route::get('/debug/expired-items', [DashboardOwnerController::class, 'debugExpiredItems']);
 Route::get('/debug/expired-items-public', [DashboardOwnerController::class, 'debugExpiredItems']);
+    // Consignor Rating Routes
+    Route::prefix('consignor')->name('api.consignor.')->group(function () {
+        Route::get('/ratings', [RatingController::class, 'getConsignorReceivedRatings']);
+        Route::get('/rating-summary', [RatingController::class, 'getConsignorRatingSummary']);
+        Route::get('/rating-analytics', [RatingController::class, 'getConsignorRatingAnalytics']);
+    });
+});
+
+// ========================================
+// CORE RESOURCE ROUTES
+// ========================================
+
+// Alamat Management
+Route::apiResource('alamat', AlamatController::class);
+
+// Barang Management
+Route::apiResource('barang', BarangController::class);
+
+// Detail Transaksi Management
+Route::apiResource('detail-transaksi', DetailTransaksiController::class);
+
+// Diskusi Produk Management
+Route::apiResource('diskusi-produk', DiskusiProdukController::class);
+
+// Donasi Management
+Route::apiResource('donasi', DonasiController::class);
+
+// Garansi Management
+Route::apiResource('garansi', GaransiController::class);
+
+// Kategori Barang Management
+Route::apiResource('kategori-barang', KategoriBarangController::class);
+
+// ========================================
+// SHOPPING CART ROUTES
+// ========================================
+
+Route::middleware(['auth:api'])->group(function () {
+    Route::prefix('keranjang-belanja')->name('api.cart.')->group(function () {
+        Route::get('/', [KeranjangBelanjaController::class, 'index']);
+        Route::post('/', [KeranjangBelanjaController::class, 'store']);
+        Route::get('/{id}', [KeranjangBelanjaController::class, 'show']);
+        Route::put('/{id}', [KeranjangBelanjaController::class, 'update']);
+        Route::delete('/{id}', [KeranjangBelanjaController::class, 'destroy']);
+        Route::post('/clear', [KeranjangBelanjaController::class, 'clearCart']);
+    });
+});
+
+// ========================================
+// SHIPPING & LOGISTICS ROUTES
+// ========================================
+
+Route::get('/pengiriman/transaksi-siap', [PengirimanController::class, 'transaksiSiapKirim']);
+Route::apiResource('pengiriman', PengirimanController::class);
+
+// ========================================
+// BUSINESS LOGIC ROUTES
+// ========================================
+
+// Komisi Management
+Route::apiResource('komisi', KomisiController::class);
+
+// Merchandise Management
+Route::apiResource('merch', MerchController::class);
+
+// Organization Management
+Route::apiResource('organisasi', OrganisasiController::class);
+
+// Employee Management
+Route::apiResource('pegawai', PegawaiController::class);
+
+// Buyer Management
+Route::apiResource('pembeli', PembeliController::class);
+
+// Consignor Management
+Route::apiResource('penitip', PenitipController::class);
+
+// Donation Request Management
+Route::apiResource('request-donasi', RequestDonasiController::class);
+
+// Role Management
+Route::apiResource('role', RoleController::class);
+
+// ========================================
+// TRANSACTION ROUTES
+// ========================================
+
+// Main Transactions
+Route::apiResource('transaksi', TransaksiController::class);
+
+// Merchandise Transactions
+Route::apiResource('transaksi-merch', TransaksiMerchController::class);
+
+// Consignment Transactions
+Route::apiResource('transaksi-penitipan', TransaksiPenitipanController::class);
+Route::post('/transaksi-penitipan/{id}/extend', [TransaksiPenitipanController::class, 'extendPenitipan']);
+
+// ========================================
+// USER MANAGEMENT ROUTES
+// ========================================
+
+Route::apiResource('users', UserController::class);
 
 // ========================================
 // FALLBACK ROUTE
@@ -389,3 +550,4 @@ Route::fallback(function () {
         'code' => 404
     ], 404);
 });
+

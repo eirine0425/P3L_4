@@ -3,14 +3,14 @@
 <head>
     <meta charset="UTF-8">
     <meta name="viewport" content="width=device-width, initial-scale=1.0">
-    <title>Nota Penitipan Barang - Bulk</title>
+    <title>Nota Penitipan Barang</title>
     <style>
         body {
             font-family: Arial, sans-serif;
-            font-size: 11px;
-            line-height: 1.3;
+            font-size: 12px;
+            line-height: 1.4;
             margin: 0;
-            padding: 15px;
+            padding: 20px;
         }
         .header {
             text-align: center;
@@ -34,93 +34,79 @@
             margin: 20px 0;
             text-decoration: underline;
         }
-        .summary-info {
+        .info-section {
             margin-bottom: 20px;
-            background-color: #f5f5f5;
-            padding: 10px;
-            border: 1px solid #ddd;
         }
-        .summary-row {
+        .info-row {
             display: flex;
             margin-bottom: 5px;
         }
-        .summary-label {
+        .info-label {
             width: 150px;
             font-weight: bold;
         }
-        .summary-value {
+        .info-value {
             flex: 1;
         }
-        .items-table {
-            width: 100%;
-            border-collapse: collapse;
+        .item-details {
+            border: 1px solid #000;
             margin: 20px 0;
         }
-        .items-table th,
-        .items-table td {
+        .item-details table {
+            width: 100%;
+            border-collapse: collapse;
+        }
+        .item-details th,
+        .item-details td {
             border: 1px solid #000;
-            padding: 6px;
+            padding: 8px;
             text-align: left;
-            font-size: 10px;
         }
-        .items-table th {
+        .item-details th {
             background-color: #f0f0f0;
-            font-weight: bold;
-        }
-        .items-table tr:nth-child(even) {
-            background-color: #f9f9f9;
-        }
-        .total-section {
-            margin-top: 20px;
-            text-align: right;
             font-weight: bold;
         }
         .terms {
             margin-top: 30px;
-            font-size: 9px;
-            page-break-inside: avoid;
+            font-size: 10px;
         }
         .terms h4 {
             margin-bottom: 10px;
-            font-size: 11px;
+            font-size: 12px;
         }
         .terms ul {
             margin: 0;
-            padding-left: 15px;
+            padding-left: 20px;
         }
         .terms li {
-            margin-bottom: 3px;
+            margin-bottom: 5px;
         }
         .signature-section {
-            margin-top: 30px;
+            margin-top: 40px;
             display: flex;
             justify-content: space-between;
-            page-break-inside: avoid;
         }
         .signature-box {
             text-align: center;
-            width: 180px;
+            width: 200px;
         }
         .signature-line {
             border-top: 1px solid #000;
-            margin-top: 50px;
+            margin-top: 60px;
             padding-top: 5px;
         }
         .footer {
-            margin-top: 20px;
+            margin-top: 30px;
             text-align: center;
-            font-size: 9px;
+            font-size: 10px;
             color: #666;
             border-top: 1px solid #ccc;
             padding-top: 10px;
         }
-        .page-break {
-            page-break-before: always;
-        }
         @media print {
             body {
                 margin: 0;
-                padding: 10px;
+                padding: 15px;
             }
         }
     </style>
@@ -134,82 +120,83 @@
         </div>
     </div>
 
-    <div class="nota-title">NOTA PENITIPAN BARANG - BULK</div>
+    <div class="nota-title">NOTA PENITIPAN BARANG</div>
 
-    <div class="summary-info">
-        <div class="summary-row">
-            <div class="summary-label">Tanggal Cetak:</div>
-            <div class="summary-value">{{ $tanggalCetak->format('d F Y H:i:s') }}</div>
+    <div class="info-section">
+        <div class="info-row">
+            <div class="info-label">No. Nota:</div>
+            <div class="info-value">{{ $item->barang_id }}</div>
         </div>
-        <div class="summary-row">
-            <div class="summary-label">Petugas:</div>
-            <div class="summary-value">{{ $petugas }}</div>
+        <div class="info-row">
+            <div class="info-label">Tanggal Penitipan:</div>
+            <div class="info-value">{{ $item->created_at->format('d F Y') }}</div>
         </div>
-        <div class="summary-row">
-            <div class="summary-label">Total Barang:</div>
-            <div class="summary-value">{{ $totalItems }} item</div>
+        <div class="info-row">
+            <div class="info-label">Nama Penitip:</div>
+            <div class="info-value">{{ $item->penitip->user->name ?? '-' }}</div>
         </div>
-        <div class="summary-row">
-            <div class="summary-label">Total Nilai:</div>
-            <div class="summary-value">Rp {{ number_format($items->sum('harga'), 0, ',', '.') }}</div>
+        <div class="info-row">
+            <div class="info-label">No. Telepon:</div>
+            <div class="info-value">{{ $item->penitip->user->phone ?? '-' }}</div>
+        </div>
+        <div class="info-row">
+            <div class="info-label">Email:</div>
+            <div class="info-value">{{ $item->penitip->user->email ?? '-' }}</div>
         </div>
     </div>
 
-    <table class="items-table">
-        <thead>
-            <tr>
-                <th width="5%">No</th>
-                <th width="15%">ID Barang</th>
-                <th width="25%">Nama Barang</th>
-                <th width="20%">Penitip</th>
-                <th width="15%">Kategori</th>
-                <th width="10%">Kondisi</th>
-                <th width="10%">Harga</th>
-            </tr>
-        </thead>
-        <tbody>
-            @foreach($items as $index => $item)
+    <div class="item-details">
+        <table>
+            <thead>
                 <tr>
-                    <td>{{ $index + 1 }}</td>
-                    <td>{{ $item->barang_id }}</td>
+                    <th>Nama Barang</th>
+                    <th>Kategori</th>
+                    <th>Kondisi</th>
+                    <th>Harga Jual</th>
+                </tr>
+            </thead>
+            <tbody>
+                <tr>
                     <td>{{ $item->nama_barang }}</td>
-                    <td>{{ $item->penitip->user->name ?? '-' }}</td>
                     <td>{{ $item->kategori->nama_kategori ?? '-' }}</td>
                     <td>{{ ucfirst(str_replace('_', ' ', $item->kondisi)) }}</td>
                     <td>Rp {{ number_format($item->harga, 0, ',', '.') }}</td>
                 </tr>
-            @endforeach
-        </tbody>
-    </table>
+            </tbody>
+        </table>
+    </div>
 
-    <div class="total-section">
-        <div>Total Nilai Barang: Rp {{ number_format($items->sum('harga'), 0, ',', '.') }}</div>
-        <div>Total Item: {{ $totalItems }} barang</div>
+    <div class="info-section">
+        <div class="info-row">
+            <div class="info-label">Deskripsi Barang:</div>
+        </div>
+        <div style="margin-top: 10px; padding: 10px; border: 1px solid #ccc; background-color: #f9f9f9;">
+            {{ $item->deskripsi }}
+        </div>
     </div>
 
     <div class="terms">
         <h4>SYARAT DAN KETENTUAN PENITIPAN:</h4>
         <ul>
-            <li>Semua barang yang tercantum dalam daftar ini telah diterima dalam kondisi sesuai yang tertera.</li>
+            <li>Barang yang dititipkan akan dijual dengan harga yang telah disepakati.</li>
             <li>Komisi penjualan sebesar 20% dari harga jual akan dipotong dari hasil penjualan.</li>
-            <li>Masa penitipan maksimal 3 bulan dari tanggal penitipan masing-masing barang.</li>
+            <li>Masa penitipan maksimal 3 bulan dari tanggal penitipan.</li>
             <li>Jika barang tidak terjual dalam masa penitipan, penitip wajib mengambil kembali barang.</li>
             <li>Barang yang tidak diambil setelah masa penitipan berakhir akan menjadi donasi.</li>
             <li>Reusemart tidak bertanggung jawab atas kerusakan barang akibat force majeure.</li>
             <li>Pembayaran hasil penjualan akan dilakukan maksimal 7 hari setelah barang terjual.</li>
-            <li>Nota ini berlaku sebagai bukti penerimaan barang titipan.</li>
         </ul>
     </div>
 
     <div class="signature-section">
         <div class="signature-box">
-            <div>Petugas Gudang</div>
+            <div>Penitip</div>
             <div class="signature-line">
-                {{ $petugas }}
+                {{ $item->penitip->user->name ?? '___________________' }}
             </div>
         </div>
         <div class="signature-box">
-            <div>Supervisor</div>
+            <div>Petugas Gudang</div>
             <div class="signature-line">
                 ___________________
             </div>
@@ -217,8 +204,8 @@
     </div>
 
     <div class="footer">
-        <p>Nota ini dicetak pada {{ $tanggalCetak->format('d F Y H:i:s') }}</p>
-        <p>Dokumen ini adalah bukti resmi penerimaan barang titipan</p>
+        <p>Nota ini dicetak pada {{ now()->format('d F Y H:i:s') }}</p>
+        <p>Simpan nota ini sebagai bukti penitipan barang</p>
     </div>
 </body>
 </html>
