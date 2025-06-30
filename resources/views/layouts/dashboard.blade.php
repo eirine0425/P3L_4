@@ -210,6 +210,9 @@
                     <li class="{{ request()->is('dashboard/warehouse/inventory') ? 'active' : '' }}">
                         <a href="{{ route('warehouse.items') }}"><i class="fas fa-boxes me-2"></i> Inventaris</a>
                     </li>
+                    <li class="{{ request()->is('dashboard/warehouse/shipments*') ? 'active' : '' }}">
+                        <a href="{{ route('dashboard.warehouse.shipments') }}"><i class="fas fa-shipping-fast me-2"></i> Kelola Pengiriman</a>
+                    </li>
                     <li class="{{ request()->is('dashboard/warehouse/shipments') ? 'active' : '' }}">
                         <a href="{{ route('warehouse.shipments') }}"><i class="fas fa-truck me-2"></i> Pengiriman</a>
                     </li>

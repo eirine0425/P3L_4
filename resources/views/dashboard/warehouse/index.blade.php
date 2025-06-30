@@ -43,21 +43,7 @@
                 </div>
             </div>
         </div>
-        <div class="col-md-3">
-            <div class="card bg-info text-white">
-                <div class="card-body">
-                    <div class="d-flex justify-content-between">
-                        <div>
-                            <h3>{{ $soldItems }}</h3>
-                            <p>Terjual</p>
-                        </div>
-                        <div>
-                            <i class="fas fa-shopping-cart fa-2x"></i>
-                        </div>
-                    </div>
-                </div>
-            </div>
-        </div>
+        
         <div class="col-md-3">
             <div class="card bg-secondary text-white">
                 <div class="card-body">
@@ -402,32 +388,34 @@
                 </div>
                 <div class="card-body">
                     <div class="row">
-                        <div class="col-md-3 mb-3">
+                        <div class="col-md-2 mb-3">
                             <a href="{{ route('dashboard.warehouse.consignment.create') }}" class="btn btn-primary btn-lg w-100">
                                 <i class="fas fa-plus me-2"></i>
                                 Tambah Barang Titipan
                             </a>
                         </div>
-                        <div class="col-md-3 mb-3">
+                        <div class="col-md-2 mb-3">
                             <a href="{{ route('dashboard.warehouse.inventory') }}" class="btn btn-success btn-lg w-100">
                                 <i class="fas fa-boxes me-2"></i>Kelola Inventaris
                             </a>
                         </div>
-                        <div class="col-md-3 mb-3">
+                        <div class="col-md-2 mb-3">
+                            <a href="{{ route('dashboard.warehouse.shipments-ready') }}" class="btn btn-warning btn-lg w-100">
+                                <i class="fas fa-shipping-fast me-2"></i>Kelola Pesanan
+                            </a>
+                        </div>
+                        <div class="col-md-2 mb-3">
                             <a href="{{ route('products.index') }}" class="btn btn-info btn-lg w-100">
                                 <i class="fas fa-store me-2"></i>Lihat Katalog
                             </a>
                         </div>
-                        <div class="col-md-3 mb-3">
-                            <a href="#" class="btn btn-warning btn-lg w-100">
+                        <div class="col-md-2 mb-3">
+                            <a href="#" class="btn btn-secondary btn-lg w-100">
                                 <i class="fas fa-chart-bar me-2"></i>Laporan
                             </a>
                         </div>
                     </div>
-                </div>
-            </div>
-        </div>
-    </div>
+    
     
     <!-- Recent Items -->
     <div class="row mt-4">

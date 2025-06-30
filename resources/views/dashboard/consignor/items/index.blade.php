@@ -87,7 +87,7 @@
                                         <th>Harga</th>
                                         <th>Kondisi</th>
                                         <th>Status</th>
-                                        <th>Durasi Penitipan</th>
+                                  
                                     </tr>
                                 </thead>
                                 <tbody>

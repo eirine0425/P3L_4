@@ -378,17 +378,7 @@ class Barang extends Model
     /**
      * Get formatted remaining time
      */
-    public function getFormattedSisaWaktuAttribute()
-    {
-        if ($this->sisa_hari < 0) {
-            $hariLewat = abs($this->sisa_hari);
-            return "Lewat {$hariLewat} hari";
-        } elseif ($this->sisa_hari == 0) {
-            return 'Berakhir hari ini';
-        } else {
-            return "{$this->sisa_hari} hari lagi";
-        }
-    }
+
 
     /**
      * Scope for items expiring soon (within 7 days)
@@ -413,5 +403,44 @@ class Barang extends Model
     public function scopeNeedsAttention($query)
     {
         return $query->whereRaw('DATEDIFF(batas_penitipan, CURDATE()) <= 7');
+    }
+
+    public function pegawaiPickup()
+    {
+        return $this->belongsTo(Pegawai::class, 'pegawai_pickup_id', 'pegawai_id');
+    }
+
+    // Tambahkan method untuk mendapatkan status pengambilan
+    public function getPickupStatusAttribute()
+    {
+        if ($this->status === 'diambil_kembali') {
+            return [
+                'status' => 'diambil_kembali',
+                'tanggal' => $this->tanggal_pengambilan,
+                'metode' => $this->metode_pengambilan,
+                'catatan' => $this->catatan_pengambilan,
+                'pegawai' => $this->pegawaiPickup ? $this->pegawaiPickup->user->name : null,
+            ];
+        }
+        
+        if ($this->is_expired) {
+            return [
+                'status' => 'perlu_diambil',
+                'hari_kadaluarsa' => abs($this->sisa_hari),
+            ];
+        }
+        
+        return [
+            'status' => 'belum_perlu_diambil',
+            'sisa_hari' => $this->sisa_hari,
+        ];
+    }
+
+    // Tambahkan method untuk mendapatkan formatted tanggal pengambilan
+    public function getFormattedTanggalPengambilanAttribute()
+    {
+        return $this->tanggal_pengambilan ? 
+            Carbon::parse($this->tanggal_pengambilan)->format('d/m/Y H:i') : 
+            '-';
     }
 }

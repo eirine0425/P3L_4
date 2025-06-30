@@ -4,22 +4,34 @@
 
 @section('content')
 <div class="container-fluid">
-    <div class="row mb-4">
-        <div class="col-12">
+    <!-- Header dengan tombol riwayat pengambilan -->
+    <div class="d-sm-flex align-items-center justify-content-between mb-4">
+        <div>
             <h2>Pengambilan Barang Tidak Laku</h2>
             <p class="text-muted">Kelola pengambilan barang yang sudah melewati batas penitipan</p>
+        </div>
+        <div>
+            <a href="{{ route('dashboard.warehouse.pickup-history') }}" class="btn btn-info me-2">
+                <i class="fas fa-history"></i> Riwayat Pengambilan 
+                @if(isset($pickedUpCount))
+                    <span class="badge bg-light text-dark">{{ $pickedUpCount }}</span>
+                @endif
+            </a>
+            <a href="{{ route('dashboard.warehouse.pickup-report') }}" class="btn btn-success">
+                <i class="fas fa-file-excel"></i> Export Data
+            </a>
         </div>
     </div>
     
     <!-- Statistics Cards -->
     <div class="row mb-4">
-        <div class="col-md-4">
+        <div class="col-md-3">
             <div class="card bg-warning text-white">
                 <div class="card-body">
                     <div class="d-flex justify-content-between">
                         <div>
                             <h3>{{ $totalExpiredItems }}</h3>
-                            <p>Total Kadaluarsa</p>
+                            <p class="mb-0">Total Kadaluarsa</p>
                         </div>
                         <div>
                             <i class="fas fa-clock fa-2x"></i>
@@ -28,13 +40,13 @@
                 </div>
             </div>
         </div>
-        <div class="col-md-4">
+        <div class="col-md-3">
             <div class="card bg-danger text-white">
                 <div class="card-body">
                     <div class="d-flex justify-content-between">
                         <div>
                             <h3>{{ $itemsExpired30Plus }}</h3>
-                            <p>Lewat 30+ Hari</p>
+                            <p class="mb-0">Lewat 30+ Hari</p>
                         </div>
                         <div>
                             <i class="fas fa-exclamation-triangle fa-2x"></i>
@@ -43,16 +55,31 @@
                 </div>
             </div>
         </div>
-        <div class="col-md-4">
+        <div class="col-md-3">
             <div class="card bg-secondary text-white">
                 <div class="card-body">
                     <div class="d-flex justify-content-between">
                         <div>
                             <h3>{{ $itemsExpired60Plus }}</h3>
-                            <p>Lewat 60+ Hari</p>
+                            <p class="mb-0">Lewat 60+ Hari</p>
                         </div>
                         <div>
                             <i class="fas fa-times-circle fa-2x"></i>
+                        </div>
+                    </div>
+                </div>
+            </div>
+        </div>
+        <div class="col-md-3">
+            <div class="card bg-success text-white">
+                <div class="card-body">
+                    <div class="d-flex justify-content-between">
+                        <div>
+                            <h3>{{ $pickedUpCount ?? 0 }}</h3>
+                            <p class="mb-0">Sudah Diambil</p>
+                        </div>
+                        <div>
+                            <i class="fas fa-check-circle fa-2x"></i>
                         </div>
                     </div>
                 </div>
@@ -65,17 +92,19 @@
         <div class="col-12">
             <div class="card">
                 <div class="card-header">
-                    <h5 class="card-title">Filter Barang</h5>
+                    <h5 class="card-title mb-0">Filter Barang</h5>
                 </div>
                 <div class="card-body">
                     <form action="{{ route('dashboard.warehouse.item-pickup') }}" method="GET">
                         <div class="row">
                             <div class="col-md-3">
+                                <label class="form-label">Pencarian</label>
                                 <input type="text" name="search" class="form-control" 
                                        placeholder="Cari nama barang atau penitip..." 
                                        value="{{ request('search') }}">
                             </div>
                             <div class="col-md-2">
+                                <label class="form-label">Kategori</label>
                                 <select name="kategori" class="form-select">
                                     <option value="">Semua Kategori</option>
                                     @foreach($categories as $category)
@@ -87,6 +116,7 @@
                                 </select>
                             </div>
                             <div class="col-md-2">
+                                <label class="form-label">Penitip</label>
                                 <select name="penitip" class="form-select">
                                     <option value="">Semua Penitip</option>
                                     @foreach($penitips as $penitip)
@@ -98,6 +128,7 @@
                                 </select>
                             </div>
                             <div class="col-md-2">
+                                <label class="form-label">Durasi Kadaluarsa</label>
                                 <select name="days_expired" class="form-select">
                                     <option value="">Semua Durasi</option>
                                     <option value="1" {{ request('days_expired') == '1' ? 'selected' : '' }}>1+ Hari</option>
@@ -107,6 +138,7 @@
                                 </select>
                             </div>
                             <div class="col-md-2">
+                                <label class="form-label">Urutkan</label>
                                 <select name="sort" class="form-select">
                                     <option value="expired_longest" {{ request('sort') == 'expired_longest' ? 'selected' : '' }}>Terlama Kadaluarsa</option>
                                     <option value="expired_shortest" {{ request('sort') == 'expired_shortest' ? 'selected' : '' }}>Terbaru Kadaluarsa</option>
@@ -115,6 +147,7 @@
                                 </select>
                             </div>
                             <div class="col-md-1">
+                                <label class="form-label">&nbsp;</label>
                                 <button type="submit" class="btn btn-primary w-100">
                                     <i class="fas fa-search"></i>
                                 </button>
@@ -131,7 +164,7 @@
         <div class="col-12">
             <div class="card">
                 <div class="card-header d-flex justify-content-between align-items-center">
-                    <h5 class="card-title">
+                    <h5 class="card-title mb-0">
                         Barang Menunggu Pengambilan 
                         <span class="badge bg-warning">{{ $items->total() }} barang</span>
                     </h5>
@@ -142,9 +175,9 @@
                         <button type="button" class="btn btn-sm btn-outline-secondary" onclick="clearSelection()">
                             <i class="fas fa-square me-1"></i>Batal Pilih
                         </button>
-                        <a href="{{ route('dashboard.warehouse.pickup-report') }}" class="btn btn-sm btn-outline-success">
-                            <i class="fas fa-download me-1"></i>Export
-                        </a>
+                        <button type="button" class="btn btn-sm btn-outline-info" onclick="refreshPage()">
+                            <i class="fas fa-sync-alt me-1"></i>Refresh
+                        </button>
                     </div>
                 </div>
                 <div class="card-body">
@@ -160,9 +193,9 @@
                                                 <label class="form-label">Konfirmasi pengambilan <span id="selectedCount">0</span> barang:</label>
                                                 <select name="bulk_pickup_method" class="form-select" required>
                                                     <option value="">Pilih metode pengambilan...</option>
-                                                    <option value="penitip_pickup">Penitip Ambil Sendiri</option>
-                                                    <option value="courier_delivery">Kurir Antar</option>
-                                                    <option value="warehouse_storage">Simpan di Gudang</option>
+                                                    <option value="diambil_langsung">Diambil Langsung</option>
+                                                    <option value="dikirim_kurir">Dikirim Kurir</option>
+                                                    <option value="dititipkan_pihak_lain">Dititipkan Pihak Lain</option>
                                                 </select>
                                             </div>
                                             <div class="col-md-4">
@@ -171,7 +204,7 @@
                                                        placeholder="Catatan pengambilan...">
                                             </div>
                                             <div class="col-md-3">
-                                                <button type="submit" class="btn btn-success">
+                                                <button type="submit" class="btn btn-success me-2">
                                                     <i class="fas fa-check me-1"></i>Konfirmasi Pengambilan
                                                 </button>
                                                 <button type="button" class="btn btn-secondary" onclick="clearSelection()">
@@ -186,7 +219,7 @@
 
                         <div class="table-responsive">
                             <table class="table table-hover">
-                                <thead>
+                                <thead class="table-light">
                                     <tr>
                                         <th width="50">
                                             <input type="checkbox" id="selectAllCheckbox" onchange="toggleSelectAll()">
@@ -199,7 +232,7 @@
                                         <th>Batas Penitipan</th>
                                         <th>Hari Lewat</th>
                                         <th>Status</th>
-                                        <th>Aksi</th>
+                                        <th width="200">Aksi</th>
                                     </tr>
                                 </thead>
                                 <tbody>
@@ -225,29 +258,48 @@
                                                 <strong>{{ $item->nama_barang }}</strong>
                                                 <br><small class="text-muted">ID: {{ $item->barang_id }}</small>
                                             </td>
-                                            <td>{{ $item->penitip->user->name ?? '-' }}</td>
+                                            <td>
+                                                {{ $item->penitip->user->name ?? '-' }}
+                                                @if($item->penitip && $item->penitip->user && $item->penitip->user->phone)
+                                                    <br><small class="text-muted">{{ $item->penitip->user->phone }}</small>
+                                                @endif
+                                            </td>
                                             <td>{{ $item->kategori->nama_kategori ?? '-' }}</td>
                                             <td>Rp {{ number_format($item->harga, 0, ',', '.') }}</td>
-                                            <td>{{ $item->batas_penitipan->format('d M Y') }}</td>
+                                            <td>
+                                                {{ $item->batas_penitipan ? $item->batas_penitipan->format('d M Y') : '-' }}
+                                            </td>
                                             <td>
                                                 @php
-                                                    $daysExpired = abs($item->sisa_hari);
+                                                    $daysExpired = $item->batas_penitipan ? 
+                                                        now()->diffInDays($item->batas_penitipan, false) : 0;
+                                                    $daysExpired = abs($daysExpired);
                                                 @endphp
-                                                <span class="badge bg-danger">{{ $daysExpired }} hari</span>
+                                                <span class="badge {{ $daysExpired > 60 ? 'bg-danger' : ($daysExpired > 30 ? 'bg-warning' : 'bg-secondary') }}">
+                                                    {{ $daysExpired }} hari
+                                                </span>
                                             </td>
                                             <td>
                                                 <span class="badge bg-warning">Menunggu Pengambilan</span>
                                             </td>
                                             <td>
                                                 <div class="btn-group" role="group">
+                                                    <a href="{{ route('dashboard.warehouse.show-pickup-form', $item->barang_id) }}" 
+                                                       class="btn btn-sm btn-primary" title="Catat Pengambilan">
+                                                        <i class="fas fa-clipboard-check"></i>
+                                                    </a>
                                                     <button type="button" class="btn btn-sm btn-success" 
-                                                            onclick="confirmPickup({{ $item->barang_id }})" title="Konfirmasi Pengambilan">
+                                                            onclick="quickPickup({{ $item->barang_id }})" title="Konfirmasi Cepat">
                                                         <i class="fas fa-check"></i>
                                                     </button>
                                                     <a href="{{ route('dashboard.warehouse.pickup-detail', $item->barang_id) }}" 
-                                                       class="btn btn-sm btn-outline-primary" title="Lihat Detail">
+                                                       class="btn btn-sm btn-outline-info" title="Lihat Detail">
                                                         <i class="fas fa-eye"></i>
                                                     </a>
+                                                    <button type="button" class="btn btn-sm btn-outline-secondary" 
+                                                            onclick="showItemDetail({{ $item->barang_id }})" title="Info Lengkap">
+                                                        <i class="fas fa-info-circle"></i>
+                                                    </button>
                                                 </div>
                                             </td>
                                         </tr>
@@ -267,10 +319,13 @@
                             </div>
                         </div>
                     @else
-                        <div class="text-center py-4">
+                        <div class="text-center py-5">
                             <i class="fas fa-check-circle fa-3x text-success mb-3"></i>
                             <h5 class="text-muted">Tidak ada barang yang menunggu pengambilan</h5>
                             <p class="text-muted">Semua barang masih dalam periode penitipan yang valid.</p>
+                            <a href="{{ route('dashboard.warehouse.index') }}" class="btn btn-primary">
+                                <i class="fas fa-arrow-left me-1"></i>Kembali ke Dashboard
+                            </a>
                         </div>
                     @endif
                 </div>
@@ -279,24 +334,24 @@
     </div>
 </div>
 
-<!-- Pickup Confirmation Modal -->
-<div class="modal fade" id="pickupModal" tabindex="-1">
+<!-- Quick Pickup Modal -->
+<div class="modal fade" id="quickPickupModal" tabindex="-1">
     <div class="modal-dialog">
         <div class="modal-content">
             <div class="modal-header">
-                <h5 class="modal-title">Konfirmasi Pengambilan Barang</h5>
+                <h5 class="modal-title">Konfirmasi Pengambilan Cepat</h5>
                 <button type="button" class="btn-close" data-bs-dismiss="modal"></button>
             </div>
-            <form id="pickupForm" method="POST">
+            <form id="quickPickupForm" method="POST">
                 @csrf
                 <div class="modal-body">
                     <div class="mb-3">
                         <label class="form-label">Metode Pengambilan</label>
                         <select name="pickup_method" class="form-select" required>
                             <option value="">Pilih metode pengambilan...</option>
-                            <option value="penitip_pickup">Penitip Ambil Sendiri</option>
-                            <option value="courier_delivery">Kurir Antar</option>
-                            <option value="warehouse_storage">Simpan di Gudang</option>
+                            <option value="diambil_langsung">Diambil Langsung oleh Penitip</option>
+                            <option value="dikirim_kurir">Dikirim via Kurir</option>
+                            <option value="dititipkan_pihak_lain">Dititipkan ke Pihak Lain</option>
                         </select>
                     </div>
                     <div class="mb-3">
@@ -304,9 +359,9 @@
                         <textarea name="pickup_notes" class="form-control" rows="3" 
                                   placeholder="Catatan pengambilan (opsional)"></textarea>
                     </div>
-                    <div class="alert alert-info">
-                        <i class="fas fa-info-circle me-2"></i>
-                        Setelah dikonfirmasi, status barang akan berubah menjadi "Diambil Kembali" dan tidak dapat dibatalkan.
+                    <div class="alert alert-warning">
+                        <i class="fas fa-exclamation-triangle me-2"></i>
+                        <strong>Perhatian:</strong> Setelah dikonfirmasi, status barang akan berubah menjadi "Diambil Kembali" dan tidak dapat dibatalkan.
                     </div>
                 </div>
                 <div class="modal-footer">
@@ -319,6 +374,26 @@
         </div>
     </div>
 </div>
+
+<!-- Item Detail Modal -->
+<div class="modal fade" id="itemDetailModal" tabindex="-1">
+    <div class="modal-dialog modal-lg">
+        <div class="modal-content">
+            <div class="modal-header">
+                <h5 class="modal-title">Detail Barang</h5>
+                <button type="button" class="btn-close" data-bs-dismiss="modal"></button>
+            </div>
+            <div class="modal-body" id="itemDetailContent">
+                <!-- Content will be loaded via AJAX -->
+                <div class="text-center">
+                    <div class="spinner-border" role="status">
+                        <span class="visually-hidden">Loading...</span>
+                    </div>
+                </div>
+            </div>
+        </div>
+    </div>
+</div>
 @endsection
 
 @push('scripts')
@@ -326,6 +401,7 @@
     function selectAll() {
         const checkboxes = document.querySelectorAll('.item-checkbox');
         checkboxes.forEach(checkbox => checkbox.checked = true);
+        document.getElementById('selectAllCheckbox').checked = true;
         updateBulkActions();
     }
 
@@ -374,11 +450,63 @@
         }
     }
 
-    function confirmPickup(itemId) {
-        const modal = new bootstrap.Modal(document.getElementById('pickupModal'));
-        const form = document.getElementById('pickupForm');
+    function quickPickup(itemId) {
+        const modal = new bootstrap.Modal(document.getElementById('quickPickupModal'));
+        const form = document.getElementById('quickPickupForm');
         form.action = `/dashboard/warehouse/item-pickup/${itemId}/confirm`;
         modal.show();
     }
+
+    function showItemDetail(itemId) {
+        const modal = new bootstrap.Modal(document.getElementById('itemDetailModal'));
+        const content = document.getElementById('itemDetailContent');
+        
+        // Show loading
+        content.innerHTML = `
+            <div class="text-center">
+                <div class="spinner-border" role="status">
+                    <span class="visually-hidden">Loading...</span>
+                </div>
+                <p class="mt-2">Memuat detail barang...</p>
+            </div>
+        `;
+        
+        modal.show();
+        
+        // Load content via AJAX
+        fetch(`/dashboard/warehouse/items/${itemId}`)
+            .then(response => response.text())
+            .then(html => {
+                content.innerHTML = html;
+            })
+            .catch(error => {
+                content.innerHTML = `
+                    <div class="alert alert-danger">
+                        <i class="fas fa-exclamation-triangle me-2"></i>
+                        Gagal memuat detail barang. Silakan coba lagi.
+                    </div>
+                `;
+            });
+    }
+
+    function refreshPage() {
+        window.location.reload();
+    }
+
+    // Auto-refresh every 5 minutes
+    setInterval(function() {
+        if (document.querySelectorAll('.item-checkbox:checked').length === 0) {
+            window.location.reload();
+        }
+    }, 300000); // 5 minutes
+
+    // Show success message if any
+    @if(session('success'))
+        toastr.success('{{ session('success') }}');
+    @endif
+
+    @if(session('error'))
+        toastr.error('{{ session('error') }}');
+    @endif
 </script>
 @endpush
