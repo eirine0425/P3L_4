@@ -20,6 +20,10 @@ use Illuminate\Support\Facades\Log;
 use Carbon\Carbon;
 use App\Models\RequestDonasi;
 use App\Models\Organisasi;
+use App\Models\Pegawai;
+use Illuminate\Http\Request;
+use Illuminate\Support\Facades\DB;
+use Carbon\Carbon;
 
 class DashboardOwnerController extends Controller
 {
@@ -145,6 +149,383 @@ class DashboardOwnerController extends Controller
 
         } catch (\Exception $e) {
             return back()->with('error', 'Failed to generate report: ' . $e->getMessage());
+        }
+    }
+
+    public function commissionReport(Request $request)
+    {
+        try {
+            $month = $request->get('month', date('m'));
+            $year = $request->get('year', date('Y'));
+            
+            // Get commission data with all required fields
+            $commissions = DB::table('barang')
+                ->select([
+                    'barang.barang_id as kode_produk',
+                    'barang.nama_barang',
+                    'barang.harga as harga_jual',
+                    'barang.tanggal_penitipan as tanggal_masuk',
+                    'transaksi.tanggal_pesan as tanggal_laku',
+                    'kategori_barang.nama_kategori',
+                    'penitip.nama as penitip_nama',
+                    'users.name as penitip_user_name',
+                    'pegawai.nama as pegawai_nama',
+                    'komisi.persentase',
+                    'komisi.nominal_komisi as komisi_reusemart',
+                    'transaksi.total_harga as transaksi_total',
+                    // Calculate hunter commission (assume 5% of selling price for hunters)
+                    DB::raw('CASE WHEN pegawai.nama IS NOT NULL THEN ROUND(barang.harga * 0.05) ELSE 0 END as komisi_hunter'),
+                    // Calculate consignor bonus (assume 2% of selling price if sold within 7 days)
+                    DB::raw('CASE WHEN DATEDIFF(transaksi.tanggal_pesan, barang.tanggal_penitipan) <= 7 THEN ROUND(barang.harga * 0.02) ELSE 0 END as bonus_penitip')
+                ])
+                ->leftJoin('detail_transaksi', 'barang.barang_id', '=', 'detail_transaksi.barang_id')
+                ->leftJoin('transaksi', 'detail_transaksi.transaksi_id', '=', 'transaksi.transaksi_id')
+                ->leftJoin('komisi', 'barang.barang_id', '=', 'komisi.barang_id')
+                ->leftJoin('kategori_barang', 'barang.kategori_id', '=', 'kategori_barang.kategori_id')
+                ->leftJoin('penitip', 'barang.penitip_id', '=', 'penitip.penitip_id')
+                ->leftJoin('users', 'penitip.user_id', '=', 'users.id')
+                ->leftJoin('pegawai', 'komisi.pegawai_id', '=', 'pegawai.pegawai_id')
+                ->where('transaksi.status_transaksi', 'selesai')
+                ->whereMonth('transaksi.tanggal_pesan', $month)
+                ->whereYear('transaksi.tanggal_pesan', $year)
+                ->orderBy('transaksi.tanggal_pesan', 'desc')
+                ->get();
+
+            // Calculate totals
+            $totalHunterCommission = $commissions->sum('komisi_hunter');
+            $totalReuseMartCommission = $commissions->sum('komisi_reusemart');
+            $totalConsignorBonus = $commissions->sum('bonus_penitip');
+            $totalSales = $commissions->sum('harga_jual');
+
+            // Summary data
+            $summary = [
+                'total_hunter_commission' => $totalHunterCommission,
+                'total_reusemart_commission' => $totalReuseMartCommission,
+                'total_consignor_bonus' => $totalConsignorBonus,
+                'total_sales' => $totalSales,
+                'total_transactions' => $commissions->count(),
+                'month_name' => Carbon::createFromDate($year, $month, 1)->format('F'),
+                'month_number' => $month,
+                'year' => $year,
+                'generated_at' => Carbon::now()->format('d F Y')
+            ];
+
+            if ($request->get('print') == 'true') {
+                return view('dashboard.owner.print-commission-report', compact('commissions', 'summary'));
+            }
+
+            return response()->json([
+                'status' => 'success',
+                'data' => [
+                    'commissions' => $commissions,
+                    'summary' => $summary
+                ]
+            ]);
+
+        } catch (\Exception $e) {
+            return response()->json([
+                'status' => 'error',
+                'message' => 'Failed to generate commission report: ' . $e->getMessage()
+            ], 500);
+        }
+    }
+
+    public function stockReport(Request $request)
+    {
+        try {
+            // Get warehouse stock data with proper relationships
+            $stockItems = DB::table('barang')
+                ->select([
+                    'barang.barang_id as kode_produk',
+                    'barang.nama_barang',
+                    'penitip.penitip_id as id_penitip',
+                    'penitip.nama as nama_penitip',
+                    'users.name as nama_penitip_user',
+                    'barang.tanggal_penitipan as tanggal_masuk',
+                    'barang.harga',
+                    'barang.status',
+                    'barang.kondisi',
+                    'kategori_barang.nama_kategori',
+                    // Check for extension from transaksi_penitipan - using status_perpanjangan instead of perpanjangan_count
+                    DB::raw('CASE WHEN transaksi_penitipan.status_perpanjangan = 1 THEN "Ya" ELSE "Tidak" END as perpanjangan'),
+                    // Hunter information (assuming hunter data is stored in pegawai table)
+                    'pegawai.pegawai_id as id_hunter',
+                    'pegawai.nama as nama_hunter'
+                ])
+                ->leftJoin('penitip', 'barang.penitip_id', '=', 'penitip.penitip_id')
+                ->leftJoin('users', 'penitip.user_id', '=', 'users.id')
+                ->leftJoin('kategori_barang', 'barang.kategori_id', '=', 'kategori_barang.kategori_id')
+                ->leftJoin('transaksi_penitipan', 'barang.barang_id', '=', 'transaksi_penitipan.barang_id')
+                ->leftJoin('komisi', 'barang.barang_id', '=', 'komisi.barang_id')
+                ->leftJoin('pegawai', 'komisi.pegawai_id', '=', 'pegawai.pegawai_id')
+                ->where('barang.status', '=', 'belum_terjual')
+                ->orderBy('barang.tanggal_penitipan', 'desc')
+                ->get();
+
+            // Calculate summary data
+            $summary = [
+                'total_items' => $stockItems->count(),
+                'total_value' => $stockItems->sum('harga'),
+                'items_with_extension' => $stockItems->where('perpanjangan', 'Ya')->count(),
+                'items_from_hunters' => $stockItems->whereNotNull('id_hunter')->count(),
+                'generated_at' => Carbon::now()->format('d F Y')
+            ];
+
+            if ($request->get('print') == 'true') {
+                return view('dashboard.owner.print-stock-report', compact('stockItems', 'summary'));
+            }
+
+            return response()->json([
+                'status' => 'success',
+                'data' => [
+                    'stock_items' => $stockItems,
+                    'summary' => $summary
+                ]
+            ]);
+
+        } catch (\Exception $e) {
+            return response()->json([
+                'status' => 'error',
+                'message' => 'Failed to generate stock report: ' . $e->getMessage()
+            ], 500);
+        }
+    }
+
+    public function hunterCommissionReport(Request $request)
+    {
+        try {
+            $month = $request->get('month', date('m'));
+            $year = $request->get('year', date('Y'));
+        
+            // Get hunter commission data with detailed information
+            $hunterCommissions = DB::table('komisi')
+                ->select([
+                    'pegawai.pegawai_id',
+                    'pegawai.nama as nama_hunter',
+                    'pegawai.nama_jabatan',
+                    'pegawai.tanggal_bergabung as tanggal_bergabung_pegawai',
+                    'users.name as hunter_user_name',
+                    'users.email as hunter_email',
+                    'users.created_at as tanggal_bergabung',
+                    DB::raw('COUNT(*) as total_barang'),
+                    DB::raw('SUM(barang.harga) as total_penjualan'),
+                    DB::raw('SUM(komisi.nominal_komisi) as total_komisi'),
+                    DB::raw('AVG(komisi.persentase) as rata_rata_persentase'),
+                    DB::raw('MIN(transaksi.tanggal_pesan) as tanggal_pertama'),
+                    DB::raw('MAX(transaksi.tanggal_pesan) as tanggal_terakhir')
+                ])
+                ->join('pegawai', 'komisi.pegawai_id', '=', 'pegawai.pegawai_id')
+                ->join('users', 'pegawai.user_id', '=', 'users.id')
+                ->join('barang', 'komisi.barang_id', '=', 'barang.barang_id')
+                ->join('detail_transaksi', 'barang.barang_id', '=', 'detail_transaksi.barang_id')
+                ->join('transaksi', 'detail_transaksi.transaksi_id', '=', 'transaksi.transaksi_id')
+                ->where('transaksi.status_transaksi', 'selesai')
+                ->whereMonth('transaksi.tanggal_pesan', $month)
+                ->whereYear('transaksi.tanggal_pesan', $year)
+                ->whereNotNull('komisi.pegawai_id')
+                ->groupBy('pegawai.pegawai_id', 'pegawai.nama', 'pegawai.nama_jabatan', 'pegawai.tanggal_bergabung', 'users.name', 'users.email', 'users.created_at')
+                ->orderBy('total_komisi', 'desc')
+                ->get();
+
+            // Get detailed transactions for each hunter
+            $hunterDetails = [];
+            foreach ($hunterCommissions as $hunter) {
+                $details = DB::table('komisi')
+                    ->select([
+                        'barang.barang_id as kode_produk',
+                        'barang.nama_barang',
+                        'barang.harga as harga_jual',
+                        'barang.tanggal_penitipan as tanggal_masuk',
+                        'transaksi.tanggal_pesan as tanggal_laku',
+                        'kategori_barang.nama_kategori',
+                        'penitip.nama as penitip_nama',
+                        'komisi.persentase',
+                        'komisi.nominal_komisi',
+                        DB::raw('DATEDIFF(transaksi.tanggal_pesan, barang.tanggal_penitipan) as hari_terjual'),
+                        DB::raw('ROUND(barang.harga * 0.05) as komisi_hunter')
+                    ])
+                    ->join('pegawai', 'komisi.pegawai_id', '=', 'pegawai.pegawai_id')
+                    ->join('barang', 'komisi.barang_id', '=', 'barang.barang_id')
+                    ->join('detail_transaksi', 'barang.barang_id', '=', 'detail_transaksi.barang_id')
+                    ->join('transaksi', 'detail_transaksi.transaksi_id', '=', 'transaksi.transaksi_id')
+                    ->leftJoin('kategori_barang', 'barang.kategori_id', '=', 'kategori_barang.kategori_id')
+                    ->leftJoin('penitip', 'barang.penitip_id', '=', 'penitip.penitip_id')
+                    ->where('pegawai.pegawai_id', $hunter->pegawai_id)
+                    ->where('transaksi.status_transaksi', 'selesai')
+                    ->whereMonth('transaksi.tanggal_pesan', $month)
+                    ->whereYear('transaksi.tanggal_pesan', $year)
+                    ->orderBy('transaksi.tanggal_pesan', 'desc')
+                    ->get();
+            
+                $hunterDetails[$hunter->pegawai_id] = $details;
+            }
+
+            // Calculate summary
+            $summary = [
+                'total_hunters' => $hunterCommissions->count(),
+                'active_hunters' => $hunterCommissions->where('total_barang', '>', 0)->count(),
+                'total_items_sold' => $hunterCommissions->sum('total_barang'),
+                'total_sales_value' => $hunterCommissions->sum('total_penjualan'),
+                'total_commission_paid' => $hunterCommissions->sum('total_komisi'),
+                'average_commission_rate' => $hunterCommissions->avg('rata_rata_persentase'),
+                'avg_commission_per_hunter' => $hunterCommissions->count() > 0 ? $hunterCommissions->sum('total_komisi') / $hunterCommissions->count() : 0,
+                'month_name' => Carbon::createFromDate($year, $month, 1)->format('F'),
+                'month_number' => $month,
+                'year' => $year,
+                'generated_at' => Carbon::now()->format('d F Y H:i:s')
+            ];
+
+            foreach ($hunterCommissions as $hunter) {
+                $hunter->total_items = $hunter->total_barang;
+                $hunter->total_sales_value = $hunter->total_penjualan;
+                $hunter->total_commission = $hunter->total_komisi;
+                $hunter->avg_item_price = $hunter->total_barang > 0 ? $hunter->total_penjualan / $hunter->total_barang : 0;
+                $hunter->first_sale_date = $hunter->tanggal_pertama;
+                $hunter->last_sale_date = $hunter->tanggal_terakhir;
+                $hunter->hunter_name = $hunter->nama_hunter;
+            }
+
+            if ($request->get('print') == 'true') {
+                return view('dashboard.owner.print-hunter-commission-report', compact('hunterCommissions', 'hunterDetails', 'summary'));
+            }
+
+            return response()->json([
+                'status' => 'success',
+                'data' => [
+                    'hunter_commissions' => $hunterCommissions,
+                    'hunter_details' => $hunterDetails,
+                    'summary' => $summary
+                ]
+            ]);
+
+        } catch (\Exception $e) {
+            return response()->json([
+                'status' => 'error',
+                'message' => 'Failed to generate hunter commission report: ' . $e->getMessage()
+            ], 500);
+        }
+    }
+
+    public function salesReport(Request $request)
+    {
+        $startDate = $request->get('start_date', Carbon::now()->startOfMonth());
+        $endDate = $request->get('end_date', Carbon::now()->endOfMonth());
+        
+        $sales = Transaksi::with(['detailTransaksi.barang.kategoriBarang', 'pembeli.user'])
+            ->where('status_transaksi', 'selesai')
+            ->whereBetween('tanggal_pesan', [$startDate, $endDate])
+            ->get();
+        
+        return response()->json([
+            'status' => 'success',
+            'data' => $sales
+        ]);
+    }
+
+    public function profitReport(Request $request)
+    {
+        $startDate = $request->get('start_date', Carbon::now()->startOfMonth());
+        $endDate = $request->get('end_date', Carbon::now()->endOfMonth());
+        
+        $revenue = Transaksi::where('status_transaksi', 'selesai')
+            ->whereBetween('tanggal_pesan', [$startDate, $endDate])
+            ->whereBetween('tanggal_pesan', [$startDate, $endDate])
+            ->sum('total_harga');
+        
+        // Get commissions based on transaction dates
+        $commissions = DB::table('komisi')
+            ->join('barang', 'komisi.barang_id', '=', 'barang.barang_id')
+            ->join('detail_transaksi', 'barang.barang_id', '=', 'detail_transaksi.barang_id')
+            ->join('transaksi', 'detail_transaksi.transaksi_id', '=', 'transaksi.transaksi_id')
+            ->where('transaksi.status_transaksi', 'selesai')
+            ->whereBetween('transaksi.tanggal_pesan', [$startDate, $endDate])
+            ->sum('komisi.nominal_komisi');
+        
+        $profit = $revenue - $commissions;
+        
+        return response()->json([
+            'status' => 'success',
+            'data' => [
+                'revenue' => $revenue,
+                'commissions' => $commissions,
+                'profit' => $profit,
+                'profit_margin' => $revenue > 0 ? ($profit / $revenue) * 100 : 0
+            ]
+        ]);
+    }
+
+    public function exportReport()
+    {
+        // Implementation for export functionality
+        return response()->json([
+            'status' => 'success',
+            'message' => 'Export functionality will be implemented'
+        ]);
+    }
+
+    public function monthlySalesReport(Request $request)
+    {
+        try {
+            $year = $request->get('year', date('Y'));
+            
+            // Get monthly sales data
+            $monthlySales = DB::table('transaksi')
+                ->select(
+                    DB::raw('MONTH(tanggal_pesan) as month'),
+                    DB::raw('COUNT(*) as total_transactions'),
+                    DB::raw('SUM(total_harga) as total_sales'),
+                    DB::raw('COUNT(DISTINCT detail_transaksi.barang_id) as total_items')
+                )
+                ->join('detail_transaksi', 'transaksi.transaksi_id', '=', 'detail_transaksi.transaksi_id')
+                ->where('status_transaksi', 'selesai')
+                ->whereYear('tanggal_pesan', $year)
+                ->groupBy('month')
+                ->orderBy('month')
+                ->get();
+            
+            // Format data for all months (including months with no sales)
+            $formattedData = [];
+            $totalItems = 0;
+            $totalSales = 0;
+            
+            for ($i = 1; $i <= 12; $i++) {
+                $monthData = $monthlySales->where('month', $i)->first();
+                
+                $formattedData[$i] = [
+                    'month' => $i,
+                    'month_name' => date('F', mktime(0, 0, 0, $i, 1)),
+                    'total_items' => $monthData ? $monthData->total_items : 0,
+                    'total_sales' => $monthData ? $monthData->total_sales : 0
+                ];
+                
+                $totalItems += $formattedData[$i]['total_items'];
+                $totalSales += $formattedData[$i]['total_sales'];
+            }
+            
+            if ($request->get('print') == 'true') {
+                return view('dashboard.owner.print-monthly-sales', [
+                    'data' => $formattedData,
+                    'year' => $year,
+                    'total_items' => $totalItems,
+                    'total_sales' => $totalSales,
+                    'print_date' => Carbon::now()->format('j F Y')
+                ]);
+            }
+            
+            return response()->json([
+                'status' => 'success',
+                'data' => [
+                    'monthly_sales' => $formattedData,
+                    'year' => $year,
+                    'total_items' => $totalItems,
+                    'total_sales' => $totalSales
+                ]
+            ]);
+        } catch (\Exception $e) {
+            return response()->json([
+                'status' => 'error',
+                'message' => 'Failed to generate monthly sales report: ' . $e->getMessage()
+            ], 500);
         }
     }
 
@@ -398,7 +779,7 @@ class DashboardOwnerController extends Controller
             'this_month_commissions' => $thisMonthCommissions
         ];
     }
-
+  
     public function salesReport(Request $request)
     {
         $startDate = $request->get('start_date', Carbon::now()->startOfMonth());

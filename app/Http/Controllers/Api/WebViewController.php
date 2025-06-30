@@ -108,17 +108,23 @@ class WebViewController extends Controller
     
     public function productDetail($id)
     {
-        $product = Barang::with(['kategori', 'diskusi.user', 'penitip'])
-            ->where('barang_id', $id)
-            ->firstOrFail();
-            
-        $relatedProducts = Barang::where('kategori_id', $product->kategori_id)
-            ->where('barang_id', '!=', $id)
-            ->where('status', 'belum_terjual')
-            ->take(4)
-            ->get();
-            
-        return view('products.show', compact('product', 'relatedProducts'));
+        try {
+            $barang = Barang::with(['kategoriBarang', 'penitip', 'garansi', 'diskusi.user'])
+                ->findOrFail($id);
+        
+            // Get related products from the same category
+            $relatedProducts = Barang::with(['kategoriBarang', 'penitip'])
+                ->where('kategori_id', $barang->kategori_id)
+                ->where('barang_id', '!=', $id)
+                ->where('status', 'belum_terjual')
+                ->limit(4)
+                ->get();
+        
+            return view('products.show', compact('barang', 'relatedProducts'));
+        } catch (\Exception $e) {
+            return redirect()->route('products.index')
+                ->with('error', 'Produk tidak ditemukan.');
+        }
     }
     
     public function warrantyCheck(Request $request)

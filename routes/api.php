@@ -280,6 +280,15 @@ Route::middleware('auth:api')->group(function () {
 // ========================================
 
 Route::middleware(['auth:api'])->group(function () {
+    // Core Rating CRUD
+    Route::apiResource('ratings', RatingController::class);
+    
+    // Rating Query Routes
+    Route::get('/ratings/item/{barang_id}', [RatingController::class, 'getItemRatings']);
+    Route::get('/ratings/consignor/{penitip_id}', [RatingController::class, 'getConsignorRatings']);
+    Route::get('/my-ratings', [RatingController::class, 'getMyRatings']);
+    Route::get('/ratable-items', [RatingController::class, 'getRatableItems']);
+    
     // Buyer Profile Rating Routes
     Route::prefix('buyer')->name('api.buyer.')->group(function () {
         Route::get('/ratings', [BuyerProfileController::class, 'showRatings']);
@@ -287,6 +296,13 @@ Route::middleware(['auth:api'])->group(function () {
         Route::put('/ratings/{id}', [BuyerProfileController::class, 'updateRating']);
         Route::delete('/ratings/{id}', [BuyerProfileController::class, 'deleteRating']);
         Route::get('/rating-stats', [BuyerProfileController::class, 'getRatingStats']);
+    });
+    
+    // Consignor Rating Routes
+    Route::prefix('consignor')->name('api.consignor.')->group(function () {
+        Route::get('/ratings', [RatingController::class, 'getConsignorReceivedRatings']);
+        Route::get('/rating-summary', [RatingController::class, 'getConsignorRatingSummary']);
+        Route::get('/rating-analytics', [RatingController::class, 'getConsignorRatingAnalytics']);
     });
 });
 

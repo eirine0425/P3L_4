@@ -3,7 +3,6 @@
 use Illuminate\Support\Facades\Route;
 use Illuminate\Support\Facades\Auth;
 use Illuminate\Support\Facades\DB;
-use Illuminate\Http\Request;
 use App\Http\Controllers\Api\AuthController;
 use App\Http\Controllers\Api\UserController;
 use App\Http\Controllers\Api\BarangController;
@@ -35,10 +34,15 @@ use App\Http\Controllers\Api\PenitipTransaksiController;
 use App\Http\Controllers\Api\ConsignorPickupController;
 use App\Http\Controllers\Api\UnsoldItemPickupController;
 
+use App\Http\Controllers\Api\PenitipBarangController;
+use App\Http\Controllers\Api\PenitipTransaksiController;
+use App\Http\Controllers\Api\ConsignorPickupController;
+
 use App\Http\Controllers\Api\RatingController;
 
 use Illuminate\Support\Facades\Log;
 use App\Models\Transaksi;
+use Illuminate\Http\Request;
 
 /*
 |--------------------------------------------------------------------------
@@ -46,8 +50,8 @@ use App\Models\Transaksi;
 |--------------------------------------------------------------------------
 |
 | Here is where you can register web routes for your application. These
-| routes are loaded by the RouteServiceProvider and all of them will
-| be assigned to the "web" middleware group. Make something great!
+| routes are loaded by the RouteServiceProvider within a group which
+| contains the "web" middleware group. Now create something great!
 |
 */
 
@@ -175,9 +179,6 @@ Route::middleware(['auth'])->group(function () {
 Route::middleware(['auth', 'role:pembeli'])->group(function () {
     // Dashboard
     Route::get('/dashboard/buyer', [DashboardBuyerController::class, 'index'])->name('dashboard.buyer');
-    Route::get('/buyer/dashboard', function () {
-        return view('buyer.dashboard');
-    })->name('buyer.dashboard');
     
     // Transaction Routes
     Route::get('/dashboard/buyer/transactions', [BuyerTransactionController::class, 'index'])->name('buyer.transactions');
@@ -188,21 +189,15 @@ Route::middleware(['auth', 'role:pembeli'])->group(function () {
     Route::post('/dashboard/keranjang/add', [KeranjangBelanjaController::class, 'store'])->name('buyer.cart.add');
     Route::put('/dashboard/keranjang/update', [KeranjangBelanjaController::class, 'update'])->name('buyer.cart.update');
     Route::delete('/dashboard/keranjang/remove/{id}', [KeranjangBelanjaController::class, 'destroy'])->name('buyer.cart.remove');
-
+    
+    // Alternative cart routes for compatibility
+    Route::get('/dashboard/keranjang/alt', function () {
+        return view('errors.missing-view', ['view' => 'dashboard.buyer.cart.index']);
+    })->name('cart.index');
+    
     Route::post('/dashboard/keranjang/alt/add', [KeranjangBelanjaController::class, 'store'])->name('cart.add');
     Route::put('/dashboard/keranjang/alt/update', [KeranjangBelanjaController::class, 'update'])->name('cart.update');
     Route::delete('/dashboard/keranjang/alt/remove/{id}', [KeranjangBelanjaController::class, 'destroy'])->name('cart.remove');
-    
-    // Cart selected items routes (consolidated)
-    Route::prefix('buyer')->name('buyer.')->group(function () {
-        Route::post('/cart/selected-items', [KeranjangBelanjaController::class, 'getSelectedItems'])->name('cart.selected-items');
-        Route::post('/cart/prepare-checkout', [KeranjangBelanjaController::class, 'prepareCheckout'])->name('cart.prepare-checkout');
-        
-        // Alamat Selector Routes
-        Route::get('/alamat/select', [WebViewController::class, 'alamatSelect'])->name('alamat.select');
-        Route::get('/alamat/details/{id}', [WebViewController::class, 'alamatGetDetails'])->name('alamat.details');
-        Route::get('/alamat/default', [WebViewController::class, 'getDefaultAlamat'])->name('alamat.default');
-    });
     
     // Alamat Routes
     Route::get('/dashboard/alamat', [WebViewController::class, 'alamatIndex'])->name('buyer.alamat.index');
@@ -310,7 +305,9 @@ Route::middleware(['auth', 'role:pembeli'])->group(function () {
     Route::post('/dashboard/buyer/rating/submit', [BuyerProfileController::class, 'submitRating'])->name('buyer.rating.submit');
     Route::put('/dashboard/buyer/rating/{rating}/update', [BuyerProfileController::class, 'updateRating'])->name('buyer.rating.update');
     Route::delete('/dashboard/buyer/rating/{rating}/delete', [BuyerProfileController::class, 'deleteRating'])->name('buyer.rating.delete');
-    
+
+    // View consignor ratings
+    Route::get('/dashboard/consignor/{penitip_id}/ratings', [RatingController::class, 'showConsignorRatings'])->name('consignor.ratings');
 });
 
 // ========================================
@@ -357,6 +354,18 @@ Route::middleware(['auth', 'role:penitip'])->group(function () {
     // Ratings Routes for Consignors
     Route::get('/dashboard/rating-diterima', [DashboardConsignorController::class, 'showRatings'])->name('consignor.ratings');
     Route::get('/dashboard/rating-diterima/{id}', [DashboardConsignorController::class, 'showRatingDetail'])->name('consignor.ratings.show');
+
+    // Consignor Pickup Routes
+    Route::get('/dashboard/consignor/pickup', [App\Http\Controllers\Api\ConsignorPickupController::class, 'index'])->name('consignor.pickup');
+    Route::post('/dashboard/consignor/schedule-pickup', [App\Http\Controllers\Api\ConsignorPickupController::class, 'schedulePickup'])->name('consignor.schedule-pickup');
+    Route::get('/dashboard/consignor/pickup/{id}', [App\Http\Controllers\Api\ConsignorPickupController::class, 'showPickupDetail'])->name('consignor.pickup.detail');
+
+    // Ratings Routes for Consignors
+    Route::get('/dashboard/rating-diterima', [DashboardConsignorController::class, 'showRatings'])->name('consignor.ratings');
+    Route::get('/dashboard/rating-diterima/{id}', [DashboardConsignorController::class, 'showRatingDetail'])->name('consignor.ratings.show');
+    Route::get('/dashboard/ratings', [RatingController::class, 'myItemsRatings'])->name('consignor.my-ratings');
+    Route::get('/dashboard/ratings/summary', [RatingController::class, 'myRatingsSummary'])->name('consignor.ratings-summary');
+
 });
 
 // ========================================
@@ -370,7 +379,6 @@ Route::middleware(['auth', 'role:gudang,pegawai gudang'])->group(function () {
         Route::get('/inventory', [DashboardWarehouseController::class, 'inventory'])->name('inventory');
         Route::get('/transactions', [DashboardWarehouseController::class, 'transactionsList'])->name('transactions');
         Route::get('/shipments', [DashboardWarehouseController::class, 'shipments'])->name('shipments');
-        Route::get('/verification', [DashboardWarehouseController::class, 'verification'])->name('verification');
         
         // NEW ROUTES FOR VERIFIED TRANSACTIONS
         Route::get('/verified-transactions', [DashboardWarehouseController::class, 'verifiedTransactions'])->name('verified-transactions');
@@ -415,6 +423,18 @@ Route::middleware(['auth', 'role:gudang,pegawai gudang'])->group(function () {
         Route::put('/shipments/{id}/status', [DashboardWarehouseController::class, 'updateShipmentStatus'])->name('shipments.update-status');
         Route::put('/shipments/{id}/courier', [DashboardWarehouseController::class, 'assignCourier'])->name('shipments.assign-courier'); // Feature 2
 
+// Consignment Transactions with search functionality
+Route::get('/consignment/transactions', [DashboardWarehouseController::class, 'consignmentTransactions'])->name('consignment.transactions');
+Route::get('/consignment/transaction/{id}', [DashboardWarehouseController::class, 'showConsignmentTransaction'])->name('consignment.transaction.show');
+
+// Shipments Management (Features 1 & 2)
+Route::get('/shipments', [DashboardWarehouseController::class, 'shipments'])->name('shipments'); // Feature 1
+Route::get('/shipments/{id}', [DashboardWarehouseController::class, 'showShipment'])->name('shipments.show');
+Route::get('/shipments/{id}/create', [DashboardWarehouseController::class, 'createShipment'])->name('shipments.create'); // Feature 2
+Route::post('/shipments', [DashboardWarehouseController::class, 'storeShipment'])->name('shipments.store'); // Feature 2
+Route::put('/shipments/{id}/status', [DashboardWarehouseController::class, 'updateShipmentStatus'])->name('shipments.update-status');
+Route::put('/shipments/{id}/courier', [DashboardWarehouseController::class, 'assignCourier'])->name('shipments.assign-courier'); // Feature 2
+
         // Consignment Transactions with search functionality
         Route::get('/consignment/transactions', [DashboardWarehouseController::class, 'consignmentTransactions'])->name('consignment.transactions');
         Route::get('/consignment/transaction/{id}', [DashboardWarehouseController::class, 'showConsignmentTransaction'])->name('consignment.transaction.show');
@@ -422,6 +442,7 @@ Route::middleware(['auth', 'role:gudang,pegawai gudang'])->group(function () {
         // Shipment management
         Route::get('/shipment/{id}', [DashboardWarehouseController::class, 'showShipment'])->name('shipment.show');
         Route::put('/shipment/{id}/status', [DashboardWarehouseController::class, 'updateShipmentStatus'])->name('shipment.update-status');
+
         
         // Transaction management
         Route::post('/transaction/{id}/shipping', [DashboardWarehouseController::class, 'createShippingSchedule'])->name('create-shipping');
@@ -435,6 +456,10 @@ Route::middleware(['auth', 'role:gudang,pegawai gudang'])->group(function () {
         Route::post('/pickup/{id}/confirm', [DashboardWarehouseController::class, 'confirmItemPickup'])->name('pickup.confirm');
         Route::post('/pickup/bulk-confirm', [DashboardWarehouseController::class, 'bulkConfirmPickup'])->name('pickup.bulk-confirm');
         Route::get('/pickup/report', [DashboardWarehouseController::class, 'generatePickupReport'])->name('pickup.report');
+    Route::get('/pickup/{id}/detail', [DashboardWarehouseController::class, 'showPickupDetail'])->name('pickup.detail');
+    Route::post('/pickup/{id}/confirm', [DashboardWarehouseController::class, 'confirmItemPickup'])->name('pickup.confirm');
+    Route::post('/pickup/bulk-confirm', [DashboardWarehouseController::class, 'bulkConfirmPickup'])->name('pickup.bulk-confirm');
+    Route::get('/pickup/report', [DashboardWarehouseController::class, 'generatePickupReport'])->name('pickup.report');
 
         // Add this route for extending consignment
         Route::put('/item/{id}/extend', [DashboardWarehouseController::class, 'extendConsignment'])
@@ -499,6 +524,20 @@ Route::middleware(['auth', 'role:cs'])->group(function () {
     Route::get('/dashboard/verifikasi-pembayaran', function () {
         return view('errors.missing-view', ['view' => 'dashboard.cs.payment_verifications.index']);
     })->name('cs.payment.verifications');
+    
+    Route::get('/dashboard/verifikasi-pembayaran/{id}', function ($id) {
+        return view('errors.missing-view', ['view' => 'dashboard.cs.payment_verifications.show', 'id' => $id]);
+    })->name('cs.payment.verifications.show');
+    
+
+    // Alternative admin route for compatibility
+    Route::get('/dashboard/admin', [DashboardAdminController::class, 'index'])->name('dashboard.admin');
+
+    // Rating Management Routes
+    Route::get('/dashboard/ratings', [RatingController::class, 'index'])->name('cs.ratings.index');
+    Route::get('/dashboard/ratings/{id}', [RatingController::class, 'show'])->name('cs.ratings.show');
+    Route::delete('/dashboard/ratings/{id}', [RatingController::class, 'destroy'])->name('cs.ratings.destroy');
+
 });
 
 // ========================================
@@ -553,6 +592,12 @@ Route::middleware(['auth', 'role:admin'])->prefix('dashboard/admin')->name('dash
     
     Route::put('/employee-verifications/{id}/approve', [PegawaiController::class, 'approve'])->name('employee.approve');
     Route::put('/employee-verifications/{id}/reject', [PegawaiController::class, 'reject'])->name('employee.reject');
+    
+    // Rating Management Routes
+    Route::get('/ratings', [RatingController::class, 'adminIndex'])->name('ratings.index');
+    Route::get('/ratings/{id}', [RatingController::class, 'adminShow'])->name('ratings.show');
+    Route::delete('/ratings/{id}', [RatingController::class, 'adminDestroy'])->name('ratings.destroy');
+    Route::get('/ratings/reports', [RatingController::class, 'ratingReports'])->name('ratings.reports');
 });
 
 // Owner Dashboard Routes
@@ -681,6 +726,13 @@ Route::middleware(['auth'])->prefix('api/dashboard')->name('api.dashboard.')->gr
     Route::get('/buyer', [DashboardBuyerController::class, 'index'])->middleware('role:pembeli');
     Route::get('/organization', [DashboardOrganisasiController::class, 'index'])->middleware('role:organisasi');
     Route::get('/hunter', [DashboardHunterController::class, 'index'])->middleware('role:hunter');
+    Route::get('/dashboard/laporan/kategori', function () {
+        return view('errors.missing-view', ['view' => 'dashboard.owner.reports.category']);
+    })->name('owner.reports.category');
+    
+    // Rating Reports
+    Route::get('/dashboard/laporan/ratings', [RatingController::class, 'ownerRatingReports'])->name('owner.reports.ratings');
+    Route::get('/dashboard/laporan/ratings/export', [RatingController::class, 'exportRatingReports'])->name('owner.reports.ratings.export');
 });
 
 // ========================================

@@ -14,7 +14,7 @@
             </div>
         </div>
     </div>
-
+    
     <!-- Filters -->
     <div class="row mb-4">
         <div class="col-12">
@@ -22,20 +22,38 @@
                 <div class="card-body">
                     <form method="GET" action="{{ route('consignor.items') }}">
                         <div class="row">
-                            <div class="col-md-4">
+                            <div class="col-md-3">
                                 <label for="search" class="form-label">Cari Barang</label>
                                 <input type="text" class="form-control" id="search" name="search" 
                                        value="{{ request('search') }}" placeholder="Nama barang...">
                             </div>
-                            <div class="col-md-3">
+                            <div class="col-md-2">
                                 <label for="status" class="form-label">Status</label>
                                 <select class="form-select" id="status" name="status">
                                     <option value="">Semua Status</option>
-                                    <option value="Menunggu Verifikasi" {{ request('status') == 'Menunggu Verifikasi' ? 'selected' : '' }}>Menunggu Verifikasi</option>
-                                    <option value="Aktif" {{ request('status') == 'Aktif' ? 'selected' : '' }}>Aktif</option>
-                                    <option value="Tidak Aktif" {{ request('status') == 'Tidak Aktif' ? 'selected' : '' }}>Tidak Aktif</option>
-                                    <option value="Terjual" {{ request('status') == 'Terjual' ? 'selected' : '' }}>Terjual</option>
-                                    <option value="Ditolak" {{ request('status') == 'Ditolak' ? 'selected' : '' }}>Ditolak</option>
+                                    <option value="belum_terjual" {{ request('status') == 'belum_terjual' ? 'selected' : '' }}>Belum Terjual</option>
+                                    <option value="terjual" {{ request('status') == 'terjual' ? 'selected' : '' }}>Terjual</option>
+                                    <option value="sold out" {{ request('status') == 'sold out' ? 'selected' : '' }}>Sold Out</option>
+                                </select>
+                            </div>
+                            <div class="col-md-2">
+                                <label for="kategori" class="form-label">Kategori</label>
+                                <select class="form-select" id="kategori" name="kategori">
+                                    <option value="">Semua Kategori</option>
+                                    @foreach($categories as $category)
+                                        <option value="{{ $category->kategori_id }}" {{ request('kategori') == $category->kategori_id ? 'selected' : '' }}>
+                                            {{ $category->nama_kategori }}
+                                        </option>
+                                    @endforeach
+                                </select>
+                            </div>
+                            <div class="col-md-2">
+                                <label for="durasi" class="form-label">Durasi Penitipan</label>
+                                <select class="form-select" id="durasi" name="durasi">
+                                    <option value="">Semua Durasi</option>
+                                    <option value="perlu_perhatian" {{ request('durasi') == 'perlu_perhatian' ? 'selected' : '' }}>Perlu Perhatian</option>
+                                    <option value="segera_berakhir" {{ request('durasi') == 'segera_berakhir' ? 'selected' : '' }}>Segera Berakhir</option>
+                                    <option value="kadaluarsa" {{ request('durasi') == 'kadaluarsa' ? 'selected' : '' }}>Kadaluarsa</option>
                                 </select>
                             </div>
                             <div class="col-md-3 d-flex align-items-end">
@@ -52,7 +70,7 @@
             </div>
         </div>
     </div>
-
+    
     <!-- Items List -->
     <div class="row">
         <div class="col-12">
@@ -69,8 +87,7 @@
                                         <th>Harga</th>
                                         <th>Kondisi</th>
                                         <th>Status</th>
-                                        <th>Tanggal</th>
-                                        <th>Aksi</th>
+                                        <th>Durasi Penitipan</th>
                                     </tr>
                                 </thead>
                                 <tbody>
@@ -93,34 +110,45 @@
                                                     <strong>{{ $item->nama_barang }}</strong>
                                                 </a>
                                                 <br>
-                                                <small class="text-muted">{{ $item->kode_barang }}</small>
+                                                <small class="text-muted">ID: {{ $item->barang_id }}</small>
                                             </td>
                                             <td>{{ $item->kategori->nama_kategori ?? '-' }}</td>
                                             <td>Rp {{ number_format($item->harga, 0, ',', '.') }}</td>
                                             <td>
-                                                <span class="badge bg-info">{{ $item->kondisi }}</span>
+                                                <span class="badge bg-info">{{ ucfirst($item->kondisi) }}</span>
                                             </td>
                                             <td>
-                                                @if($item->status_barang == 'Aktif')
-                                                    <span class="badge bg-success">{{ $item->status_barang }}</span>
-                                                @elseif($item->status_barang == 'Menunggu Verifikasi')
-                                                    <span class="badge bg-warning">{{ $item->status_barang }}</span>
-                                                @elseif($item->status_barang == 'Ditolak')
-                                                    <span class="badge bg-danger">{{ $item->status_barang }}</span>
-                                                @elseif($item->status_barang == 'Terjual')
-                                                    <span class="badge bg-primary">{{ $item->status_barang }}</span>
+                                                @if($item->status == 'belum_terjual')
+                                                    <span class="badge bg-success">Belum Terjual</span>
+                                                @elseif($item->status == 'terjual')
+                                                    <span class="badge bg-primary">Terjual</span>
+                                                @elseif($item->status == 'sold out')
+                                                    <span class="badge bg-danger">Sold Out</span>
                                                 @else
-                                                    <span class="badge bg-secondary">{{ $item->status_barang }}</span>
+                                                    <span class="badge bg-secondary">{{ ucfirst($item->status) }}</span>
                                                 @endif
                                             </td>
-                                            <td>{{ $item->created_at ? $item->created_at->format('d M Y') : '-' }}</td>
                                             <td>
+                                                <div class="d-flex flex-column">
+                                                    <span class="badge {{ $item->status_durasi_badge_class }} mb-1">
+                                                        {{ $item->status_durasi_text }}
+                                                    </span>
+                                                    <small class="{{ $item->is_expired ? 'text-danger' : 'text-muted' }}">
+                                                        {{ $item->formatted_sisa_waktu }}
+                                                    </small>
+                                                    @if($item->batas_penitipan)
+                                                        <small class="text-muted">
+                                                            Batas: {{ $item->batas_penitipan->format('d M Y') }}
+                                                        </small>
+                                                    @endif
+                                                </div>
+
                                                 <div class="btn-group" role="group">
                                                     <a href="{{ route('consignor.items.show', $item->barang_id) }}" 
                                                        class="btn btn-sm btn-outline-primary" title="Lihat Detail">
                                                         <i class="fas fa-eye"></i>
                                                     </a>
-                                                    @if($item->status_barang != 'Terjual')
+                                                    @if($item->status != 'terjual')
                                                         <a href="{{ route('consignor.items.edit', $item->barang_id) }}" 
                                                            class="btn btn-sm btn-outline-warning" title="Edit">
                                                             <i class="fas fa-edit"></i>
@@ -142,7 +170,7 @@
                                 </tbody>
                             </table>
                         </div>
-
+                        
                         <!-- Pagination -->
                         <div class="d-flex justify-content-center mt-4">
                             {{ $items->appends(request()->query())->links() }}

@@ -11,154 +11,214 @@
             line-height: 1.3;
             margin: 0;
             padding: 15px;
-            color: #333;
         }
-        
         .header {
             text-align: center;
-            border-bottom: 2px solid #2c3e50;
-            padding-bottom: 15px;
+            border-bottom: 2px solid #000;
+            padding-bottom: 10px;
             margin-bottom: 20px;
         }
-        
         .company-name {
-            font-size: 20px;
+            font-size: 18px;
             font-weight: bold;
-            color: #2c3e50;
             margin-bottom: 5px;
         }
-        
-        .document-title {
+        .company-info {
+            font-size: 10px;
+            color: #666;
+        }
+        .nota-title {
             font-size: 16px;
             font-weight: bold;
-            color: #e74c3c;
-            margin-top: 10px;
-        }
-        
-        .summary-info {
-            background-color: #ecf0f1;
-            padding: 15px;
-            border-radius: 5px;
-            margin-bottom: 20px;
             text-align: center;
+            margin: 20px 0;
+            text-decoration: underline;
         }
-        
+        .summary-info {
+            margin-bottom: 20px;
+            background-color: #f5f5f5;
+            padding: 10px;
+            border: 1px solid #ddd;
+        }
+        .summary-row {
+            display: flex;
+            margin-bottom: 5px;
+        }
+        .summary-label {
+            width: 150px;
+            font-weight: bold;
+        }
+        .summary-value {
+            flex: 1;
+        }
         .items-table {
             width: 100%;
             border-collapse: collapse;
-            margin-bottom: 20px;
+            margin: 20px 0;
         }
-        
-        .items-table th {
-            background-color: #3498db;
-            color: white;
-            padding: 8px 5px;
+        .items-table th,
+        .items-table td {
+            border: 1px solid #000;
+            padding: 6px;
             text-align: left;
             font-size: 10px;
+        }
+        .items-table th {
+            background-color: #f0f0f0;
             font-weight: bold;
         }
-        
-        .items-table td {
-            padding: 6px 5px;
-            border-bottom: 1px solid #ddd;
-            font-size: 9px;
-        }
-        
         .items-table tr:nth-child(even) {
-            background-color: #f8f9fa;
+            background-color: #f9f9f9;
         }
-        
-        .status-badge {
-            display: inline-block;
-            padding: 2px 6px;
-            border-radius: 10px;
-            font-size: 8px;
+        .total-section {
+            margin-top: 20px;
+            text-align: right;
             font-weight: bold;
-            text-transform: uppercase;
         }
-        
-        .status-available {
-            background-color: #2ecc71;
-            color: white;
-        }
-        
-        .status-sold {
-            background-color: #e74c3c;
-            color: white;
-        }
-        
-        .footer {
-            text-align: center;
+        .terms {
             margin-top: 30px;
-            padding-top: 15px;
-            border-top: 1px solid #bdc3c7;
             font-size: 9px;
-            color: #7f8c8d;
+            page-break-inside: avoid;
         }
-        
+        .terms h4 {
+            margin-bottom: 10px;
+            font-size: 11px;
+        }
+        .terms ul {
+            margin: 0;
+            padding-left: 15px;
+        }
+        .terms li {
+            margin-bottom: 3px;
+        }
+        .signature-section {
+            margin-top: 30px;
+            display: flex;
+            justify-content: space-between;
+            page-break-inside: avoid;
+        }
+        .signature-box {
+            text-align: center;
+            width: 180px;
+        }
+        .signature-line {
+            border-top: 1px solid #000;
+            margin-top: 50px;
+            padding-top: 5px;
+        }
+        .footer {
+            margin-top: 20px;
+            text-align: center;
+            font-size: 9px;
+            color: #666;
+            border-top: 1px solid #ccc;
+            padding-top: 10px;
+        }
         .page-break {
             page-break-before: always;
+        }
+        @media print {
+            body {
+                margin: 0;
+                padding: 10px;
+            }
         }
     </style>
 </head>
 <body>
-    <!-- Header -->
     <div class="header">
         <div class="company-name">REUSEMART</div>
-        <div class="document-title">LAPORAN PENITIPAN BARANG</div>
+        <div class="company-info">
+            Jl. Contoh No. 123, Kota Contoh<br>
+            Telp: (021) 1234-5678 | Email: info@reusemart.com
+        </div>
     </div>
 
-    <!-- Summary Information -->
+    <div class="nota-title">NOTA PENITIPAN BARANG - BULK</div>
+
     <div class="summary-info">
-        <strong>Total Barang: {{ $totalItems }} | Tanggal Cetak: {{ $tanggalCetak->format('d F Y, H:i') }} WIB | Petugas: {{ $petugas }}</strong>
+        <div class="summary-row">
+            <div class="summary-label">Tanggal Cetak:</div>
+            <div class="summary-value">{{ $tanggalCetak->format('d F Y H:i:s') }}</div>
+        </div>
+        <div class="summary-row">
+            <div class="summary-label">Petugas:</div>
+            <div class="summary-value">{{ $petugas }}</div>
+        </div>
+        <div class="summary-row">
+            <div class="summary-label">Total Barang:</div>
+            <div class="summary-value">{{ $totalItems }} item</div>
+        </div>
+        <div class="summary-row">
+            <div class="summary-label">Total Nilai:</div>
+            <div class="summary-value">Rp {{ number_format($items->sum('harga'), 0, ',', '.') }}</div>
+        </div>
     </div>
 
-    <!-- Items Table -->
     <table class="items-table">
         <thead>
             <tr>
-                <th style="width: 8%">ID</th>
-                <th style="width: 25%">Nama Barang</th>
-                <th style="width: 15%">Penitip</th>
-                <th style="width: 12%">Kategori</th>
-                <th style="width: 12%">Harga</th>
-                <th style="width: 10%">Status</th>
-                <th style="width: 10%">Tgl Penitipan</th>
-                <th style="width: 8%">Sisa Hari</th>
+                <th width="5%">No</th>
+                <th width="15%">ID Barang</th>
+                <th width="25%">Nama Barang</th>
+                <th width="20%">Penitip</th>
+                <th width="15%">Kategori</th>
+                <th width="10%">Kondisi</th>
+                <th width="10%">Harga</th>
             </tr>
         </thead>
         <tbody>
-            @foreach($items as $item)
+            @foreach($items as $index => $item)
                 <tr>
+                    <td>{{ $index + 1 }}</td>
                     <td>{{ $item->barang_id }}</td>
-                    <td><strong>{{ $item->nama_barang }}</strong></td>
+                    <td>{{ $item->nama_barang }}</td>
                     <td>{{ $item->penitip->user->name ?? '-' }}</td>
                     <td>{{ $item->kategori->nama_kategori ?? '-' }}</td>
+                    <td>{{ ucfirst(str_replace('_', ' ', $item->kondisi)) }}</td>
                     <td>Rp {{ number_format($item->harga, 0, ',', '.') }}</td>
-                    <td>
-                        <span class="status-badge {{ $item->status == 'belum_terjual' ? 'status-available' : 'status-sold' }}">
-                            {{ ucfirst(str_replace('_', ' ', $item->status)) }}
-                        </span>
-                    </td>
-                    <td>{{ $item->tanggal_mulai_penitipan->format('d/m/Y') }}</td>
-                    <td>
-                        @if($item->sisa_hari > 0)
-                            <span style="color: #27ae60;">{{ $item->sisa_hari }} hari</span>
-                        @elseif($item->sisa_hari == 0)
-                            <span style="color: #f39c12;">Hari ini</span>
-                        @else
-                            <span style="color: #e74c3c;">-{{ abs($item->sisa_hari) }} hari</span>
-                        @endif
-                    </td>
                 </tr>
             @endforeach
         </tbody>
     </table>
 
-    <!-- Footer -->
+    <div class="total-section">
+        <div>Total Nilai Barang: Rp {{ number_format($items->sum('harga'), 0, ',', '.') }}</div>
+        <div>Total Item: {{ $totalItems }} barang</div>
+    </div>
+
+    <div class="terms">
+        <h4>SYARAT DAN KETENTUAN PENITIPAN:</h4>
+        <ul>
+            <li>Semua barang yang tercantum dalam daftar ini telah diterima dalam kondisi sesuai yang tertera.</li>
+            <li>Komisi penjualan sebesar 20% dari harga jual akan dipotong dari hasil penjualan.</li>
+            <li>Masa penitipan maksimal 3 bulan dari tanggal penitipan masing-masing barang.</li>
+            <li>Jika barang tidak terjual dalam masa penitipan, penitip wajib mengambil kembali barang.</li>
+            <li>Barang yang tidak diambil setelah masa penitipan berakhir akan menjadi donasi.</li>
+            <li>Reusemart tidak bertanggung jawab atas kerusakan barang akibat force majeure.</li>
+            <li>Pembayaran hasil penjualan akan dilakukan maksimal 7 hari setelah barang terjual.</li>
+            <li>Nota ini berlaku sebagai bukti penerimaan barang titipan.</li>
+        </ul>
+    </div>
+
+    <div class="signature-section">
+        <div class="signature-box">
+            <div>Petugas Gudang</div>
+            <div class="signature-line">
+                {{ $petugas }}
+            </div>
+        </div>
+        <div class="signature-box">
+            <div>Supervisor</div>
+            <div class="signature-line">
+                ___________________
+            </div>
+        </div>
+    </div>
+
     <div class="footer">
-        <p>Dokumen ini dicetak secara otomatis oleh sistem ReuseMarket pada {{ $tanggalCetak->format('d F Y, H:i') }} WIB</p>
-        <p><strong>ReuseMarket</strong> - Platform Jual Beli Barang Bekas Berkualitas</p>
+        <p>Nota ini dicetak pada {{ $tanggalCetak->format('d F Y H:i:s') }}</p>
+        <p>Dokumen ini adalah bukti resmi penerimaan barang titipan</p>
     </div>
 </body>
 </html>

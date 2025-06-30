@@ -62,6 +62,7 @@
         <div class="row mb-4">
             <div class="col-12">
                 <h4>Ringkasan KPI</h4>
+                <h4>Ringkasan Kinerja</h4>
             </div>
             <div class="col-3">
                 <div class="kpi-box">
@@ -418,4 +419,5 @@
         }
     </script>
 </body>
+</html>
 </html>
